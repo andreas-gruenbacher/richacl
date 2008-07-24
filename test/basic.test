@@ -1,0 +1,68 @@
+No write-through
+
+$ rm -rf d
+$ mkdir d
+$ cd d
+
+$ touch x
+$ nfs4acl --set 'everyone@:rw::allow' x
+$ ls -l x | cut -d ' ' -f 1
+> -rw-rw-rw-
+
+$ nfs4acl --get x
+> x:
+> everyone@:rw::allow
+>
+
+$ chmod 664 x
+$ ls -l x | cut -d ' ' -f 1
+> -rw-rw-r--
+
+$ nfs4acl --get x
+> x:
+> owner@:rw::allow
+> group@:rw::allow
+> everyone@:r::allow
+>
+
+$ mkdir sub 
+$ nfs4acl --set 'everyone@:rwx:fd:allow' sub
+$ ls -dl sub | cut -d ' ' -f 1
+> drwxrwxrwx
+
+$ nfs4acl --get sub
+> sub:
+> everyone@:rwx:fd:allow
+>
+
+$ chmod 775 sub
+$ ls -dl sub | cut -d ' ' -f 1
+> drwxrwxr-x
+$ nfs4acl --get sub
+> sub:
+> owner@:rwx::allow
+> group@:rwx::allow
+> everyone@:rwx:fdi:allow
+> everyone@:rx::allow
+>
+
+$ touch sub/f
+$ ls -l sub/f | cut -d ' ' -f 1
+> -rw-rw-rw-
+
+$ nfs4acl --get sub/f
+> sub/f:
+> everyone@:rw::allow
+>
+
+$ mkdir sub/sub2
+$ ls -dl sub/sub2 | cut -d ' ' -f 1
+> drwxrwxrwx
+
+$ nfs4acl --get sub/sub2
+> sub/sub2:
+> everyone@:rwx:fd:allow
+>
+
+$ cd ..
+$ rm -rf d

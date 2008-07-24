@@ -1,0 +1,1044 @@
+#define _GNU_SOURCE
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <stdlib.h>
+#include <ctype.h>
+#include <alloca.h>
+#include <errno.h>
+#include <pwd.h>
+#include <grp.h>
+#include <attr/xattr.h>
+#include "string_buffer.h"
+#include "nfs4acl.h"
+#include "nfs4acl_xattr.h"
+#include "nfs4acl-internal.h"
+
+#define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
+#define ALIGN(x,a) (((x)+(a)-1)&~((a)-1))
+
+const char *nfs4ace_owner_who	 = "OWNER@";
+const char *nfs4ace_group_who	 = "GROUP@";
+const char *nfs4ace_everyone_who = "EVERYONE@";
+
+/*
+ * The POSIX permissions are supersets of the following mask flags.
+ */
+#define ACE4_POSIX_MODE_READ ( \
+	ACE4_READ_DATA | ACE4_LIST_DIRECTORY )
+#define ACE4_POSIX_MODE_WRITE ( \
+	ACE4_WRITE_DATA | ACE4_ADD_FILE | \
+	ACE4_APPEND_DATA | ACE4_ADD_SUBDIRECTORY | \
+	ACE4_DELETE_CHILD )
+#define ACE4_POSIX_MODE_EXEC ( \
+	ACE4_EXECUTE)
+
+/*
+ * The ACE4_READ_ATTRIBUTES and ACE4_READ_ACL flags are always granted
+ * in POSIX. The ACE4_SYNCHRONIZE flag has no meaning under POSIX.
+ */
+#define ACE4_POSIX_ALWAYS_ALLOWED ( \
+	ACE4_SYNCHRONIZE | \
+	ACE4_READ_ATTRIBUTES | \
+	ACE4_READ_ACL )
+
+static struct {
+	uint16_t	e_type;
+	const char	*e_name;
+} type_values[] = {
+	{ ACE4_ACCESS_ALLOWED_ACE_TYPE, "allow" },
+	{ ACE4_ACCESS_DENIED_ACE_TYPE,  "deny" },
+};
+
+#define FLAGS_BIT(c, name, str) \
+	{ ACE4_ ## name, c, #name }
+
+static struct {
+	uint16_t        e_flag;
+	char            e_char;
+	const char      *e_name;
+} flag_bits[] = {
+	FLAGS_BIT('f', FILE_INHERIT_ACE, "file_inherit_ace"),
+	FLAGS_BIT('d', DIRECTORY_INHERIT_ACE, "directory_inherit_ace"),
+	FLAGS_BIT('n', NO_PROPAGATE_INHERIT_ACE, "no_propagate_inherit_ace"),
+	FLAGS_BIT('i', INHERIT_ONLY_ACE, "inherit_only_ace"),
+	FLAGS_BIT('g', IDENTIFIER_GROUP, "identifier_group"),
+};
+
+#undef FLAGS_BIT
+
+#define MASK_BIT(c, name, str) \
+	{ ACE4_ ## name, c, str, NFS4ACL_TEXT_FILE_CONTEXT | \
+				 NFS4ACL_TEXT_DIRECTORY_CONTEXT }
+#define FILE_MASK_BIT(c, name, str) \
+	{ ACE4_ ## name, c, str, NFS4ACL_TEXT_FILE_CONTEXT }
+#define DIRECTORY_MASK_BIT(c, name, str) \
+	{ ACE4_ ## name, c, str, NFS4ACL_TEXT_DIRECTORY_CONTEXT }
+
+struct {
+	uint32_t        e_mask;
+	char            e_char;
+	const char      *e_name;
+	int             e_context;
+} mask_bits[] = {
+	MASK_BIT('*', VALID_MASK, "*"),
+	FILE_MASK_BIT('r', READ_DATA, "read_data"),
+	DIRECTORY_MASK_BIT('r', LIST_DIRECTORY, "list_directory"),
+	FILE_MASK_BIT('w', WRITE_DATA, "write_data"),
+	DIRECTORY_MASK_BIT('w', ADD_FILE, "add_file"),
+	FILE_MASK_BIT('a', APPEND_DATA, "append_data"),
+	DIRECTORY_MASK_BIT('a', ADD_SUBDIRECTORY, "add_subdirectory"),
+	MASK_BIT('N', READ_NAMED_ATTRS, "read_named_attrs"),
+	MASK_BIT('n', WRITE_NAMED_ATTRS, "write_named_attrs"),
+	MASK_BIT('x', EXECUTE, "execute"),
+	MASK_BIT('d', DELETE_CHILD, "delete_child"),
+	MASK_BIT('T', READ_ATTRIBUTES, "read_attributes"),
+	MASK_BIT('t', WRITE_ATTRIBUTES, "write_attributes"),
+	MASK_BIT('D', DELETE, "delete"),
+	MASK_BIT('M', READ_ACL, "read_acl"),
+	MASK_BIT('m', WRITE_ACL, "write_acl"),
+	MASK_BIT('o', WRITE_OWNER, "take_ownership"),
+	MASK_BIT('s', SYNCHRONIZE, "synchronize"),
+};
+
+#undef MASK_BIT
+#undef FILE_MASK_BIT
+#undef DIRECTORY_MASK_BIT
+
+const char *nfs4ace_get_who(const struct nfs4ace *ace)
+{
+	if (!(ace->e_flags & ACE4_SPECIAL_WHO))
+		return NULL;
+	return ace->u.e_who;
+}
+
+int nfs4ace_is_same_who(const struct nfs4ace *a, const struct nfs4ace *b)
+{
+#define WHO_FLAGS (ACE4_SPECIAL_WHO | ACE4_IDENTIFIER_GROUP)
+	if ((a->e_flags & WHO_FLAGS) != (b->e_flags & WHO_FLAGS))
+		return 0;
+	if (a->e_flags & ACE4_SPECIAL_WHO)
+		return a->u.e_who == b->u.e_who;
+	else
+		return a->u.e_id == b->u.e_id;
+#undef WHO_FLAGS
+}
+
+int nfs4ace_is_owner(const struct nfs4ace *ace)
+{
+	return (ace->e_flags & ACE4_SPECIAL_WHO) &&
+		ace->u.e_who == nfs4ace_owner_who;
+}
+
+int nfs4ace_is_group(const struct nfs4ace *ace)
+{
+	return (ace->e_flags & ACE4_SPECIAL_WHO) &&
+		ace->u.e_who == nfs4ace_group_who;
+}
+
+int nfs4ace_is_everyone(const struct nfs4ace *ace)
+{
+	return (ace->e_flags & ACE4_SPECIAL_WHO) &&
+		ace->u.e_who == nfs4ace_everyone_who;
+}
+
+struct nfs4acl *nfs4acl_alloc(size_t count)
+{
+	size_t size = sizeof(struct nfs4acl) + count * sizeof(struct nfs4ace);
+	struct nfs4acl *acl = malloc(size);
+
+	if (acl) {
+		memset(acl, 0, size);
+		acl->a_count = count;
+	}
+	return acl;
+}
+
+struct nfs4acl *nfs4acl_clone(struct nfs4acl *acl)
+{
+	size_t size;
+	struct nfs4acl *acl2;
+
+	if (!acl)
+		return NULL;
+	size = sizeof(struct nfs4acl) + acl->a_count * sizeof(struct nfs4ace);
+	acl2 = malloc(size);
+	if (acl2)
+		memcpy(acl2, acl, size);
+	return acl2;
+}
+
+void nfs4acl_free(struct nfs4acl *acl)
+{
+	free(acl);
+}
+
+/**
+ * nfs4acl_allowed_to_who  -  mask flags allowed to a specific who value
+ *
+ * Computes the mask values allowed to a specific who value, taking
+ * EVERYONE@ entries into account.
+ */
+static unsigned int nfs4acl_allowed_to_who(struct nfs4acl *acl,
+					   struct nfs4ace *who)
+{
+	struct nfs4ace *ace;
+	unsigned int allowed = 0;
+
+	nfs4acl_for_each_entry_reverse(ace, acl) {
+		if (nfs4ace_is_inherit_only(ace))
+			continue;
+		if (nfs4ace_is_same_who(ace, who) ||
+		    nfs4ace_is_everyone(ace)) {
+			if (nfs4ace_is_allow(ace))
+				allowed |= ace->e_mask;
+			else if (nfs4ace_is_deny(ace))
+				allowed &= ~ace->e_mask;
+		}
+	}
+	return allowed;
+}
+
+/**
+ * nfs4acl_compute_max_masks  -  compute upper bound masks
+ *
+ * Computes upper bound owner, group, and other masks so that none of
+ * the mask flags allowed by the acl are disabled (for any choice of the
+ * file owner or group membership).
+ */
+void nfs4acl_compute_max_masks(struct nfs4acl *acl)
+{
+	struct nfs4ace *ace;
+
+	acl->a_owner_mask = 0;
+	acl->a_group_mask = 0;
+	acl->a_other_mask = 0;
+
+	nfs4acl_for_each_entry_reverse(ace, acl) {
+		if (nfs4ace_is_inherit_only(ace))
+			continue;
+
+		if (nfs4ace_is_owner(ace)) {
+			if (nfs4ace_is_allow(ace))
+				acl->a_owner_mask |= ace->e_mask;
+			else if (nfs4ace_is_deny(ace))
+				acl->a_owner_mask &= ~ace->e_mask;
+		} else if (nfs4ace_is_everyone(ace)) {
+			if (nfs4ace_is_allow(ace)) {
+				struct nfs4ace who = {
+					.e_flags = ACE4_SPECIAL_WHO,
+					.u.e_who = nfs4ace_group_who,
+				};
+
+				acl->a_other_mask |= ace->e_mask;
+				acl->a_group_mask |=
+					nfs4acl_allowed_to_who(acl, &who);
+				acl->a_owner_mask |= ace->e_mask;
+			} else if (nfs4ace_is_deny(ace)) {
+				acl->a_other_mask &= ~ace->e_mask;
+				acl->a_group_mask &= ~ace->e_mask;
+				acl->a_owner_mask &= ~ace->e_mask;
+			}
+		} else {
+			if (nfs4ace_is_allow(ace)) {
+				unsigned int mask =
+					nfs4acl_allowed_to_who(acl, ace);
+
+				acl->a_group_mask |= mask;
+				acl->a_owner_mask |= mask;
+			}
+		}
+	}
+}
+
+static struct nfs4acl *nfs4acl_from_xattr(const void *value, size_t size)
+{
+	const struct nfs4acl_xattr *xattr_acl = value;
+	const struct nfs4ace_xattr *xattr_ace = (void *)(xattr_acl + 1);
+	struct nfs4acl *acl;
+	struct nfs4ace *ace;
+	int count;
+
+	if (size < sizeof(struct nfs4acl_xattr) ||
+	    xattr_acl->a_version != ACL4_XATTR_VERSION ||
+	    (xattr_acl->a_flags & ~ACL4_WRITE_THROUGH))
+		goto fail_einval;
+
+	count = ntohs(xattr_acl->a_count);
+	if (count > ACL4_XATTR_MAX_COUNT)
+		goto fail_einval;
+
+	acl = nfs4acl_alloc(count);
+	if (!acl)
+		return NULL;
+
+	acl->a_flags = xattr_acl->a_flags;
+	acl->a_owner_mask = ntohl(xattr_acl->a_owner_mask);
+	if (acl->a_owner_mask & ~ACE4_VALID_MASK)
+		goto fail_einval;
+	acl->a_group_mask = ntohl(xattr_acl->a_group_mask);
+	if (acl->a_group_mask & ~ACE4_VALID_MASK)
+		goto fail_einval;
+	acl->a_other_mask = ntohl(xattr_acl->a_other_mask);
+	if (acl->a_other_mask & ~ACE4_VALID_MASK)
+		goto fail_einval;
+
+	nfs4acl_for_each_entry(ace, acl) {
+		const char *who = (void *)(xattr_ace + 1), *end;
+		ssize_t used = (void *)who - value;
+
+		if (used > size)
+			goto fail_einval;
+		end = memchr(who, 0, size - used);
+		if (!end)
+			goto fail_einval;
+
+		ace->e_type = ntohs(xattr_ace->e_type);
+		ace->e_flags = ntohs(xattr_ace->e_flags);
+		ace->e_mask = ntohl(xattr_ace->e_mask);
+		ace->u.e_id = ntohl(xattr_ace->e_id);
+
+		if (ace->e_flags & ~ACE4_VALID_FLAGS)
+			goto fail_einval;
+		if (ace->e_type > ACE4_ACCESS_DENIED_ACE_TYPE ||
+		    (ace->e_mask & ~ACE4_VALID_MASK))
+			goto fail_einval;
+
+		if (who == end) {
+			if (ace->u.e_id == -1)
+				goto fail_einval;  /* uid/gid needed */
+		} else if (nfs4ace_set_who(ace, who))
+			goto fail_einval;
+
+		xattr_ace = (void *)who + ALIGN(end - who + 1, 4);
+	}
+
+	return acl;
+
+fail_einval:
+	nfs4acl_free(acl);
+	errno = EINVAL;
+	return NULL;
+}
+
+static size_t nfs4acl_xattr_size(const struct nfs4acl *acl)
+{
+	size_t size = sizeof(struct nfs4acl_xattr);
+	const struct nfs4ace *ace;
+
+	nfs4acl_for_each_entry(ace, acl) {
+		size += sizeof(struct nfs4ace_xattr) +
+			(nfs4ace_get_who(ace) ?
+			 ALIGN(strlen(ace->u.e_who) + 1, 4) : 4);
+	}
+	return size;
+}
+
+static void nfs4acl_to_xattr(const struct nfs4acl *acl, void *buffer)
+{
+	struct nfs4acl_xattr *xattr_acl = buffer;
+	struct nfs4ace_xattr *xattr_ace;
+	const struct nfs4ace *ace;
+
+	xattr_acl->a_version = ACL4_XATTR_VERSION;
+	xattr_acl->a_flags = acl->a_flags;
+	xattr_acl->a_count = htons(acl->a_count);
+
+	xattr_acl->a_owner_mask = htonl(acl->a_owner_mask);
+	xattr_acl->a_group_mask = htonl(acl->a_group_mask);
+	xattr_acl->a_other_mask = htonl(acl->a_other_mask);
+
+	xattr_ace = (void *)(xattr_acl + 1);
+	nfs4acl_for_each_entry(ace, acl) {
+		xattr_ace->e_type = htons(ace->e_type);
+		xattr_ace->e_flags = htons(ace->e_flags &
+			ACE4_VALID_FLAGS);
+		xattr_ace->e_mask = htonl(ace->e_mask);
+		if (nfs4ace_get_who(ace)) {
+			int sz = ALIGN(strlen(ace->u.e_who) + 1, 4);
+
+			xattr_ace->e_id = htonl(-1);
+			memset(xattr_ace->e_who + sz - 4, 0, 4);
+			strcpy(xattr_ace->e_who, ace->u.e_who);
+			xattr_ace = (void *)xattr_ace->e_who + sz;
+		} else {
+			xattr_ace->e_id = htonl(ace->u.e_id);
+			memset(xattr_ace->e_who, 0, 4);
+			xattr_ace = (void *)xattr_ace->e_who + 4;
+		}
+	}
+}
+
+struct nfs4acl *nfs4acl_get_file(const char *path)
+{
+	void *value;
+	ssize_t retval;
+	struct nfs4acl *acl;
+
+	retval = getxattr(path, SYSTEM_NFS4ACL, NULL, 0);
+	if (retval > 0) {
+		value = alloca(retval);
+		if (!value)
+			return NULL;
+		retval = getxattr(path, SYSTEM_NFS4ACL, value, retval);
+	}
+	if (retval < 0)
+		return NULL;
+	acl = nfs4acl_from_xattr(value, retval);
+
+	return acl;
+}
+
+struct nfs4acl *nfs4acl_get_fd(int fd)
+{
+	void *value;
+	ssize_t retval;
+	struct nfs4acl *acl;
+
+	retval = fgetxattr(fd, SYSTEM_NFS4ACL, NULL, 0);
+	if (retval > 0) {
+		value = alloca(retval);
+		if (!value)
+			return NULL;
+		retval = fgetxattr(fd, SYSTEM_NFS4ACL, value, retval);
+	}
+	if (retval < 0)
+		return NULL;
+	acl = nfs4acl_from_xattr(value, retval);
+
+	return acl;
+}
+
+int nfs4acl_set_file(const char *path, const struct nfs4acl *acl)
+{
+	size_t size = nfs4acl_xattr_size(acl);
+	void *value = alloca(size);
+
+	nfs4acl_to_xattr(acl, value);
+	return setxattr(path, SYSTEM_NFS4ACL, value, size, 0);
+}
+
+int nfs4acl_set_fd(int fd, const struct nfs4acl *acl)
+{
+	size_t size = nfs4acl_xattr_size(acl);
+	void *value = alloca(size);
+
+	nfs4acl_to_xattr(acl, value);
+	return fsetxattr(fd, SYSTEM_NFS4ACL, value, size, 0);
+}
+
+static void write_type(struct string_buffer *buffer, uint16_t type)
+{
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(type_values); i++) {
+		if (type == type_values[i].e_type) {
+			buffer_sprintf(buffer, "%s", type_values[i].e_name);
+			break;
+		}
+	}
+	if (i == ARRAY_SIZE(type_values))
+		buffer_sprintf(buffer, "%u", type);
+}
+
+static void write_flags(struct string_buffer *buffer, uint16_t flags, int fmt)
+{
+	int cont = 0, i;
+
+	flags &= ~ACE4_SPECIAL_WHO;
+
+	for (i = 0; i < ARRAY_SIZE(flag_bits); i++) {
+		if (!(flags & flag_bits[i].e_flag))
+			continue;
+
+		flags &= ~flag_bits[i].e_flag;
+		if (fmt & NFS4ACL_TEXT_LONG) {
+			if (cont)
+				buffer_sprintf(buffer, "/");
+			buffer_sprintf(buffer, "%s", flag_bits[i].e_name);
+		} else
+			buffer_sprintf(buffer, "%c", flag_bits[i].e_char);
+		cont = 1;
+	}
+	if (flags) {
+		if (cont)
+			buffer_sprintf(buffer, "/");
+		buffer_sprintf(buffer, "0x%x", flags);
+	}
+}
+
+static void write_mask(struct string_buffer *buffer, uint32_t mask, int fmt)
+{
+	int stuff_written = 0, i;
+	unsigned int nondir_mask, dir_mask;
+
+	/*
+	 * In long format, we write the non-directory and/or directory mask
+	 * name depending on the context which applies. The short format
+	 * does not distinguish between the two, so make sure that we won't
+	 * repeat the same mask letters.
+	 */
+	if (!(fmt & (NFS4ACL_TEXT_FILE_CONTEXT |
+		     NFS4ACL_TEXT_DIRECTORY_CONTEXT)))
+		fmt |= NFS4ACL_TEXT_FILE_CONTEXT |
+		       NFS4ACL_TEXT_DIRECTORY_CONTEXT;
+	if (!(fmt & NFS4ACL_TEXT_LONG) &&
+	    (fmt & NFS4ACL_TEXT_FILE_CONTEXT))
+		fmt &= ~NFS4ACL_TEXT_DIRECTORY_CONTEXT;
+
+	nondir_mask = (fmt & NFS4ACL_TEXT_FILE_CONTEXT) ? mask : 0;
+	dir_mask = (fmt & NFS4ACL_TEXT_DIRECTORY_CONTEXT) ? mask : 0;
+
+	for (i = 0; i < ARRAY_SIZE(mask_bits); i++) {
+		int found = 0;
+
+		if ((nondir_mask & mask_bits[i].e_mask) ==
+		    mask_bits[i].e_mask &&
+		    (mask_bits[i].e_context & NFS4ACL_TEXT_FILE_CONTEXT)) {
+			nondir_mask &= ~mask_bits[i].e_mask;
+			found = 1;
+		}
+		if ((dir_mask & mask_bits[i].e_mask) == mask_bits[i].e_mask &&
+		    (mask_bits[i].e_context & NFS4ACL_TEXT_DIRECTORY_CONTEXT)) {
+			dir_mask &= ~mask_bits[i].e_mask;
+			found = 1;
+		}
+		if (found) {
+			if (fmt & NFS4ACL_TEXT_SIMPLIFY) {
+				/* Hide permissions that are always allowed. */
+				if (mask_bits[i].e_mask ==
+				    (mask_bits[i].e_mask &
+				     ACE4_POSIX_ALWAYS_ALLOWED))
+				        continue;
+				/* Hide DELETE_CHILD in non-dir context. */
+				if (!(fmt & NFS4ACL_TEXT_DIRECTORY_CONTEXT) &&
+				    mask_bits[i].e_mask == ACE4_DELETE_CHILD)
+				        continue;
+			}
+			if (fmt & NFS4ACL_TEXT_LONG) {
+				if (stuff_written)
+				        buffer_sprintf(buffer, "/");
+				buffer_sprintf(buffer, "%s",
+					       mask_bits[i].e_name);
+			} else
+				buffer_sprintf(buffer, "%c",
+					       mask_bits[i].e_char);
+			stuff_written = 1;
+		}
+	}
+	if (nondir_mask | dir_mask) {
+		if (stuff_written)
+			buffer_sprintf(buffer, "/");
+		buffer_sprintf(buffer, "0x%x", nondir_mask | dir_mask);
+	}
+}
+
+static void write_identifier(struct string_buffer *buffer,
+			     const struct nfs4ace *ace)
+{
+	/* FIXME: switch to getpwuid_r() and getgrgid_r() here. */
+
+	if (ace->e_flags & ACE4_SPECIAL_WHO) {
+		char *dup, *c;
+
+		dup = alloca(strlen(ace->u.e_who) + 1);
+		strcpy(dup, ace->u.e_who);
+		for (c = dup; *c; c++)
+			*c = tolower(*c);
+
+		buffer_sprintf(buffer, "%s", dup);
+	} else if (ace->e_flags & ACE4_IDENTIFIER_GROUP) {
+		struct group *group = getgrgid(ace->u.e_id);
+
+		if (group)
+			buffer_sprintf(buffer, "%s", group->gr_name);
+		else
+			buffer_sprintf(buffer, "%d", ace->u.e_id);
+	} else {
+		struct passwd *passwd = getpwuid(ace->u.e_id);
+
+		if (passwd)
+			buffer_sprintf(buffer, "%s", passwd->pw_name);
+		else
+			buffer_sprintf(buffer, "%d", ace->u.e_id);
+	}
+}
+
+char *nfs4acl_to_text(const struct nfs4acl *acl, int fmt)
+{
+	struct string_buffer *buffer;
+	const struct nfs4ace *ace;
+	unsigned int allowed = ~0;
+	int fmt2;
+
+	if (fmt & NFS4ACL_TEXT_SIMPLIFY) {
+		allowed = 0;
+		nfs4acl_for_each_entry(ace, acl) {
+			if (nfs4ace_is_inherit_only(ace))
+				continue;
+
+			if (nfs4ace_is_allow(ace))
+				allowed |= ace->e_mask;
+		}
+	}
+
+	buffer = alloc_string_buffer(128);
+	if (!buffer)
+		return NULL;
+
+	if (fmt & NFS4ACL_TEXT_SHOW_MASKS) {
+		fmt2 = fmt;
+		nfs4acl_for_each_entry(ace, acl) {
+			if (nfs4ace_is_inherit_only(ace))
+				continue;
+
+			if (ace->e_flags & ACE4_FILE_INHERIT_ACE)
+				fmt2 |= NFS4ACL_TEXT_FILE_CONTEXT;
+			if (ace->e_flags & ACE4_DIRECTORY_INHERIT_ACE)
+				fmt2 |= NFS4ACL_TEXT_DIRECTORY_CONTEXT;
+		}
+
+		buffer_sprintf(buffer, "owner:");
+		write_mask(buffer, acl->a_owner_mask & allowed, fmt2);
+		buffer_sprintf(buffer, "::mask\n");
+		buffer_sprintf(buffer, "group:");
+		write_mask(buffer, acl->a_group_mask & allowed, fmt2);
+		buffer_sprintf(buffer, "::mask\n");
+		buffer_sprintf(buffer, "other:");
+		write_mask(buffer, acl->a_other_mask & allowed, fmt2);
+		buffer_sprintf(buffer, "::mask\n");
+	}
+
+	nfs4acl_for_each_entry(ace, acl) {
+		write_identifier(buffer, ace);
+		buffer_sprintf(buffer, ":");
+
+		fmt2 = fmt;
+		if (ace->e_flags & ACE4_INHERIT_ONLY_ACE)
+			fmt2 &= ~(NFS4ACL_TEXT_FILE_CONTEXT |
+				  NFS4ACL_TEXT_DIRECTORY_CONTEXT);
+		if (ace->e_flags & ACE4_FILE_INHERIT_ACE)
+			fmt2 |= NFS4ACL_TEXT_FILE_CONTEXT;
+		if (ace->e_flags & ACE4_DIRECTORY_INHERIT_ACE)
+			fmt2 |= NFS4ACL_TEXT_DIRECTORY_CONTEXT;
+
+		write_mask(buffer, ace->e_mask & allowed, fmt2);
+		buffer_sprintf(buffer, ":");
+		write_flags(buffer, ace->e_flags, fmt2);
+		buffer_sprintf(buffer, ":");
+		write_type(buffer, ace->e_type);
+		buffer_sprintf(buffer, "\n");
+	}
+
+	if (string_buffer_okay(buffer)) {
+		char *str = realloc(buffer->buffer, buffer->offset + 1);
+		if (str)
+			return str;
+	}
+
+	free_string_buffer(buffer);
+	errno = ENOMEM;
+	return NULL;
+}
+
+static int identifier_from_text(const char *str, struct nfs4ace *ace,
+				void (*error)(const char *, ...))
+{
+	char *c;
+	unsigned long l;
+
+	c = strchr(str, '@');
+	if (c) {
+		char *dup;
+
+		if (c[1]) {
+			error("Domain name not supported in `%s'\n", str);
+			goto fail;
+		}
+
+		/* Ignore case in special identifiers. */
+		dup = alloca(strlen(str) + 1);
+		strcpy(dup, str);
+		for (c = dup; *c; c++)
+			*c = toupper(*c);
+
+		if (nfs4ace_set_who(ace, dup)) {
+			error("Special user `%s' not supported\n", str);
+			goto fail;
+		}
+		return 1;
+	}
+	l = strtoul(str, &c, 0);
+	if (*c == 0) {
+		ace->u.e_id = l;
+		return 1;
+	}
+	if (ace->e_flags & ACE4_IDENTIFIER_GROUP) {
+		struct group *group = getgrnam(str);
+
+		if (!group) {
+			error("Group `%s' does not exist\n", str);
+			goto fail;
+		}
+		ace->u.e_id = group->gr_gid;
+		return 1;
+	} else {
+		struct passwd *passwd = getpwnam(str);
+
+		if (!passwd) {
+			error("User `%s' does not exist\n", str);
+			goto fail;
+		}
+		ace->u.e_id = passwd->pw_uid;
+		return 1;
+	}
+fail:
+	errno = EINVAL;
+	return 0;
+}
+
+static uint16_t type_from_text(const char *str,
+			       void (*error)(const char *, ...))
+{
+	char *c;
+	int i;
+	unsigned long l;
+
+	l = strtoul(str, &c, 0);
+	if (*c == 0)
+		return l;
+
+	/* Recognize type mnemonic */
+	for (i = 0; i < ARRAY_SIZE(type_values); i++) {
+		if (!strcasecmp(str, type_values[i].e_name))
+			return type_values[i].e_type;
+	}
+	error("Invalid entry type `%s'\n", str);
+	return (uint16_t)-1;
+}
+
+static uint16_t flags_from_text(const char *str,
+				void (*error)(const char *, ...))
+{
+	char *dup, *end;
+	uint16_t flags = 0;
+
+	end = alloca(strlen(str) + 1);
+	strcpy(end, str);
+
+	while ((dup = end)) {
+		char *c;
+		unsigned long l;
+		int i;
+
+		while (*dup == '/')
+			dup++;
+		end = strchr(dup, '/');
+		if (end)
+			*end++ = 0;
+		if (!*dup)
+			break;
+
+		l = strtoul(str, &c, 0);
+		if (*c == 0) {
+			flags |= l;
+			continue;
+		}
+
+		/* Recognize flag mnemonics */
+		for (i = 0; i < ARRAY_SIZE(flag_bits); i++) {
+			if (!strcasecmp(dup, flag_bits[i].e_name)) {
+				flags |= flag_bits[i].e_flag;
+				break;
+			}
+		}
+		if (i != ARRAY_SIZE(flag_bits))
+			continue;
+
+		/* Recognize single-character flags */
+		for (c = dup; *c; c++) {
+			for (i = 0; i < ARRAY_SIZE(flag_bits); i++) {
+				if (*c == flag_bits[i].e_char) {
+					flags |= flag_bits[i].e_flag;
+					break;
+				}
+			}
+			if (i != ARRAY_SIZE(flag_bits))
+				continue;
+
+			error("Invalid flag value `%s'\n", c);
+			return (uint16_t)-1;
+		}
+	}
+
+	return flags;
+}
+
+static uint32_t mask_from_text(const char *str,
+			       void (*error)(const char *, ...))
+{
+	char *dup, *end;
+	uint32_t mask = 0;
+
+	end = alloca(strlen(str) + 1);
+	strcpy(end, str);
+
+	while ((dup = end)) {
+		char *c;
+		unsigned long l;
+		int i;
+
+		while (*dup == '/')
+			dup++;
+		end = strchr(dup, '/');
+		if (end)
+			*end++ = 0;
+		if (!*dup)
+			break;
+
+		l = strtoul(dup, &c, 0);
+		if (*c == 0) {
+			mask |= l;
+			continue;
+		}
+
+		/* Recognize mask mnemonics */
+		for (i = 0; i < ARRAY_SIZE(mask_bits); i++) {
+			if (!strcasecmp(dup, mask_bits[i].e_name)) {
+				mask |= mask_bits[i].e_mask;
+				break;
+			}
+		}
+		if (i != ARRAY_SIZE(mask_bits))
+			continue;
+
+		/* Recognize single-character masks */
+		for (c = dup; *c; c++) {
+			for (i = 0; i < ARRAY_SIZE(mask_bits); i++) {
+				if (*c == mask_bits[i].e_char) {
+				        mask |= mask_bits[i].e_mask;
+				        break;
+				}
+			}
+			if (i != ARRAY_SIZE(mask_bits))
+				continue;
+
+			error("Invalid mask value `%s'\n", dup);
+			return (uint32_t)-1;
+		}
+	}
+
+	return mask;
+}
+
+struct nfs4acl *nfs4acl_from_text(const char *str,
+				  void (*error)(const char *, ...))
+{
+	char *who_str = NULL, *mask_str = NULL, *flags_str = NULL,
+	     *type_str = NULL;
+	/*unsigned int owner_mask = -1, group_mask = -1, other_mask = -1;*/
+	struct nfs4acl *acl;
+
+	acl = nfs4acl_alloc(0);
+	if (!acl)
+		return NULL;
+
+	acl->a_owner_mask = -1;
+	acl->a_group_mask = -1;
+	acl->a_other_mask = -1;
+
+	while (*str) {
+		struct nfs4acl *acl2;
+		struct nfs4ace *ace;
+		uint32_t mask;
+		const char *entry, *c;
+
+		while (isspace(*str) || *str == ',')
+			str++;
+		if (!*str)
+			break;
+
+		entry = str;
+		c = strchr(str, ':');
+		if (!c)
+			goto fail_syntax;
+		who_str = strndup(str, c - str);
+		if (!who_str)
+			goto fail;
+		str = c + 1;
+
+		c = strchr(str, ':');
+		if (!c)
+			goto fail_syntax;
+		mask_str = strndup(str, c - str);
+		if (!mask_str)
+			goto fail;
+		str = c + 1;
+
+		c = strchr(str, ':');
+		if (!c)
+			goto fail_syntax;
+		flags_str = strndup(str, c - str);
+		if (!flags_str)
+			goto fail;
+		str = c + 1;
+
+		for (c = str; *c && !(isspace(*c) || *c == ','); c++)
+			;
+		type_str = strndup(str, c - str);
+		if (!type_str)
+			goto fail;
+		str = c;
+
+		mask = mask_from_text(mask_str, error);
+		if (mask == (uint32_t)-1)
+			goto fail_einval;
+		if (!strcasecmp(type_str, "MASK")) {
+			if (!strcasecmp(who_str, "OWNER"))
+				acl->a_owner_mask = mask;
+			else if (!strcasecmp(who_str, "GROUP"))
+				acl->a_group_mask = mask;
+			else if (!strcasecmp(who_str, "OTHER"))
+				acl->a_other_mask = mask;
+			else {
+				error("Invalid mask identifier `%s'\n",
+				      who_str);
+				goto fail_einval;
+			}
+		} else {
+			size_t size = sizeof(struct nfs4acl) + (acl->a_count
+				      + 1) * sizeof(struct nfs4ace);
+			acl2 = realloc(acl, size);
+			if (!acl2)
+				goto fail;
+			acl = acl2;
+			memset(acl->a_entries + acl->a_count, 0,
+			       sizeof(struct nfs4ace));
+			acl->a_count++;
+
+			ace = acl->a_entries + acl->a_count - 1;
+			ace->e_mask = mask;
+			ace->e_flags = flags_from_text(flags_str, error);
+			if (ace->e_flags == (uint16_t)-1)
+				goto fail_einval;
+			if (!identifier_from_text(who_str, ace, error))
+				goto fail_einval;
+			ace->e_type = type_from_text(type_str, error);
+			if (ace->e_type == (uint16_t)-1)
+				goto fail_einval;
+		}
+
+		free(type_str);
+		type_str = NULL;
+		free(flags_str);
+		flags_str = NULL;
+		free(mask_str);
+		mask_str = NULL;
+		free(who_str);
+		who_str = NULL;
+		continue;
+
+	fail_syntax:
+		for (c = entry; *c && !(isspace(*c) || *c == ','); c++)
+			;
+		error("Invalid entry `%.*s'\n", c - entry, entry);
+		goto fail_einval;
+	}
+
+	/*
+	if (owner_mask == -1 || group_mask == -1 || other_mask == -1)
+		nfs4acl_compute_max_masks(acl);
+	if (owner_mask != -1)
+		acl->a_owner_mask = owner_mask;
+	if (group_mask != -1)
+		acl->a_group_mask = group_mask;
+	if (other_mask != -1)
+		acl->a_other_mask = other_mask;
+	*/
+
+	return acl;
+
+fail_einval:
+	errno = EINVAL;
+
+fail:
+	free(type_str);
+	free(flags_str);
+	free(mask_str);
+	free(who_str);
+	nfs4acl_free(acl);
+	return NULL;
+}
+
+int nfs4ace_set_who(struct nfs4ace *ace, const char *who)
+{
+	if (!strcmp(who, nfs4ace_owner_who))
+		who = nfs4ace_owner_who;
+	else if (!strcmp(who, nfs4ace_group_who))
+		who = nfs4ace_group_who;
+	else if (!strcmp(who, nfs4ace_everyone_who))
+		who = nfs4ace_everyone_who;
+	else
+		return -1;
+
+	ace->u.e_who = who;
+	ace->e_flags |= ACE4_SPECIAL_WHO;
+	/*
+	 * Also clear the ACE4_IDENTIFIER_GROUP flag for ACEs with a special
+	 * who value: nfs4ace_is_same_who() relies on that.
+	 */
+	ace->e_flags &= ~ACE4_IDENTIFIER_GROUP;
+	return 0;
+}
+
+void nfs4ace_set_uid(struct nfs4ace *ace, uid_t uid)
+{
+	ace->u.e_id = uid;
+	ace->e_flags &= ~(ACE4_SPECIAL_WHO | ACE4_IDENTIFIER_GROUP);
+}
+
+void nfs4ace_set_gid(struct nfs4ace *ace, gid_t gid)
+{
+	ace->u.e_id = gid;
+	ace->e_flags |= ACE4_IDENTIFIER_GROUP;
+	ace->e_flags &= ~ACE4_SPECIAL_WHO;
+}
+
+static unsigned int nfs4acl_mode_to_mask(mode_t mode)
+{
+	unsigned int mask = ACE4_POSIX_ALWAYS_ALLOWED;
+
+	if (mode & S_IROTH)
+		mask |= ACE4_POSIX_MODE_READ;
+	if (mode & S_IWOTH)
+		mask |= ACE4_POSIX_MODE_WRITE;
+	if (mode & S_IXOTH)
+		mask |= ACE4_POSIX_MODE_EXEC;
+
+	return mask;
+}
+
+struct nfs4acl *nfs4acl_from_mode(mode_t mode)
+{
+	struct nfs4acl *acl = nfs4acl_alloc(1);
+	struct nfs4ace *ace;
+
+	acl = nfs4acl_alloc(1);
+	if (!acl)
+		return NULL;
+	ace = acl->a_entries;
+
+	acl->a_owner_mask = nfs4acl_mode_to_mask(mode >> 6);
+	acl->a_group_mask = nfs4acl_mode_to_mask(mode >> 3);
+	acl->a_other_mask = nfs4acl_mode_to_mask(mode);
+
+	ace->e_type = ACE4_ACCESS_ALLOWED_ACE_TYPE;
+	ace->e_flags = ACE4_SPECIAL_WHO;
+	ace->e_mask = ACE4_VALID_MASK;
+	ace->u.e_who = nfs4ace_everyone_who;
+	
+	if (nfs4acl_apply_masks(&acl)) {
+		free(acl);
+		acl = NULL;
+	}
+	return acl;
+}
