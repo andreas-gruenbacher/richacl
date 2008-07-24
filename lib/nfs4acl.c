@@ -1104,7 +1104,7 @@ static unsigned int nfs4acl_mode_to_mask(mode_t mode)
 
 struct nfs4acl *nfs4acl_from_mode(mode_t mode)
 {
-	struct nfs4acl *acl = nfs4acl_alloc(1);
+	struct nfs4acl *acl;
 	struct nfs4ace *ace;
 
 	acl = nfs4acl_alloc(1);
