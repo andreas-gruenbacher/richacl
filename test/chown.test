@@ -4,7 +4,7 @@ $ cd d
 $ whoami
 > root
 
-$ groups daemon
+$ id -Gn daemon
 > daemon bin
 
 $ touch a
