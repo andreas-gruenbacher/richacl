@@ -959,12 +959,18 @@ struct nfs4acl *nfs4acl_from_text(const char *str, int *pflags,
 				if (*c == ':' || *c == ',' || isspace(*c))
 					break;
 			}
+			mask_str = strndup(str, c - str);
+			if (!mask_str)
+				goto fail;
 			if (*c != ':') {
-				if (acl_flags_from_text(str, acl, error))
+				if (acl_flags_from_text(mask_str, acl, error))
 					goto fail_einval;
 				flags |= NFS4ACL_TEXT_FLAGS;
 				str = c;
-				goto free_who_str;
+				goto free_mask_str;
+			} else {
+				free(mask_str);
+				mask_str = NULL;
 			}
 		}
 
@@ -1035,9 +1041,9 @@ struct nfs4acl *nfs4acl_from_text(const char *str, int *pflags,
 		type_str = NULL;
 		free(flags_str);
 		flags_str = NULL;
+	free_mask_str:
 		free(mask_str);
 		mask_str = NULL;
-	free_who_str:
 		free(who_str);
 		who_str = NULL;
 		continue;
