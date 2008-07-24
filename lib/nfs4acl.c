@@ -64,6 +64,7 @@ static struct {
 	FLAGS_BIT('n', NO_PROPAGATE_INHERIT_ACE, "no_propagate_inherit_ace"),
 	FLAGS_BIT('i', INHERIT_ONLY_ACE, "inherit_only_ace"),
 	FLAGS_BIT('g', IDENTIFIER_GROUP, "identifier_group"),
+	FLAGS_BIT('a', INHERITED_ACE, "inherited_ace"),
 };
 
 #undef FLAGS_BIT

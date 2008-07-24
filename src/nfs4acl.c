@@ -204,7 +204,10 @@ static void synopsis(int help)
 "The supported <flags> values are:\n"
 "\tfile_inherit_ace (f), directory_inherit_ace (d),\n"
 "\tno_propagate_inherit_ace (n), inherit_only_ace (i),\n"
-"\tidentifier_group (g)\n",
+"\tidentifier_group (g), inherited_ace (a)\n"
+"\n"
+"Per-ACL flag values are:\n"
+"\tauto_inherit (a), protected (p), defaulted (d), write_through (w)\n",
 	basename(progname));
 	exit(0);
 }
