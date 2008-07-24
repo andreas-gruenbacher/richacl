@@ -32,15 +32,6 @@ const char *nfs4ace_everyone_who = "EVERYONE@";
 #define ACE4_POSIX_MODE_EXEC ( \
 	ACE4_EXECUTE)
 
-/*
- * The ACE4_READ_ATTRIBUTES and ACE4_READ_ACL flags are always granted
- * in POSIX. The ACE4_SYNCHRONIZE flag has no meaning under POSIX.
- */
-#define ACE4_POSIX_ALWAYS_ALLOWED ( \
-	ACE4_SYNCHRONIZE | \
-	ACE4_READ_ATTRIBUTES | \
-	ACE4_READ_ACL )
-
 static struct {
 	char		a_char;
 	unsigned char	a_flag;

@@ -105,12 +105,7 @@ nfs4ace_change_mask(struct nfs4acl_alloc *x, struct nfs4ace **ace,
 {
 	if (mask && (*ace)->e_mask == mask)
 		return 0;
-	if (mask == 0) {
-		if (nfs4ace_is_inheritable(*ace))
-			(*ace)->e_flags |= ACE4_INHERIT_ONLY_ACE;
-		else
-			nfs4acl_delete_entry(x, ace);
-	} else {
+	if (mask & ~ACE4_POSIX_ALWAYS_ALLOWED) {
 		if (nfs4ace_is_inheritable(*ace)) {
 			if (nfs4acl_insert_entry(x, ace))
 				return -1;
@@ -120,6 +115,11 @@ nfs4ace_change_mask(struct nfs4acl_alloc *x, struct nfs4ace **ace,
 			nfs4ace_clear_inheritance_flags(*ace);
 		}
 		(*ace)->e_mask = mask;
+	} else {
+		if (nfs4ace_is_inheritable(*ace))
+			(*ace)->e_flags |= ACE4_INHERIT_ONLY_ACE;
+		else
+			nfs4acl_delete_entry(x, ace);
 	}
 	return 0;
 }
@@ -166,7 +166,7 @@ nfs4acl_move_everyone_aces_down(struct nfs4acl_alloc *x)
 			}
 		}
 	}
-	if (allowed) {
+	if (allowed & ~ACE4_POSIX_ALWAYS_ALLOWED) {
 		struct nfs4ace *last_ace = ace - 1;
 
 		if (nfs4ace_is_everyone(last_ace) &&

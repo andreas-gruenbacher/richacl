@@ -1,6 +1,15 @@
 #ifndef __NFS4ACL_INTERNAL_H
 #define __NFS4ACL_INTERNAL_H
 
+/*
+ * The ACE4_READ_ATTRIBUTES and ACE4_READ_ACL flags are always granted
+ * in POSIX. The ACE4_SYNCHRONIZE flag has no meaning under POSIX.
+ */
+#define ACE4_POSIX_ALWAYS_ALLOWED ( \
+	ACE4_SYNCHRONIZE | \
+	ACE4_READ_ATTRIBUTES | \
+	ACE4_READ_ACL )
+
 /* e_flags bitflags */
 #define ACE4_SPECIAL_WHO		0x4000  /* internal to the library */
 
