@@ -64,9 +64,9 @@ static struct {
 	{ ACE4_ ## name, c, #name }
 
 static struct {
-	uint16_t        e_flag;
-	char            e_char;
-	const char      *e_name;
+	uint16_t	e_flag;
+	char		e_char;
+	const char	*e_name;
 } ace_flag_bits[] = {
 	FLAGS_BIT('f', FILE_INHERIT_ACE, "file_inherit_ace"),
 	FLAGS_BIT('d', DIRECTORY_INHERIT_ACE, "directory_inherit_ace"),
@@ -86,10 +86,10 @@ static struct {
 	{ ACE4_ ## name, c, str, NFS4ACL_TEXT_DIRECTORY_CONTEXT }
 
 struct {
-	uint32_t        e_mask;
-	char            e_char;
-	const char      *e_name;
-	int             e_context;
+	uint32_t	e_mask;
+	char		e_char;
+	const char	*e_name;
+	int		e_context;
 } mask_bits[] = {
 	MASK_BIT('*', VALID_MASK, "*"),
 	FILE_MASK_BIT('r', READ_DATA, "read_data"),
@@ -547,11 +547,11 @@ static void write_mask(struct string_buffer *buffer, uint32_t mask, int fmt)
 				if (mask_bits[i].e_mask ==
 				    (mask_bits[i].e_mask &
 				     ACE4_POSIX_ALWAYS_ALLOWED))
-				        continue;
+					continue;
 			}
 			if (fmt & NFS4ACL_TEXT_LONG) {
 				if (stuff_written)
-				        buffer_sprintf(buffer, "/");
+					buffer_sprintf(buffer, "/");
 				buffer_sprintf(buffer, "%s",
 					       mask_bits[i].e_name);
 			} else
@@ -907,8 +907,8 @@ static int mask_from_text(const char *str, unsigned int *mask,
 		for (c = dup; *c; c++) {
 			for (i = 0; i < ARRAY_SIZE(mask_bits); i++) {
 				if (*c == mask_bits[i].e_char) {
-				        *mask |= mask_bits[i].e_mask;
-				        break;
+					*mask |= mask_bits[i].e_mask;
+					break;
 				}
 			}
 			if (i != ARRAY_SIZE(mask_bits))
