@@ -31,39 +31,7 @@
 #include "nfs4acl.h"
 #include "string_buffer.h"
 
-//#include <stdint.h>
-//#include <string.h>
-//#include <ctype.h>
-//#include <alloca.h>
-//#include <arpa/inet.h>
-//#include <pwd.h>
-//#include <grp.h>
-
 static const char *progname;
-
-#if 0
-static char *strdup_toupper(const char *str)
-{
-	char *dup = NOFAIL(strdup(str)), *s;
-	if (dup) {
-		for (s = dup; *s; s++)
-			*s = toupper(*s);
-	}
-	return dup;
-}
-#endif
-
-#if 0
-static char *strdup_tolower(const char *str)
-{
-	char *dup = NOFAIL(strdup(str)), *s;
-	if (dup) {
-		for (s = dup; *s; s++)
-			*s = tolower(*s);
-	}
-	return dup;
-}
-#endif
 
 void printf_stderr(const char *fmt, ...)
 {
@@ -146,8 +114,7 @@ static int print_nfs4acl(const char *file, struct nfs4acl *acl, int fmt)
 	text = nfs4acl_to_text(acl, fmt);
 	if (!text)
 		goto fail;
-	if (file)
-		printf("%s:\n", file);
+	printf("%s:\n", file);
 	puts(text);
 	free(text);
 	nfs4acl_free(acl);
@@ -168,8 +135,7 @@ static struct option long_options[] = {
 	{"remove",		0, 0, 'r'},
 	{"long",		0, 0, 'l'},
 	{"raw",			0, 0,  1 },
-	{"write-through",	0, 0,  2 },
-	{"dry-run",		0, 0,  3 },
+	{"dry-run",		0, 0,  2 },
 	{"version",		0, 0, 'v'},
 	{"help",		0, 0, 'h'},
 	{ NULL,			0, 0,  0 }
@@ -237,7 +203,7 @@ static void synopsis(int help)
 int main(int argc, char *argv[])
 {
 	int opt_get = 0, opt_remove = 0, opt_dry_run = 0;
-	int opt_modify = 0, opt_set = 0, opt_write_through = 0;
+	int opt_modify = 0, opt_set = 0;
 	char *acl_text = NULL, *acl_file = NULL;
 	int format = NFS4ACL_TEXT_SIMPLIFY;
 	int status = 0;
@@ -295,11 +261,7 @@ int main(int argc, char *argv[])
 				format &= ~NFS4ACL_TEXT_SIMPLIFY;
 				break;
 
-			case 2:  /* --write-through */
-				opt_write_through = 1;
-				break;
-
-			case 3:  /* --dry-run */
+			case 2:  /* --dry-run */
 				opt_dry_run = 1;
 				break;
 
@@ -372,19 +334,12 @@ int main(int argc, char *argv[])
 			if (other_mask != -1)
 				acl->a_other_mask = other_mask;
 		}
-		/*
-		 * On file systems with write-through semantics, we need to tell the
-		 * kernel that we actually mean write-through; otherwise we would be
-		 * mixing semantics.
-		 */
-		if (opt_write_through)
-			acl->a_flags |= ACL4_WRITE_THROUGH;
 	}
 
 	if (opt_dry_run && opt_set) {
-		if (print_nfs4acl(NULL, acl, format |
-					     NFS4ACL_TEXT_FILE_CONTEXT |
-					     NFS4ACL_TEXT_DIRECTORY_CONTEXT)) {
+		if (print_nfs4acl("<no file>", acl, format |
+				NFS4ACL_TEXT_FILE_CONTEXT |
+				NFS4ACL_TEXT_DIRECTORY_CONTEXT)) {
 			perror("");
 			return 1;
 		}
