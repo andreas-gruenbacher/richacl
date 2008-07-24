@@ -261,8 +261,7 @@ static struct nfs4acl *nfs4acl_from_xattr(const void *value, size_t size)
 	int count;
 
 	if (size < sizeof(struct nfs4acl_xattr) ||
-	    xattr_acl->a_version != ACL4_XATTR_VERSION ||
-	    (xattr_acl->a_flags & ~ACL4_WRITE_THROUGH))
+	    xattr_acl->a_version != ACL4_XATTR_VERSION)
 		goto fail_einval;
 
 	count = ntohs(xattr_acl->a_count);
@@ -275,14 +274,8 @@ static struct nfs4acl *nfs4acl_from_xattr(const void *value, size_t size)
 
 	acl->a_flags = xattr_acl->a_flags;
 	acl->a_owner_mask = ntohl(xattr_acl->a_owner_mask);
-	if (acl->a_owner_mask & ~ACE4_VALID_MASK)
-		goto fail_einval;
 	acl->a_group_mask = ntohl(xattr_acl->a_group_mask);
-	if (acl->a_group_mask & ~ACE4_VALID_MASK)
-		goto fail_einval;
 	acl->a_other_mask = ntohl(xattr_acl->a_other_mask);
-	if (acl->a_other_mask & ~ACE4_VALID_MASK)
-		goto fail_einval;
 
 	nfs4acl_for_each_entry(ace, acl) {
 		const char *who = (void *)(xattr_ace + 1), *end;
@@ -298,12 +291,6 @@ static struct nfs4acl *nfs4acl_from_xattr(const void *value, size_t size)
 		ace->e_flags = ntohs(xattr_ace->e_flags);
 		ace->e_mask = ntohl(xattr_ace->e_mask);
 		ace->u.e_id = ntohl(xattr_ace->e_id);
-
-		if (ace->e_flags & ~ACE4_VALID_FLAGS)
-			goto fail_einval;
-		if (ace->e_type > ACE4_ACCESS_DENIED_ACE_TYPE ||
-		    (ace->e_mask & ~ACE4_VALID_MASK))
-			goto fail_einval;
 
 		if (who == end) {
 			if (ace->u.e_id == -1)
@@ -352,8 +339,7 @@ static void nfs4acl_to_xattr(const struct nfs4acl *acl, void *buffer)
 	xattr_ace = (void *)(xattr_acl + 1);
 	nfs4acl_for_each_entry(ace, acl) {
 		xattr_ace->e_type = htons(ace->e_type);
-		xattr_ace->e_flags = htons(ace->e_flags &
-			ACE4_VALID_FLAGS);
+		xattr_ace->e_flags = htons(ace->e_flags & ACE4_VALID_FLAGS);
 		xattr_ace->e_mask = htonl(ace->e_mask);
 		if (nfs4ace_get_who(ace)) {
 			int sz = ALIGN(strlen(ace->u.e_who) + 1, 4);
