@@ -15,11 +15,31 @@ LDFLAGS := -g
 
 all: src/nfs4acl
 
-src/nfs4acl : src/nfs4acl.o lib/libnfs4acl.o
+src/nfs4acl : src/nfs4acl.o lib/libnfs4acl.a
 	$(CC) $(LDFLAGS) -o $@ $+
 
-lib/libnfs4acl.o : lib/nfs4acl.o lib/string_buffer.o lib/nfs4acl_compat.o
-	$(LD) $(LDFLAGS) -o $@ -r $+
+lib/libnfs4acl.a : lib/nfs4acl.o lib/string_buffer.o lib/nfs4acl_compat.o
+	$(RM) -f $@
+	$(AR) r $@ $+
+
+prefix=		/usr/local
+exec_prefix=	$(prefix)
+includedir=		$(prefix)/include
+libdir=		$(exec_prefix)/lib
+sbindir=	$(exec_prefix)/sbin
+pkgdatadir=	$(prefix)/share/$(NAME)
+INSTALL=	install -c
+
+install: all
+	$(INSTALL) -d -m 755 $(DESTDIR)$(includedir)/$(NAME)
+	for file in $(INCLUDE_SOURCES) ; do $(INSTALL) -m 644 $$file $(DESTDIR)$(includedir)/$(NAME) ; done
+	$(INSTALL) -d -m 755 $(DESTDIR)$(libdir)
+	$(INSTALL) -m 644 lib/libnfs4acl.a $(DESTDIR)$(libdir)
+	$(INSTALL) -d -m 755 $(DESTDIR)$(sbindir)
+	$(INSTALL) -m 755 src/nfs4acl $(DESTDIR)$(sbindir)
+	$(INSTALL) -d -m 755 $(DESTDIR)$(pkgdatadir)/test
+	for file in $(TESTS) ; do $(INSTALL) -m 644 $$file $(DESTDIR)$(pkgdatadir)/test ; done
+	chmod 755 $(DESTDIR)$(pkgdatadir)/test/run
 
 dist:
 	rm -f $(NAME)-$(VERSION)
@@ -28,4 +48,4 @@ dist:
 	rm -f $(NAME)-$(VERSION)
 
 clean:
-	rm -f src/nfs4acl.o lib/libnfs4acl.o lib/nfs4acl.o lib/string_buffer.o lib/nfs4acl_compat.o
+	rm -f src/nfs4acl.o lib/libnfs4acl.a lib/nfs4acl.o lib/string_buffer.o lib/nfs4acl_compat.o
