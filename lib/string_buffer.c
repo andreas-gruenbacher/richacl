@@ -44,13 +44,14 @@ char *buffer_sprintf(struct string_buffer *buffer, const char *format, ...)
 		return NULL;
 
 	va_start(ap, format);
-	va_copy(aq, ap);
 	for(;;) {
 		size_t new_size;
 		char *new_buffer;
 
+		va_copy(aq, ap);
 		needed = vsnprintf(buffer->buffer + buffer->offset,
-				   buffer->size - buffer->offset, format, ap);
+				   buffer->size - buffer->offset, format, aq);
+		va_end(aq);
 		if (needed < buffer->size - buffer->offset)
 			break;
 
@@ -68,8 +69,7 @@ char *buffer_sprintf(struct string_buffer *buffer, const char *format, ...)
 		buffer->size = new_size;
 	}
 	buffer->offset += needed;
-	va_end(aq);
-	va_end(ap);
 out:
+	va_end(ap);
 	return buffer->buffer;
 }
