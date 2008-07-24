@@ -257,7 +257,7 @@ static struct nfs4acl *nfs4acl_from_xattr(const void *value, size_t size)
 {
 	const struct nfs4acl_xattr *xattr_acl = value;
 	const struct nfs4ace_xattr *xattr_ace = (void *)(xattr_acl + 1);
-	struct nfs4acl *acl;
+	struct nfs4acl *acl = NULL;
 	struct nfs4ace *ace;
 	int count;
 
@@ -364,14 +364,13 @@ struct nfs4acl *nfs4acl_get_file(const char *path)
 	struct nfs4acl *acl;
 
 	retval = getxattr(path, SYSTEM_NFS4ACL, NULL, 0);
-	if (retval > 0) {
-		value = alloca(retval);
-		if (!value)
-			return NULL;
-		retval = getxattr(path, SYSTEM_NFS4ACL, value, retval);
-	}
-	if (retval < 0)
+	if (retval <= 0)
 		return NULL;
+
+	value = alloca(retval);
+	if (!value)
+		return NULL;
+	retval = getxattr(path, SYSTEM_NFS4ACL, value, retval);
 	acl = nfs4acl_from_xattr(value, retval);
 
 	return acl;
@@ -384,14 +383,13 @@ struct nfs4acl *nfs4acl_get_fd(int fd)
 	struct nfs4acl *acl;
 
 	retval = fgetxattr(fd, SYSTEM_NFS4ACL, NULL, 0);
-	if (retval > 0) {
-		value = alloca(retval);
-		if (!value)
-			return NULL;
-		retval = fgetxattr(fd, SYSTEM_NFS4ACL, value, retval);
-	}
-	if (retval < 0)
+	if (retval <= 0)
 		return NULL;
+
+	value = alloca(retval);
+	if (!value)
+		return NULL;
+	retval = fgetxattr(fd, SYSTEM_NFS4ACL, value, retval);
 	acl = nfs4acl_from_xattr(value, retval);
 
 	return acl;
