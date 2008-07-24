@@ -1,8 +1,6 @@
 Test cases for (acl, masks) pairs that cannot be represented as
 pure ACLs
 
-No write-through
-
 $ rm -rf d
 $ mkdir d
 $ cd d
