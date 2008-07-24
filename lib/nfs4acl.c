@@ -122,7 +122,7 @@ const char *nfs4ace_get_who(const struct nfs4ace *ace)
 	return ace->u.e_who;
 }
 
-int nfs4ace_is_same_who(const struct nfs4ace *a, const struct nfs4ace *b)
+int nfs4ace_is_same_identifier(const struct nfs4ace *a, const struct nfs4ace *b)
 {
 #define WHO_FLAGS (ACE4_SPECIAL_WHO | ACE4_IDENTIFIER_GROUP)
 	if ((a->e_flags & WHO_FLAGS) != (b->e_flags & WHO_FLAGS))
@@ -198,7 +198,7 @@ static unsigned int nfs4acl_allowed_to_who(struct nfs4acl *acl,
 	nfs4acl_for_each_entry_reverse(ace, acl) {
 		if (nfs4ace_is_inherit_only(ace))
 			continue;
-		if (nfs4ace_is_same_who(ace, who) ||
+		if (nfs4ace_is_same_identifier(ace, who) ||
 		    nfs4ace_is_everyone(ace)) {
 			if (nfs4ace_is_allow(ace))
 				allowed |= ace->e_mask;
@@ -602,19 +602,7 @@ char *nfs4acl_to_text(const struct nfs4acl *acl, int fmt)
 {
 	struct string_buffer *buffer;
 	const struct nfs4ace *ace;
-	unsigned int allowed = ~0;
 	int fmt2;
-
-	if (fmt & NFS4ACL_TEXT_SIMPLIFY) {
-		allowed = 0;
-		nfs4acl_for_each_entry(ace, acl) {
-			if (nfs4ace_is_inherit_only(ace))
-				continue;
-
-			if (nfs4ace_is_allow(ace))
-				allowed |= ace->e_mask;
-		}
-	}
 
 	buffer = alloc_string_buffer(128);
 	if (!buffer)
@@ -622,16 +610,24 @@ char *nfs4acl_to_text(const struct nfs4acl *acl, int fmt)
 
 	write_acl_flags(buffer, acl->a_flags, fmt);
 	if (fmt & NFS4ACL_TEXT_SHOW_MASKS) {
+		unsigned int allowed = 0;
+		
 		fmt2 = fmt;
 		nfs4acl_for_each_entry(ace, acl) {
 			if (nfs4ace_is_inherit_only(ace))
 				continue;
+
+			if (nfs4ace_is_allow(ace))
+				allowed |= ace->e_mask;
 
 			if (ace->e_flags & ACE4_FILE_INHERIT_ACE)
 				fmt2 |= NFS4ACL_TEXT_FILE_CONTEXT;
 			if (ace->e_flags & ACE4_DIRECTORY_INHERIT_ACE)
 				fmt2 |= NFS4ACL_TEXT_DIRECTORY_CONTEXT;
 		}
+
+		if (!(fmt & NFS4ACL_TEXT_SIMPLIFY))
+			allowed = ~0;
 
 		buffer_sprintf(buffer, "owner:");
 		write_mask(buffer, acl->a_owner_mask & allowed, fmt2);
@@ -657,7 +653,7 @@ char *nfs4acl_to_text(const struct nfs4acl *acl, int fmt)
 		if (ace->e_flags & ACE4_DIRECTORY_INHERIT_ACE)
 			fmt2 |= NFS4ACL_TEXT_DIRECTORY_CONTEXT;
 
-		write_mask(buffer, ace->e_mask & allowed, fmt2);
+		write_mask(buffer, ace->e_mask, fmt2);
 		buffer_sprintf(buffer, ":");
 		write_ace_flags(buffer, ace->e_flags, fmt2);
 		buffer_sprintf(buffer, ":");
@@ -926,21 +922,17 @@ static int mask_from_text(const char *str, unsigned int *mask,
 	return 0;
 }
 
-struct nfs4acl *nfs4acl_from_text(const char *str,
+struct nfs4acl *nfs4acl_from_text(const char *str, int *pflags,
 				  void (*error)(const char *, ...))
 {
 	char *who_str = NULL, *mask_str = NULL, *flags_str = NULL,
 	     *type_str = NULL;
-	/*unsigned int owner_mask = -1, group_mask = -1, other_mask = -1;*/
 	struct nfs4acl *acl;
+	int flags = 0;
 
 	acl = nfs4acl_alloc(0);
 	if (!acl)
 		return NULL;
-
-	acl->a_owner_mask = -1;
-	acl->a_group_mask = -1;
-	acl->a_other_mask = -1;
 
 	while (*str) {
 		struct nfs4acl *acl2;
@@ -970,6 +962,7 @@ struct nfs4acl *nfs4acl_from_text(const char *str,
 			if (*c != ':') {
 				if (acl_flags_from_text(str, acl, error))
 					goto fail_einval;
+				flags |= NFS4ACL_TEXT_FLAGS;
 				str = c;
 				goto free_who_str;
 			}
@@ -1003,13 +996,16 @@ struct nfs4acl *nfs4acl_from_text(const char *str,
 		if (mask_from_text(mask_str, &mask, error))
 			goto fail_einval;
 		if (!strcasecmp(type_str, "MASK")) {
-			if (!strcasecmp(who_str, "OWNER"))
+			if (!strcasecmp(who_str, "OWNER")) {
 				acl->a_owner_mask = mask;
-			else if (!strcasecmp(who_str, "GROUP"))
+				flags |= NFS4ACL_TEXT_OWNER_MASK;
+			} else if (!strcasecmp(who_str, "GROUP")) {
 				acl->a_group_mask = mask;
-			else if (!strcasecmp(who_str, "OTHER"))
+				flags |= NFS4ACL_TEXT_GROUP_MASK;
+			} else if (!strcasecmp(who_str, "OTHER")) {
 				acl->a_other_mask = mask;
-			else {
+				flags |= NFS4ACL_TEXT_OTHER_MASK;
+			} else {
 				error("Invalid file mask `%s'\n",
 				      who_str);
 				goto fail_einval;
@@ -1053,17 +1049,8 @@ struct nfs4acl *nfs4acl_from_text(const char *str,
 		goto fail_einval;
 	}
 
-	/*
-	if (owner_mask == -1 || group_mask == -1 || other_mask == -1)
-		nfs4acl_compute_max_masks(acl);
-	if (owner_mask != -1)
-		acl->a_owner_mask = owner_mask;
-	if (group_mask != -1)
-		acl->a_group_mask = group_mask;
-	if (other_mask != -1)
-		acl->a_other_mask = other_mask;
-	*/
-
+	if (pflags)
+		*pflags = flags;
 	return acl;
 
 fail_einval:
@@ -1093,7 +1080,7 @@ int nfs4ace_set_who(struct nfs4ace *ace, const char *who)
 	ace->e_flags |= ACE4_SPECIAL_WHO;
 	/*
 	 * Also clear the ACE4_IDENTIFIER_GROUP flag for ACEs with a special
-	 * who value: nfs4ace_is_same_who() relies on that.
+	 * who value: nfs4ace_is_same_identifier() relies on that.
 	 */
 	ace->e_flags &= ~ACE4_IDENTIFIER_GROUP;
 	return 0;
@@ -1110,6 +1097,11 @@ void nfs4ace_set_gid(struct nfs4ace *ace, gid_t gid)
 	ace->u.e_id = gid;
 	ace->e_flags |= ACE4_IDENTIFIER_GROUP;
 	ace->e_flags &= ~ACE4_SPECIAL_WHO;
+}
+
+void nfs4ace_copy(struct nfs4ace *dst, const struct nfs4ace *src)
+{
+	memcpy(dst, src, sizeof(struct nfs4ace));
 }
 
 static unsigned int nfs4acl_mode_to_mask(mode_t mode)

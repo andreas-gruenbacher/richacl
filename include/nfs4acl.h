@@ -91,24 +91,31 @@ struct nfs4acl {
 };
 
 #define nfs4acl_for_each_entry(_ace, _acl) \
-	for (_ace = _acl->a_entries; \
-	     _ace != _acl->a_entries + _acl->a_count; \
-	     _ace++)
+	for ((_ace) = (_acl)->a_entries; \
+	     (_ace) != (_acl)->a_entries + (_acl)->a_count; \
+	     (_ace)++)
 
 #define nfs4acl_for_each_entry_reverse(_ace, _acl) \
-	for (_ace = _acl->a_entries + _acl->a_count - 1; \
-	     _ace != _acl->a_entries - 1; \
-	     _ace--)
+	for ((_ace) = (_acl)->a_entries + (_acl)->a_count - 1; \
+	     (_ace) != (_acl)->a_entries - 1; \
+	     (_ace)--)
 
+/* nfs4acl_to_text flags */
 #define NFS4ACL_TEXT_LONG		1
 #define NFS4ACL_TEXT_FILE_CONTEXT	2
 #define NFS4ACL_TEXT_DIRECTORY_CONTEXT	4
 #define NFS4ACL_TEXT_SHOW_MASKS		8
 #define NFS4ACL_TEXT_SIMPLIFY		16
 
-extern int nfs4ace_is_owner(const struct nfs4ace *ace);
-extern int nfs4ace_is_group(const struct nfs4ace *ace);
-extern int nfs4ace_is_everyone(const struct nfs4ace *ace);
+/* nfs4acl_from_text flags */
+#define NFS4ACL_TEXT_OWNER_MASK		1
+#define NFS4ACL_TEXT_GROUP_MASK		2
+#define NFS4ACL_TEXT_OTHER_MASK		4
+#define NFS4ACL_TEXT_FLAGS		8
+
+extern int nfs4ace_is_owner(const struct nfs4ace *);
+extern int nfs4ace_is_group(const struct nfs4ace *);
+extern int nfs4ace_is_everyone(const struct nfs4ace *);
 
 static inline int nfs4ace_is_allow(const struct nfs4ace *ace)
 {
@@ -120,11 +127,13 @@ static inline int nfs4ace_is_deny(const struct nfs4ace *ace)
 	return ace->e_type == ACE4_ACCESS_DENIED_ACE_TYPE;
 }
 
-extern const char *nfs4ace_get_who(const struct nfs4ace *ace);
+extern const char *nfs4ace_get_who(const struct nfs4ace *);
 
 extern int nfs4ace_set_who(struct nfs4ace *, const char *);
-extern void nfs4ace_set_uid(struct nfs4ace *ace, uid_t uid);
-extern void nfs4ace_set_gid(struct nfs4ace *ace, gid_t gid);
+extern void nfs4ace_set_uid(struct nfs4ace *, uid_t);
+extern void nfs4ace_set_gid(struct nfs4ace *, gid_t);
+extern int nfs4ace_is_same_identifier(const struct nfs4ace *, const struct nfs4ace *);
+extern void nfs4ace_copy(struct nfs4ace *, const struct nfs4ace *);
 
 extern struct nfs4acl *nfs4acl_get_file(const char *);
 extern struct nfs4acl *nfs4acl_get_fd(int);
@@ -132,7 +141,8 @@ extern int nfs4acl_set_file(const char *, const struct nfs4acl *);
 extern int nfs4acl_set_fd(int, const struct nfs4acl *);
 
 extern char *nfs4acl_to_text(const struct nfs4acl *, int);
-extern struct nfs4acl *nfs4acl_from_text(const char *, void (*)(const char *, ...));
+extern struct nfs4acl *nfs4acl_from_text(const char *, int *,
+					 void (*)(const char *, ...));
 
 extern struct nfs4acl *nfs4acl_alloc(size_t);
 extern struct nfs4acl *nfs4acl_clone(struct nfs4acl *);

@@ -4,8 +4,6 @@
 /* e_flags bitflags */
 #define ACE4_SPECIAL_WHO		0x4000  /* internal to the library */
 
-extern int nfs4ace_is_same_who(const struct nfs4ace *a, const struct nfs4ace *b);
-
 static inline void
 nfs4ace_clear_inheritance_flags(struct nfs4ace *ace)
 {

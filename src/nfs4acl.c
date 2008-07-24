@@ -42,94 +42,108 @@ void printf_stderr(const char *fmt, ...)
 	va_end(ap);
 }
 
-#if 0
-struct nfs4acl *modify_nfs4acl(struct nfs4acl *old_acl, size_t *old_acl_size,
-			       struct nfs4acl *acl)
+int modify_nfs4acl(struct nfs4acl **acl2, struct nfs4acl *acl, int acl_has)
 {
-	struct nfs4ace *old_ace, *ace;
-	unsigned int m, n;
+	struct nfs4ace *ace2, *ace;
 
-	nfs4acl_for_each_entry(m, ace, acl) {
-		int found = 0;
+	nfs4acl_for_each_entry(ace, acl) {
+		struct nfs4acl *acl3;
+		struct nfs4ace *ace3;
 
-		nfs4acl_for_each_entry(n, old_ace, old_acl) {
-			if (old_ace->e_type == ace->e_type &&
-			    ((old_ace->e_flags & ACE4_IDENTIFIER_GROUP) ==
-			     (ace->e_flags & ACE4_IDENTIFIER_GROUP)) &&
-			    old_ace->e_id == ace->e_id &&
-			    !strcmp(old_ace->e_who, ace->e_who)) {
-				old_ace->e_mask = ace->e_mask;
-				old_ace->e_flags = ace->e_flags;
-				found = 1;
+		nfs4acl_for_each_entry(ace2, *acl2) {
+			if (ace2->e_type == ace->e_type &&
+			    nfs4ace_is_same_identifier(ace, ace2)) {
+				ace2->e_mask = ace->e_mask;
+				ace2->e_flags = ace->e_flags;
+				break;
 			}
 		}
-		if (!found) {
-			size_t ace_size = NFS4ACE_SIZE(ace->e_who);
-			size_t offset;
+		if (ace2 != (*acl2)->a_entries + (*acl2)->a_count)
+			continue;
 
-			old_acl = NOFAIL(realloc(old_acl, *old_acl_size + ace_size));
-			if (ace->e_type == ACE4_ACCESS_DENIED_ACE_TYPE) {
-				nfs4acl_for_each_entry(n, old_ace, old_acl) {
-					if (old_ace->e_type == ACE4_ACCESS_DENIED_ACE_TYPE)
-						continue;
-					offset = (void *)old_ace - (void *)old_acl;
+		acl3 = nfs4acl_alloc((*acl2)->a_count + 1);
+		if (!acl3)
+			return -1;
+		ace3 = acl3->a_entries;
+		if (nfs4ace_is_deny(ace)) {
+			nfs4acl_for_each_entry(ace2, *acl2) {
+				if (!nfs4ace_is_deny(ace2))
 					break;
-				}
-			} else
-				offset = *old_acl_size;
-			memmove((void *)old_acl + offset + ace_size,
-				(void *)old_acl + offset,
-				*old_acl_size - offset);
-			memcpy((void *)old_acl + offset, ace, ace_size);
-			*old_acl_size += ace_size;
-			old_acl->a_count++;
+				nfs4ace_copy(ace3++, ace2);
+			}
+			nfs4ace_copy(ace3++, ace);
+			while (ace2 != (*acl2)->a_entries + (*acl2)->a_count)
+				nfs4ace_copy(ace3++, ace2++);
+		} else {
+			nfs4acl_for_each_entry(ace2, *acl2)
+				nfs4ace_copy(ace3++, ace2);
+			nfs4ace_copy(ace3++, ace);
 		}
+
+		nfs4acl_free(*acl2);
+		*acl2 = acl3;
 	}
 
-	if (!opt_no_masks &&
-	    (acl->a_flags & (OWNER_MASK_UNSET | GROUP_MASK_UNSET | OTHER_MASK_UNSET)))
-		nfs4acl_compute_max_masks(old_acl);
+	if (acl_has & NFS4ACL_TEXT_FLAGS)
+		(*acl2)->a_flags = acl->a_flags;
 
-	if (!(acl->a_flags & OWNER_MASK_UNSET))
-		old_acl->a_owner_mask = acl->a_owner_mask;
-	if (!(acl->a_flags & GROUP_MASK_UNSET))
-		old_acl->a_group_mask = acl->a_group_mask;
-	if (!(acl->a_flags & OTHER_MASK_UNSET))
-		old_acl->a_other_mask = acl->a_other_mask;
+	if (!((acl_has & NFS4ACL_TEXT_OWNER_MASK) && 
+	      (acl_has & NFS4ACL_TEXT_GROUP_MASK) && 
+	      (acl_has & NFS4ACL_TEXT_OTHER_MASK)))
+		nfs4acl_compute_max_masks(*acl2);
+	if (acl_has & NFS4ACL_TEXT_OWNER_MASK)
+		(*acl2)->a_owner_mask = acl->a_owner_mask;
+	if (acl_has & NFS4ACL_TEXT_GROUP_MASK)
+		(*acl2)->a_group_mask = acl->a_group_mask;
+	if (acl_has & NFS4ACL_TEXT_OTHER_MASK)
+		(*acl2)->a_other_mask = acl->a_other_mask;
 
-	old_acl->a_flags &= ~(OWNER_MASK_UNSET | GROUP_MASK_UNSET | OTHER_MASK_UNSET);
-
-	return old_acl;
+	return 0;
 }
-#endif
 
-static int print_nfs4acl(const char *file, struct nfs4acl *acl, int fmt)
+static struct nfs4acl *get_nfs4acl(const char *file, mode_t mode)
+{
+	struct nfs4acl *acl;
+
+	acl = nfs4acl_get_file(file);
+	if (!acl && (errno == ENODATA || errno == ENOTSUP || errno == ENOSYS)) {
+		acl = nfs4acl_from_mode(mode);
+	}
+	return acl;
+}
+
+static int print_nfs4acl(const char *file, struct nfs4acl **acl, int fmt)
 {
 	char *text;
 
 	if (!(fmt & NFS4ACL_TEXT_SHOW_MASKS)) {
-		if (nfs4acl_apply_masks(&acl))
+		if (nfs4acl_apply_masks(acl))
 			goto fail;
 	}
-	text = nfs4acl_to_text(acl, fmt);
+	text = nfs4acl_to_text(*acl, fmt);
 	if (!text)
 		goto fail;
 	printf("%s:\n", file);
 	puts(text);
 	free(text);
-	nfs4acl_free(acl);
 	return 0;
 
 fail:
-	nfs4acl_free(acl);
 	return -1;
 }
+
+int format_for_mode(mode_t mode)
+{
+	if (S_ISDIR(mode))
+		return NFS4ACL_TEXT_DIRECTORY_CONTEXT;
+	else
+		return NFS4ACL_TEXT_FILE_CONTEXT;
+}
+
 static struct option long_options[] = {
 	{"get",			0, 0, 'g'},
-#if 0
 	{"modify",		1, 0, 'm'},
 	{"modify-file",		1, 0, 'M'},
-#endif
 	{"set",			1, 0, 's'},
 	{"set-file",		1, 0, 'S'},
 	{"remove",		0, 0, 'r'},
@@ -154,22 +168,17 @@ static void synopsis(int help)
 "Commands:\n"
 "  --get       Display the ACL of file(s). Multiple ACL entries are separated\n"
 "              by newline.\n"
-#if 0
 "  --modify acl_entries\n"
 "              Modify the ACL of file(s) by replacing existing entries with\n"
 "              the entries in acl_entries, and adding all new entries.\n"
-#endif
 "  --set acl   Set the ACL of file(s) to acl. Multiple ACL entries are\n"
 "              separated by whitespace or commas.\n"
-#if 0
 "  --modify-file acl_entries_file, --set-file acl_file\n"
 "              Identical to --modify / --set, but read the ACL from a file\n"
 "              instead. If the file is `-', read from standard input.\n"
-#else
 "  --set-file acl_file\n"
 "              Identical to --set, but read the ACL from a file\n"
 "              instead. If the file is `-', read from standard input.\n"
-#endif
 "  --delete-acl\n"
 "              Delete the ACL of file(s).\n"
 "  --version   Display the version of %s and exit.\n"
@@ -210,6 +219,7 @@ int main(int argc, char *argv[])
 	int c;
 
 	struct nfs4acl *acl = NULL;
+	int acl_has;
 
 	progname = argv[0];
 
@@ -219,7 +229,6 @@ int main(int argc, char *argv[])
 			case 'g':
 				opt_get = 1;
 				break;
-#if 0
 			case 'm':
 				opt_modify = 1;
 				acl_text = optarg;
@@ -229,7 +238,6 @@ int main(int argc, char *argv[])
 				opt_modify = 1;
 				acl_file = optarg;
 				break;
-#endif
 			case 's':
 				opt_set = 1;
 				acl_text = optarg;
@@ -276,7 +284,7 @@ int main(int argc, char *argv[])
 		synopsis(argc == 1);
 
 	if (acl_text) {
-		acl = nfs4acl_from_text(acl_text, printf_stderr);
+		acl = nfs4acl_from_text(acl_text, &acl_has, printf_stderr);
 		if (!acl)
 			return 1;
 	}
@@ -311,36 +319,36 @@ int main(int argc, char *argv[])
 			return 1;
 		}
 
-		acl = nfs4acl_from_text(buffer->buffer, printf_stderr);
+		acl = nfs4acl_from_text(buffer->buffer, &acl_has, printf_stderr);
 		if (!acl)
 			return 1;
 		free_string_buffer(buffer);
 	}
 
-	if (acl) {
-		/* Compute all masks which haven't been set explicitly. */
-		if (acl->a_owner_mask == -1 ||
-		    acl->a_group_mask == -1 ||
-		    acl->a_other_mask == -1) {
-			unsigned int owner_mask = acl->a_owner_mask;
-			unsigned int group_mask = acl->a_group_mask;
-			unsigned int other_mask = acl->a_other_mask;
+	/* Compute all masks which haven't been set explicitly. */
+	if (opt_set && acl && !((acl_has & NFS4ACL_TEXT_OWNER_MASK) &&
+				(acl_has & NFS4ACL_TEXT_GROUP_MASK) &&
+				(acl_has & NFS4ACL_TEXT_OTHER_MASK))) {
+		unsigned int owner_mask = acl->a_owner_mask;
+		unsigned int group_mask = acl->a_group_mask;
+		unsigned int other_mask = acl->a_other_mask;
 
-			nfs4acl_compute_max_masks(acl);
-			if (owner_mask != -1)
-				acl->a_owner_mask = owner_mask;
-			if (group_mask != -1)
-				acl->a_group_mask = group_mask;
-			if (other_mask != -1)
-				acl->a_other_mask = other_mask;
-		}
+		nfs4acl_compute_max_masks(acl);
+		if (acl_has & NFS4ACL_TEXT_OWNER_MASK)
+			acl->a_owner_mask = owner_mask;
+		if (acl_has & NFS4ACL_TEXT_GROUP_MASK)
+			acl->a_group_mask = group_mask;
+		if (acl_has & NFS4ACL_TEXT_OTHER_MASK)
+			acl->a_other_mask = other_mask;
 	}
 
 	if (opt_dry_run && opt_set) {
-		if (print_nfs4acl("<no file>", acl, format |
+		const char *file = "<no filename>";
+
+		if (print_nfs4acl(file, &acl, format |
 				NFS4ACL_TEXT_FILE_CONTEXT |
 				NFS4ACL_TEXT_DIRECTORY_CONTEXT)) {
-			perror("");
+			perror(file);
 			return 1;
 		}
 		return 0;
@@ -348,88 +356,53 @@ int main(int argc, char *argv[])
 
 	for (; optind < argc; optind++) {
 		const char *file = argv[optind];
+		struct nfs4acl *acl2 = NULL;
 
-#if 0
-		if (opt_modify) {
-			struct nfs4acl *old_acl;
-			size_t old_acl_size;
-
-			old_acl = get_nfs4acl(file, system_nfs4acl, &old_acl_size);
-			if (!old_acl) {
-#if 0
-				old_acl = NOFAIL(malloc(sizeof(struct nfs4acl)));
-				memset(old_acl, 0, sizeof(struct nfs4acl));
-				acl->a_version = ACL4_XATTR_VERSION;
-#else
-				struct stat st;
-
-				if (stat(file, &st)) {
-					perror(file);
-					status = 1;
-					continue;
-				}
-				old_acl = nfs4acl_from_mode(st.st_mode, &old_acl_size);
-#endif
-			}
-			old_acl = modify_nfs4acl(old_acl, &old_acl_size, acl);
-			if (opt_dry_run) {
-				if (!buffer)
-					buffer = NOFAIL(alloc_grow_buffer(1024));
-				write_nfs4acl(buffer, old_acl, -1,
-					      NONDIR_MASK | DIR_MASK, '\n', 1);
-				puts(buffer->buffer);
-				reset_grow_buffer(buffer);
-				continue;
-			}
-			nfs4acl_to_big_endian(old_acl);
-			if (setxattr(file, system_nfs4acl, old_acl, old_acl_size, 0)) {
-				perror(file);
-				status = 1;
-			}
-			free(old_acl);
-		} else
-#endif
 		if (opt_set) {
-			if (nfs4acl_set_file(file, acl)) {
-				perror(file);
-				status = 1;
-			}
-		} else if (opt_remove) {
-			if (removexattr(file, "system.nfs4acl")) {
-				if (errno != ENODATA) {
-					perror(file);
-					status = 1;
-				}
-			}
-		} else {
-			struct nfs4acl *acl2;
+			if (nfs4acl_set_file(file, acl))
+				goto fail;
+		} else if (opt_modify) {
 			struct stat st;
 
 			if (stat(file, &st))
 				goto fail;
-
-			acl2 = nfs4acl_get_file(file);
-			if (!acl2) {
-				switch(errno) {
-					case ENODATA: case ENOSYS: case ENOTSUP:
-						acl2 = nfs4acl_from_mode(st.st_mode);
-						break;
-					default:
-						goto fail;
-				}
-			}
-
-			if (print_nfs4acl(file, acl2,
-					  format | (S_ISDIR(st.st_mode) ?
-						    NFS4ACL_TEXT_DIRECTORY_CONTEXT :
-						    NFS4ACL_TEXT_FILE_CONTEXT)))
+			acl2 = get_nfs4acl(file, st.st_mode);
+			if (!acl2)
 				goto fail;
-			continue;
+			if (modify_nfs4acl(&acl2, acl, acl_has))
+				goto fail;
+			if (opt_dry_run) {
+				if (print_nfs4acl(file, &acl2, format |
+						format_for_mode(st.st_mode)))
+					goto fail;
+			} else {
+				if (nfs4acl_set_file(file, acl2))
+					goto fail;
+			}
+		} else if (opt_remove) {
+			if (removexattr(file, "system.nfs4acl")) {
+				if (errno != ENODATA)
+					goto fail;
+			}
+		} else {
+			struct stat st;
 
-		fail:
-			perror(file);
-			status = 1;
+			if (stat(file, &st))
+				goto fail;
+			acl2 = get_nfs4acl(file, st.st_mode);
+			if (!acl2)
+				goto fail;
+			if (print_nfs4acl(file, &acl2, format |
+					format_for_mode(st.st_mode)))
+				goto fail;
 		}
+		nfs4acl_free(acl2);
+		continue;
+
+	fail:
+		nfs4acl_free(acl2);
+		perror(file);
+		status = 1;
 	}
 
 	nfs4acl_free(acl);

@@ -217,12 +217,12 @@ __nfs4acl_propagate_everyone(struct nfs4acl_alloc *x, struct nfs4ace *who,
 		if (nfs4ace_is_inherit_only(ace))
 			continue;
 		if (nfs4ace_is_allow(ace)) {
-			if (nfs4ace_is_same_who(ace, who)) {
+			if (nfs4ace_is_same_identifier(ace, who)) {
 				allow &= ~ace->e_mask;
 				allow_last = ace;
 			}
 		} else if (nfs4ace_is_deny(ace)) {
-			if (nfs4ace_is_same_who(ace, who))
+			if (nfs4ace_is_same_identifier(ace, who))
 				allow &= ~ace->e_mask;
 			if (allow & ace->e_mask)
 				allow_last = NULL;
@@ -485,7 +485,7 @@ __nfs4acl_isolate_who(struct nfs4acl_alloc *x, struct nfs4ace *who,
 	nfs4acl_for_each_entry_reverse(ace, x->acl) {
 		if (nfs4ace_is_inherit_only(ace))
 			continue;
-		if (nfs4ace_is_same_who(ace, who)) {
+		if (nfs4ace_is_same_identifier(ace, who)) {
 			if (nfs4ace_is_allow(ace))
 				allowed |= ace->e_mask;
 			else if (nfs4ace_is_deny(ace))
@@ -504,7 +504,7 @@ __nfs4acl_isolate_who(struct nfs4acl_alloc *x, struct nfs4ace *who,
 		if (nfs4ace_is_inherit_only(ace))
 			continue;
 		if (nfs4ace_is_deny(ace)) {
-			if (nfs4ace_is_same_who(ace, who))
+			if (nfs4ace_is_same_identifier(ace, who))
 				break;
 		} else if (nfs4ace_is_allow(ace) &&
 			   (ace->e_mask & deny)) {
