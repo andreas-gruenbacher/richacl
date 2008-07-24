@@ -5,7 +5,7 @@
 #include <string.h>
 
 /* a_flags values */
-#define ACL4_WRITE_THROUGH		0x01
+#define ACL4_WRITE_THROUGH		0x40
 
 #define ACL4_VALID_FLAGS \
 	ACL4_WRITE_THROUGH
