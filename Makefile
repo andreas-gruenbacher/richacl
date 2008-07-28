@@ -1,49 +1,69 @@
-NAME := nfs4acl
-VERSION := 0.9
+#
+# Copyright (c) 2008 Silicon Graphics, Inc.  All Rights Reserved.
+#
 
-INCLUDE_SOURCES := include/nfs4acl.h include/nfs4acl_xattr.h include/nfs4acl-internal.h include/string_buffer.h
-SRC_SOURCES := src/nfs4acl.c
-LIB_SOURCES := lib/nfs4acl.c lib/nfs4acl_compat.c lib/string_buffer.c
-TESTS := test/run $(wildcard test/*.test)
-SOURCES := Makefile $(INCLUDE_SOURCES) $(SRC_SOURCES) $(LIB_SOURCES)
+TOPDIR = .
+HAVE_BUILDDEFS = $(shell test -f $(TOPDIR)/include/builddefs && echo yes || echo no)
 
-CPPFLAGS := -Iinclude
-CFLAGS := -g -Wall -DVERSION=\"$(VERSION)\"
-LDFLAGS := -g
+ifeq ($(HAVE_BUILDDEFS), yes)
+include $(TOPDIR)/include/builddefs
+endif
 
-all: src/nfs4acl
+CONFIGURE = configure include/builddefs include/config.h
+LSRCFILES = configure configure.in aclocal.m4 Makepkgs install-sh \
+	README VERSION
 
-src/nfs4acl : src/nfs4acl.o lib/libnfs4acl.a
-	$(CC) $(LDFLAGS) -o $@ $+
+LDIRT = config.log .dep config.status config.cache confdefs.h conftest* \
+	Logs/* built .census install.* install-dev.* install-lib.* *.gz
 
-lib/libnfs4acl.a : lib/nfs4acl.o lib/string_buffer.o lib/nfs4acl_compat.o
-	$(RM) -f $@
-	$(AR) r $@ $+
+#SUBDIRS = include libnfs4acl nfs4acl m4 man doc po \
+#	  test examples build debian
+SUBDIRS = include libnfs4acl nfs4acl m4 doc \
+	  test build
 
-prefix=		/usr/local
-exec_prefix=	$(prefix)
-includedir=		$(prefix)/include
-libdir=		$(exec_prefix)/lib
-sbindir=	$(exec_prefix)/sbin
-pkgdatadir=	$(prefix)/share/$(NAME)
-INSTALL=	install -c
+default: $(CONFIGURE)
+ifeq ($(HAVE_BUILDDEFS), no)
+	$(MAKE) -C . $@
+else
+	$(SUBDIRS_MAKERULE)
+endif
 
-install: all
-	$(INSTALL) -d -m 755 $(DESTDIR)$(includedir)/$(NAME)
-	for file in $(INCLUDE_SOURCES) ; do $(INSTALL) -m 644 $$file $(DESTDIR)$(includedir)/$(NAME) ; done
-	$(INSTALL) -d -m 755 $(DESTDIR)$(libdir)
-	$(INSTALL) -m 644 lib/libnfs4acl.a $(DESTDIR)$(libdir)
-	$(INSTALL) -d -m 755 $(DESTDIR)$(sbindir)
-	$(INSTALL) -m 755 src/nfs4acl $(DESTDIR)$(sbindir)
-	$(INSTALL) -d -m 755 $(DESTDIR)$(pkgdatadir)/test
-	for file in $(TESTS) ; do $(INSTALL) -m 644 $$file $(DESTDIR)$(pkgdatadir)/test ; done
-	chmod 755 $(DESTDIR)$(pkgdatadir)/test/run
+ifeq ($(HAVE_BUILDDEFS), yes)
+include $(BUILDRULES)
+else
+clean:	# if configure hasn't run, nothing to clean
+endif
 
-dist:
-	rm -f $(NAME)-$(VERSION)
-	ln -s . $(NAME)-$(VERSION)
-	tar cfz $(NAME)-$(VERSION).tar.gz ${SOURCES:%=$(NAME)-$(VERSION)/%}
-	rm -f $(NAME)-$(VERSION)
+$(CONFIGURE):
+	autoconf
+	./configure \
+		--prefix=/ \
+		--exec-prefix=/ \
+		--sbindir=/bin \
+		--bindir=/usr/bin \
+		--libdir=/lib \
+		--libexecdir=/usr/lib \
+		--enable-lib64=yes \
+		--includedir=/usr/include \
+		--mandir=/usr/share/man \
+		--datadir=/usr/share \
+		$$LOCAL_CONFIGURE_OPTIONS
+	touch .census
 
-clean:
-	rm -f src/nfs4acl.o lib/libnfs4acl.a lib/nfs4acl.o lib/string_buffer.o lib/nfs4acl_compat.o
+aclocal.m4::
+	aclocal --acdir=`pwd`/m4 --output=$@
+
+install: default
+	$(SUBDIRS_MAKERULE)
+	$(INSTALL) -m 755 -d $(PKG_DOC_DIR)
+	$(INSTALL) -m 644 README $(PKG_DOC_DIR)
+
+install-dev: default
+	$(SUBDIRS_MAKERULE)
+
+install-lib: default
+	$(SUBDIRS_MAKERULE)
+
+realclean distclean: clean
+	rm -f $(LDIRT) $(CONFIGURE)
+	rm -rf autom4te.cache Logs

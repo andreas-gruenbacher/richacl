@@ -1,0 +1,41 @@
+NFS4ACL_1.0 {
+    global:
+	# ace funcs
+	nfs4ace_is_owner;
+	nfs4ace_is_group;
+	nfs4ace_is_everyone;
+	nfs4ace_get_who;
+	nfs4ace_set_who;
+	nfs4ace_set_uid;
+	nfs4ace_set_gid;
+	nfs4ace_is_same_identifier;
+	nfs4ace_copy;
+
+	# acl funcs
+	nfs4acl_get_file;
+	nfs4acl_get_fd;
+	nfs4acl_set_file;
+	nfs4acl_set_fd;
+	nfs4acl_to_text;
+	nfs4acl_from_text;
+	nfs4acl_alloc;
+	nfs4acl_clone;
+	nfs4acl_free;
+	nfs4acl_apply_masks;
+	nfs4acl_compute_max_masks;
+	nfs4acl_from_mode;
+
+
+	# string buffer
+	alloc_string_buffer;
+	reset_string_buffer;
+	free_string_buffer;
+	buffer_sprintf;
+
+    local:
+    	# Library internal stuff
+	nfs4ace_owner_who;
+	nfs4ace_group_who;
+	nfs4ace_everyone_who;
+
+};
