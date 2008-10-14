@@ -19,18 +19,18 @@ Summary: Dynamic library for NFS v4 access control list support.
 Group: Development/Libraries
 Prereq: /sbin/ldconfig
 
-%description -n libacl
+%description -n libnfs4acl
 This package contains the libnfs4acl.so dynamic library which contains
 functions for manipulating NFS v4 access control lists.
 
-%package -n libacl-devel
+%package -n libnfs4acl-devel
 Summary: NFS v4 Access control list static libraries and headers.
 Group: Development/Libraries
-Requires: libacl
-Provides: acl-devel
-Obsoletes: acl-devel
+Requires: libnfs4acl
+Provides: libnfs4acl-devel
+Obsoletes: libnfs4acl-devel
 
-%description -n libacl-devel
+%description -n libnfs4acl-devel
 This package contains static libraries and header files needed to develop
 programs which make use of the NFS v4 access control list programming interface.
 
