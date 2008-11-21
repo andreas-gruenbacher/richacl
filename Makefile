@@ -18,15 +18,20 @@ LDIRT = config.log .dep config.status config.cache confdefs.h conftest* \
 
 #SUBDIRS = include libnfs4acl nfs4acl m4 man doc po \
 #	  test examples build debian
-SUBDIRS = include libnfs4acl nfs4acl m4 doc \
-	  test build
+LIB_SUBDIRS = include libnfs4acl
+TOOL_SUBDIRS = nfs4acl m4 doc test build
 
-default: $(CONFIGURE)
+SUBDIRS = $(LIB_SUBDIRS) $(TOOL_SUBDIRS)
+
+default: include/builddefs include/config.h
 ifeq ($(HAVE_BUILDDEFS), no)
 	$(MAKE) -C . $@
 else
-	$(SUBDIRS_MAKERULE)
+	$(MAKE) $(SUBDIRS)
 endif
+
+# tool/lib dependencies
+nfs4acl: libnfs4acl
 
 ifeq ($(HAVE_BUILDDEFS), yes)
 include $(BUILDRULES)
@@ -34,7 +39,7 @@ else
 clean:	# if configure hasn't run, nothing to clean
 endif
 
-$(CONFIGURE):
+include/builddefs:
 	autoconf
 	./configure \
 		--prefix=/ \
@@ -49,20 +54,33 @@ $(CONFIGURE):
 		--datadir=/usr/share \
 		$$LOCAL_CONFIGURE_OPTIONS
 	touch .census
+ 
+include/config.h: include/builddefs
+## Recover from the removal of $@
+	@if test -f $@; then :; else \
+		rm -f include/builddefs; \
+		$(MAKE) $(AM_MAKEFLAGS) include/builddefs; \
+	fi
 
 aclocal.m4::
 	aclocal --acdir=`pwd`/m4 --output=$@
 
-install: default
-	$(SUBDIRS_MAKERULE)
+install: default $(addsuffix -install,$(SUBDIRS))
 	$(INSTALL) -m 755 -d $(PKG_DOC_DIR)
 	$(INSTALL) -m 644 README $(PKG_DOC_DIR)
 
-install-dev: default
-	$(SUBDIRS_MAKERULE)
+install-dev: default $(addsuffix -install-dev,$(SUBDIRS))
 
-install-lib: default
-	$(SUBDIRS_MAKERULE)
+install-lib: default $(addsuffix -install-lib,$(SUBDIRS))
+
+%-install:
+	$(MAKE) -C $* install
+
+%-install-dev:
+	$(MAKE) -C $* install-dev
+
+%-install-lib:
+	$(MAKE) -C $* install-lib
 
 realclean distclean: clean
 	rm -f $(LDIRT) $(CONFIGURE)
