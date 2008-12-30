@@ -39,7 +39,7 @@ else
 clean:	# if configure hasn't run, nothing to clean
 endif
 
-include/builddefs:
+configure include/builddefs:
 	autoconf
 	./configure \
 		--prefix=/ \
