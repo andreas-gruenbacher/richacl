@@ -9,10 +9,10 @@ HFILES = nfs4acl.h nfs4acl-internal.h nfs4acl_xattr.h string_buffer.h
 LSRCFILES = builddefs.in buildmacros buildrules config.h.in
 LDIRT = sys
 
+default: sys
+
 sys:
 	$(LN_S) . $@
-
-default: sys
 
 include $(BUILDRULES)
 
