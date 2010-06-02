@@ -16,7 +16,7 @@ LT_AGE = 1
 
 LCFLAGS =
 
-HFILES =
+HFILES = byteorder.h
 CFILES = richacl.c  richacl_compat.c  string_buffer.c
 
 default: $(LTLIBRARY)
