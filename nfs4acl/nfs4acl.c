@@ -158,7 +158,7 @@ static void synopsis(int help)
 {
 	FILE *file = help ? stdout : stderr;
 
-	fprintf(file, "SYNOPSIS: %s options] {command} file ...\n",
+	fprintf(file, "SYNOPSIS: %s [options] {command} file ...\n",
 		basename(progname));
 	if (!help)
 		exit(1);
