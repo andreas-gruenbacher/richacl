@@ -554,7 +554,8 @@ static void write_mask(struct string_buffer *buffer, uint32_t mask, int fmt)
 				buffer_sprintf(buffer, "%c",
 					       mask_bits[i].e_char);
 			stuff_written = 1;
-		}
+		} else if (!(fmt & RICHACL_TEXT_LONG))
+			buffer_sprintf(buffer, "-");
 	}
 	if (nondir_mask | dir_mask) {
 		if (stuff_written)
@@ -576,21 +577,21 @@ static void write_identifier(struct string_buffer *buffer,
 		for (c = dup; *c; c++)
 			*c = tolower(*c);
 
-		buffer_sprintf(buffer, "%s", dup);
+		buffer_sprintf(buffer, "%10s", dup);
 	} else if (ace->e_flags & ACE4_IDENTIFIER_GROUP) {
 		struct group *group = getgrgid(ace->u.e_id);
 
 		if (group)
-			buffer_sprintf(buffer, "%s", group->gr_name);
+			buffer_sprintf(buffer, "%10s", group->gr_name);
 		else
-			buffer_sprintf(buffer, "%d", ace->u.e_id);
+			buffer_sprintf(buffer, "%10d", ace->u.e_id);
 	} else {
 		struct passwd *passwd = getpwuid(ace->u.e_id);
 
 		if (passwd)
-			buffer_sprintf(buffer, "%s", passwd->pw_name);
+			buffer_sprintf(buffer, "%10s", passwd->pw_name);
 		else
-			buffer_sprintf(buffer, "%d", ace->u.e_id);
+			buffer_sprintf(buffer, "%10d", ace->u.e_id);
 	}
 }
 
@@ -625,13 +626,13 @@ char *richacl_to_text(const struct richacl *acl, int fmt)
 		if (!(fmt & RICHACL_TEXT_SIMPLIFY))
 			allowed = ~0;
 
-		buffer_sprintf(buffer, "owner:");
+		buffer_sprintf(buffer, "%11s", "owner:");
 		write_mask(buffer, acl->a_owner_mask & allowed, fmt2);
 		buffer_sprintf(buffer, "::mask\n");
-		buffer_sprintf(buffer, "group:");
+		buffer_sprintf(buffer, "%11s", "group:");
 		write_mask(buffer, acl->a_group_mask & allowed, fmt2);
 		buffer_sprintf(buffer, "::mask\n");
-		buffer_sprintf(buffer, "other:");
+		buffer_sprintf(buffer, "%11s", "other:");
 		write_mask(buffer, acl->a_other_mask & allowed, fmt2);
 		buffer_sprintf(buffer, "::mask\n");
 	}
@@ -708,6 +709,8 @@ static int acl_flags_from_text(const char *str, struct richacl *acl,
 
 		/* Recognize single-character flags */
 		for (c = dup; *c; c++) {
+			if (*c == '-')
+				continue;
 			for (i = 0; i < ARRAY_SIZE(acl_flag_bits); i++) {
 				if (*c == acl_flag_bits[i].a_char) {
 					acl->a_flags |= acl_flag_bits[i].a_flag;
