@@ -5,9 +5,9 @@ $ whoami
 > root
 
 $ mkdir d1 d2 d3 d4
-$ nfs4acl --set 'daemon:wx::allow' d2
-$ nfs4acl --set 'daemon:ax::allow' d3
-$ nfs4acl --set 'daemon:wax::allow' d4
+$ richacl --set 'daemon:wx::allow' d2
+$ richacl --set 'daemon:ax::allow' d3
+$ richacl --set 'daemon:wax::allow' d4
 
 $ su daemon
 

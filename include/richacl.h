@@ -1,5 +1,5 @@
-#ifndef __NFS4ACL_H
-#define __NFS4ACL_H
+#ifndef __RICHACL_H
+#define __RICHACL_H
 
 #include <sys/types.h>
 #include <string.h>
@@ -71,7 +71,7 @@
 	ACE4_WRITE_OWNER | \
 	ACE4_SYNCHRONIZE )
 
-struct nfs4ace {
+struct richace {
 	unsigned short	e_type;
 	unsigned short	e_flags;
 	unsigned int	e_mask;
@@ -81,75 +81,75 @@ struct nfs4ace {
 	} u;
 };
 
-struct nfs4acl {
+struct richacl {
 	unsigned char	a_flags;
 	unsigned short	a_count;
 	unsigned int	a_owner_mask;
 	unsigned int	a_group_mask;
 	unsigned int	a_other_mask;
-	struct nfs4ace  a_entries[0];
+	struct richace  a_entries[0];
 };
 
-#define nfs4acl_for_each_entry(_ace, _acl) \
+#define richacl_for_each_entry(_ace, _acl) \
 	for ((_ace) = (_acl)->a_entries; \
 	     (_ace) != (_acl)->a_entries + (_acl)->a_count; \
 	     (_ace)++)
 
-#define nfs4acl_for_each_entry_reverse(_ace, _acl) \
+#define richacl_for_each_entry_reverse(_ace, _acl) \
 	for ((_ace) = (_acl)->a_entries + (_acl)->a_count - 1; \
 	     (_ace) != (_acl)->a_entries - 1; \
 	     (_ace)--)
 
-/* nfs4acl_to_text flags */
-#define NFS4ACL_TEXT_LONG		1
-#define NFS4ACL_TEXT_FILE_CONTEXT	2
-#define NFS4ACL_TEXT_DIRECTORY_CONTEXT	4
-#define NFS4ACL_TEXT_SHOW_MASKS		8
-#define NFS4ACL_TEXT_SIMPLIFY		16
+/* richacl_to_text flags */
+#define RICHACL_TEXT_LONG		1
+#define RICHACL_TEXT_FILE_CONTEXT	2
+#define RICHACL_TEXT_DIRECTORY_CONTEXT	4
+#define RICHACL_TEXT_SHOW_MASKS		8
+#define RICHACL_TEXT_SIMPLIFY		16
 
-/* nfs4acl_from_text flags */
-#define NFS4ACL_TEXT_OWNER_MASK		1
-#define NFS4ACL_TEXT_GROUP_MASK		2
-#define NFS4ACL_TEXT_OTHER_MASK		4
-#define NFS4ACL_TEXT_FLAGS		8
+/* richacl_from_text flags */
+#define RICHACL_TEXT_OWNER_MASK		1
+#define RICHACL_TEXT_GROUP_MASK		2
+#define RICHACL_TEXT_OTHER_MASK		4
+#define RICHACL_TEXT_FLAGS		8
 
-extern int nfs4ace_is_owner(const struct nfs4ace *);
-extern int nfs4ace_is_group(const struct nfs4ace *);
-extern int nfs4ace_is_everyone(const struct nfs4ace *);
+extern int richace_is_owner(const struct richace *);
+extern int richace_is_group(const struct richace *);
+extern int richace_is_everyone(const struct richace *);
 
-static inline int nfs4ace_is_allow(const struct nfs4ace *ace)
+static inline int richace_is_allow(const struct richace *ace)
 {
 	return ace->e_type == ACE4_ACCESS_ALLOWED_ACE_TYPE;
 }
 
-static inline int nfs4ace_is_deny(const struct nfs4ace *ace)
+static inline int richace_is_deny(const struct richace *ace)
 {
 	return ace->e_type == ACE4_ACCESS_DENIED_ACE_TYPE;
 }
 
-extern const char *nfs4ace_get_who(const struct nfs4ace *);
+extern const char *richace_get_who(const struct richace *);
 
-extern int nfs4ace_set_who(struct nfs4ace *, const char *);
-extern void nfs4ace_set_uid(struct nfs4ace *, uid_t);
-extern void nfs4ace_set_gid(struct nfs4ace *, gid_t);
-extern int nfs4ace_is_same_identifier(const struct nfs4ace *, const struct nfs4ace *);
-extern void nfs4ace_copy(struct nfs4ace *, const struct nfs4ace *);
+extern int richace_set_who(struct richace *, const char *);
+extern void richace_set_uid(struct richace *, uid_t);
+extern void richace_set_gid(struct richace *, gid_t);
+extern int richace_is_same_identifier(const struct richace *, const struct richace *);
+extern void richace_copy(struct richace *, const struct richace *);
 
-extern struct nfs4acl *nfs4acl_get_file(const char *);
-extern struct nfs4acl *nfs4acl_get_fd(int);
-extern int nfs4acl_set_file(const char *, const struct nfs4acl *);
-extern int nfs4acl_set_fd(int, const struct nfs4acl *);
+extern struct richacl *richacl_get_file(const char *);
+extern struct richacl *richacl_get_fd(int);
+extern int richacl_set_file(const char *, const struct richacl *);
+extern int richacl_set_fd(int, const struct richacl *);
 
-extern char *nfs4acl_to_text(const struct nfs4acl *, int);
-extern struct nfs4acl *nfs4acl_from_text(const char *, int *,
+extern char *richacl_to_text(const struct richacl *, int);
+extern struct richacl *richacl_from_text(const char *, int *,
 					 void (*)(const char *, ...));
 
-extern struct nfs4acl *nfs4acl_alloc(size_t);
-extern struct nfs4acl *nfs4acl_clone(struct nfs4acl *);
-extern void nfs4acl_free(struct nfs4acl *);
+extern struct richacl *richacl_alloc(size_t);
+extern struct richacl *richacl_clone(struct richacl *);
+extern void richacl_free(struct richacl *);
 
-extern int nfs4acl_apply_masks(struct nfs4acl **);
-extern void nfs4acl_compute_max_masks(struct nfs4acl *);
-extern struct nfs4acl *nfs4acl_from_mode(mode_t);
+extern int richacl_apply_masks(struct richacl **);
+extern void richacl_compute_max_masks(struct richacl *);
+extern struct richacl *richacl_from_mode(mode_t);
 
-#endif  /* __NFS4ACL_H */
+#endif  /* __RICHACL_H */

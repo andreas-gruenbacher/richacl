@@ -4,72 +4,72 @@ $ cd d
 
 $ touch x
 
-$ nfs4acl --set 'owner@:rw::allow group@:rw::allow everyone@:r::allow' x
-$ nfs4acl --get x
+$ richacl --set 'owner@:rw::allow group@:rw::allow everyone@:r::allow' x
+$ richacl --get x
 > x:
 > owner@:rw::allow
 > group@:rw::allow
 > everyone@:r::allow
 >
 
-$ nfs4acl --set 'everyone@:w::allow owner@:r::allow group@:r::allow' x
+$ richacl --set 'everyone@:w::allow owner@:r::allow group@:r::allow' x
 $ chmod 664 x
-$ nfs4acl --get x
+$ richacl --get x
 > x:
 > owner@:rw::allow
 > group@:rw::allow
 >
 
-$ nfs4acl --set 'everyone@:w::deny owner@:rw::allow group@:rw::allow' x
+$ richacl --set 'everyone@:w::deny owner@:rw::allow group@:rw::allow' x
 $ chmod 664 x
-$ nfs4acl --get x
+$ richacl --get x
 > x:
 > owner@:r::allow
 > group@:r::allow
 >
 
-$ nfs4acl --set 'owner@:rwmo::allow' x
-$ nfs4acl --get x
+$ richacl --set 'owner@:rwmo::allow' x
+$ richacl --get x
 > x:
 > owner@:rwmo::allow
 >
 
 $ chmod 644 x
-$ nfs4acl --get x
+$ richacl --get x
 > x:
 > owner@:rw::allow
 >
 
-$ nfs4acl --set 'root:rw::allow' x
+$ richacl --set 'root:rw::allow' x
 $ chmod 664 x
-$ nfs4acl --get x
+$ richacl --get x
 > x:
 > root:rw::allow
 >
 
 $ chmod 644 x
-$ nfs4acl --get x
+$ richacl --get x
 > x:
 > root:r::allow
 >
 
 $ chmod 664 x
-$ nfs4acl --get x
+$ richacl --get x
 > x:
 > root:rw::allow
 >
 
-$ nfs4acl --set 'root:rw::allow everyone@:r::allow' x
+$ richacl --set 'root:rw::allow everyone@:r::allow' x
 $ chmod 664 x
-$ nfs4acl --get x
+$ richacl --get x
 > x:
 > root:rw::allow
 > everyone@:r::allow
 >
 
-$ nfs4acl --set 'root:r::allow everyone@:rw::allow' x
+$ richacl --set 'root:r::allow everyone@:rw::allow' x
 $ chmod 664 x
-$ nfs4acl --get x
+$ richacl --get x
 > x:
 > root:rw::allow
 > owner@:rw::allow
@@ -77,9 +77,9 @@ $ nfs4acl --get x
 > everyone@:r::allow
 >
 
-$ nfs4acl --set 'root:w::deny everyone@:rw::allow' x
+$ richacl --set 'root:w::deny everyone@:rw::allow' x
 $ chmod 664 x
-$ nfs4acl --get x
+$ richacl --get x
 > x:
 > root:w::deny
 > owner@:rw::allow
@@ -88,9 +88,9 @@ $ nfs4acl --get x
 > everyone@:r::allow
 >
 
-$ nfs4acl --set 'root:rw::allow root:w::deny everyone@:rw::allow' x
+$ richacl --set 'root:rw::allow root:w::deny everyone@:rw::allow' x
 $ chmod 664 x
-$ nfs4acl --get x
+$ richacl --get x
 > x:
 > root:rw::allow
 > root:w::deny
@@ -99,16 +99,16 @@ $ nfs4acl --get x
 > everyone@:r::allow
 >
 
-$ nfs4acl --set 'everyone@:rw::allow' x
+$ richacl --set 'everyone@:rw::allow' x
 $ chmod 066 x
-$ nfs4acl --get x
+$ richacl --get x
 > x:
 > owner@:rw::deny
 > everyone@:rw::allow
 > 
 
 $ chmod 006 x
-$ nfs4acl --get x
+$ richacl --get x
 > x:
 > owner@:rw::deny
 > group@:rw::deny
@@ -116,22 +116,22 @@ $ nfs4acl --get x
 > 
 
 $ chmod 606 x
-$ nfs4acl --get x
+$ richacl --get x
 > x:
 > group@:rw::deny
 > everyone@:rw::allow
 > 
 
-$ nfs4acl --set 'root:rw::allow everyone@:rw::allow' x
+$ richacl --set 'root:rw::allow everyone@:rw::allow' x
 $ chmod 606 x
-$ nfs4acl --get x
+$ richacl --get x
 > x:
 > group@:rw::deny
 > everyone@:rw::allow
 > 
 
 $ chmod 646 x
-$ nfs4acl --get x
+$ richacl --get x
 > x:
 > root:r::allow
 > group@:w::deny

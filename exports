@@ -1,4 +1,4 @@
-NFS4ACL_1.0 {
+RICHACL_1.0 {
     global:
 	# ace funcs
 	nfs4ace_is_owner;
@@ -12,18 +12,18 @@ NFS4ACL_1.0 {
 	nfs4ace_copy;
 
 	# acl funcs
-	nfs4acl_get_file;
-	nfs4acl_get_fd;
-	nfs4acl_set_file;
-	nfs4acl_set_fd;
-	nfs4acl_to_text;
-	nfs4acl_from_text;
-	nfs4acl_alloc;
-	nfs4acl_clone;
-	nfs4acl_free;
-	nfs4acl_apply_masks;
-	nfs4acl_compute_max_masks;
-	nfs4acl_from_mode;
+	richacl_get_file;
+	richacl_get_fd;
+	richacl_set_file;
+	richacl_set_fd;
+	richacl_to_text;
+	richacl_from_text;
+	richacl_alloc;
+	richacl_clone;
+	richacl_free;
+	richacl_apply_masks;
+	richacl_compute_max_masks;
+	richacl_from_mode;
 
 
 	# string buffer

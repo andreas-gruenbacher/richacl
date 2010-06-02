@@ -40,9 +40,9 @@
 6. Makefiles and build environment
    First have a look at some Makefiles
 
-   	example using SUBDIRS :  nfs4acl/Makefile
-        example static library:  nfs4acl/libnfs4acl/Makefile
-        example command       :  nfs4acl/nfs4acl/Makefile
+   	example using SUBDIRS :  richacl/Makefile
+        example static library:  richacl/librichacl/Makefile
+        example command       :  richacl/richacl/Makefile
 
    All Makefiles must define TOPDIR as the root of the project. This
    allows other stuff to be found relative to $(TOPDIR).
@@ -72,15 +72,15 @@
 
    # ./Makepkgs
    this script generates all of the packages supported - each has a
-   subdirectory below nfs4acl/build where knowledge specific to each
+   subdirectory below richacl/build where knowledge specific to each
    package type is maintained.
 
    The script produces logs of each stage of the build (this info is
    also echoed to the screen when the "verbose" option is provided):
 
-	nfs4acl/Logs/configure	- `autoconf; ./configure' output
-	nfs4acl/Logs/default	- `make default' output
-	nfs4acl/Logs/dist	- `make build dist' output
+	richacl/Logs/configure	- `autoconf; ./configure' output
+	richacl/Logs/default	- `make default' output
+	richacl/Logs/dist	- `make build dist' output
 
    On successful completion, the script echoes the names of packages
    successfully generated.

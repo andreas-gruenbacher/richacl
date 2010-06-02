@@ -15,13 +15,13 @@ Chown and chgrp with no take ownership permission fails:
 	> chown: changing ownership of `a': Operation not permitted
 	$ chgrp daemon a
 	> chgrp: changing group of `a': Operation not permitted
-	$ nfs4acl --set 'daemon:rwo::allow' a
+	$ richacl --set 'daemon:rwo::allow' a
 	> a: Operation not permitted
 
 Add the take_ownership permission. This is reflected in the file masks; the
 file mode cannot show this though:
 	$ su
-	$ nfs4acl --set 'daemon:rwo::allow' a
+	$ richacl --set 'daemon:rwo::allow' a
 
 Chown and chgrp to an arbitrary other user or group fails:
 	$ su daemon
@@ -49,7 +49,7 @@ because the masks now do not grant change_ownership access:
 
 Add back change_ownership:
 	$ su
-	$ nfs4acl --set 'daemon:rwo::allow' a
+	$ richacl --set 'daemon:rwo::allow' a
 
 Now, chgrp to one of the groups the process is in and chown to the same user
 succeeds:

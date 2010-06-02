@@ -15,7 +15,7 @@ Without write access, the ctime cannot be changed.
 With write access, the ctime can be set to the current time, but not to
 any other time:
 	$ su
-	$ nfs4acl --set 'bin:rw::allow' a
+	$ richacl --set 'bin:rw::allow' a
 
 	$ su bin
 	$ touch a
@@ -25,7 +25,7 @@ any other time:
 
 With set_attributes access, the ctime can be set to an arbitrary time:
 	$ su
-	$ nfs4acl --set 'bin:rwt::allow' a
+	$ richacl --set 'bin:rwt::allow' a
 
 	$ su bin
 	$ touch -r b a

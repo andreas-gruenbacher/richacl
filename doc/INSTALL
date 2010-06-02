@@ -3,16 +3,16 @@ attribute library and utility from source, and how to install them.
 
 0. If you have the binary rpm, simply install it and skip to step 2 (below).
    The rpm command to do this is:
-	# rpm -Uvh nfs4acl
+	# rpm -Uvh richacl
 
    The Debian command to do this is:
-	# dpkg -i nfs4acl
+	# dpkg -i richacl
    or, if you have apt configured (don't need the binary package):
-	# apt-get install nfs4acl
+	# apt-get install richacl
 
 1. Configure, build and install the package
 
-   The "nfs4acl" package uses autoconf/configure and expects a GNU build
+   The "richacl" package uses autoconf/configure and expects a GNU build
    environment (your platform must at least have both autoconf and gmake). 
 
    If you just want to spin an RPM and/or tar file, use the Makepkgs

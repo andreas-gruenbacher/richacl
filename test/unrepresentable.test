@@ -7,11 +7,11 @@ $ cd d
 
 $ touch x
 
-$ nfs4acl --set 'group@:rw::allow' x
+$ richacl --set 'group@:rw::allow' x
 $ chmod 600 x
 $ ls -l x | cut -d ' ' -f 1
 > -rw-------
-$ nfs4acl --get x
+$ richacl --get x
 > x:
 >
 $ rm -f x

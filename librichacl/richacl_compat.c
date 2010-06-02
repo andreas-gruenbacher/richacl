@@ -13,11 +13,11 @@
  */
 
 #include <stdlib.h>
-#include "nfs4acl.h"
-#include "nfs4acl-internal.h"
+#include "richacl.h"
+#include "richacl-internal.h"
 
 /**
- * struct nfs4acl_alloc  -  remember how many entries are actually allocated
+ * struct richacl_alloc  -  remember how many entries are actually allocated
  * @acl:	acl with a_count <= @count
  * @count:	the actual number of entries allocated in @acl
  *
@@ -25,13 +25,13 @@
  * not have to reallocate when we remove existing entries followed by
  * adding new entries.
  */
-struct nfs4acl_alloc {
-	struct nfs4acl *acl;
+struct richacl_alloc {
+	struct richacl *acl;
 	unsigned int count;
 };
 
 /**
- * nfs4acl_delete_entry  -  delete an entry in an acl
+ * richacl_delete_entry  -  delete an entry in an acl
  * @x:		acl and number of allocated entries
  * @ace:	an entry in @x->acl
  *
@@ -42,7 +42,7 @@ struct nfs4acl_alloc {
  * an acl.
  */
 static void
-nfs4acl_delete_entry(struct nfs4acl_alloc *x, struct nfs4ace **ace)
+richacl_delete_entry(struct richacl_alloc *x, struct richace **ace)
 {
 	void *end = x->acl->a_entries + x->acl->a_count;
 
@@ -52,7 +52,7 @@ nfs4acl_delete_entry(struct nfs4acl_alloc *x, struct nfs4ace **ace)
 }
 
 /**
- * nfs4acl_insert_entry  -  insert an entry in an acl
+ * richacl_insert_entry  -  insert an entry in an acl
  * @x:		acl and number of allocated entries
  * @ace:	entry before which the new entry shall be inserted
  *
@@ -60,14 +60,14 @@ nfs4acl_delete_entry(struct nfs4acl_alloc *x, struct nfs4ace **ace)
  * it.  This may require reallocating @x->acl.
  */
 static int
-nfs4acl_insert_entry(struct nfs4acl_alloc *x, struct nfs4ace **ace)
+richacl_insert_entry(struct richacl_alloc *x, struct richace **ace)
 {
 	int n = *ace - x->acl->a_entries;
 
 	if (x->count == x->acl->a_count) {
-		size_t size = sizeof(struct nfs4acl) +
-			      (x->count + 1) * sizeof(struct nfs4ace);
-		struct nfs4acl *acl2;
+		size_t size = sizeof(struct richacl) +
+			      (x->count + 1) * sizeof(struct richace);
+		struct richacl *acl2;
 
 		acl2 = realloc(x->acl, size);
 		if (!acl2)
@@ -76,14 +76,14 @@ nfs4acl_insert_entry(struct nfs4acl_alloc *x, struct nfs4ace **ace)
 		x->acl = acl2;
 		*ace = acl2->a_entries + n;
 	}
-	memmove(*ace + 1, *ace, sizeof(struct nfs4ace) * (x->acl->a_count - n));
-	memset(*ace, 0, sizeof(struct nfs4ace));
+	memmove(*ace + 1, *ace, sizeof(struct richace) * (x->acl->a_count - n));
+	memset(*ace, 0, sizeof(struct richace));
 	x->acl->a_count++;
 	return 0;
 }
 
 /**
- * nfs4ace_change_mask  -  change the mask in @ace to @mask
+ * richace_change_mask  -  change the mask in @ace to @mask
  * @x:		acl and number of allocated entries
  * @ace:	entry to modify
  * @mask:	new mask for @ace
@@ -100,32 +100,32 @@ nfs4acl_insert_entry(struct nfs4acl_alloc *x, struct nfs4ace **ace)
  * modifying masks while forward iterating over an acl.
  */
 static int
-nfs4ace_change_mask(struct nfs4acl_alloc *x, struct nfs4ace **ace,
+richace_change_mask(struct richacl_alloc *x, struct richace **ace,
 			   unsigned int mask)
 {
 	if (mask && (*ace)->e_mask == mask)
 		return 0;
 	if (mask & ~ACE4_POSIX_ALWAYS_ALLOWED) {
-		if (nfs4ace_is_inheritable(*ace)) {
-			if (nfs4acl_insert_entry(x, ace))
+		if (richace_is_inheritable(*ace)) {
+			if (richacl_insert_entry(x, ace))
 				return -1;
-			memcpy(*ace, *ace + 1, sizeof(struct nfs4ace));
+			memcpy(*ace, *ace + 1, sizeof(struct richace));
 			(*ace)->e_flags |= ACE4_INHERIT_ONLY_ACE;
 			(*ace)++;
-			nfs4ace_clear_inheritance_flags(*ace);
+			richace_clear_inheritance_flags(*ace);
 		}
 		(*ace)->e_mask = mask;
 	} else {
-		if (nfs4ace_is_inheritable(*ace))
+		if (richace_is_inheritable(*ace))
 			(*ace)->e_flags |= ACE4_INHERIT_ONLY_ACE;
 		else
-			nfs4acl_delete_entry(x, ace);
+			richacl_delete_entry(x, ace);
 	}
 	return 0;
 }
 
 /**
- * nfs4acl_move_everyone_aces_down  -  move everyone@ acl entries to the end
+ * richacl_move_everyone_aces_down  -  move everyone@ acl entries to the end
  * @x:		acl and number of allocated entries
  *
  * Move all everyone acl entries to the bottom of the acl so that only a
@@ -137,57 +137,57 @@ nfs4ace_change_mask(struct nfs4acl_alloc *x, struct nfs4ace **ace,
  * grants, but we need it to simplify successive transformations.
  */
 static int
-nfs4acl_move_everyone_aces_down(struct nfs4acl_alloc *x)
+richacl_move_everyone_aces_down(struct richacl_alloc *x)
 {
-	struct nfs4ace *ace;
+	struct richace *ace;
 	unsigned int allowed = 0, denied = 0;
 
-	nfs4acl_for_each_entry(ace, x->acl) {
-		if (nfs4ace_is_inherit_only(ace))
+	richacl_for_each_entry(ace, x->acl) {
+		if (richace_is_inherit_only(ace))
 			continue;
-		if (nfs4ace_is_everyone(ace)) {
-			if (nfs4ace_is_allow(ace))
+		if (richace_is_everyone(ace)) {
+			if (richace_is_allow(ace))
 				allowed |= (ace->e_mask & ~denied);
-			else if (nfs4ace_is_deny(ace))
+			else if (richace_is_deny(ace))
 				denied |= (ace->e_mask & ~allowed);
 			else
 				continue;
-			if (nfs4ace_change_mask(x, &ace, 0))
+			if (richace_change_mask(x, &ace, 0))
 				return -1;
 		} else {
-			if (nfs4ace_is_allow(ace)) {
-				if (nfs4ace_change_mask(x, &ace, allowed |
+			if (richace_is_allow(ace)) {
+				if (richace_change_mask(x, &ace, allowed |
 						(ace->e_mask & ~denied)))
 					return -1;
-			} else if (nfs4ace_is_deny(ace)) {
-				if (nfs4ace_change_mask(x, &ace, denied |
+			} else if (richace_is_deny(ace)) {
+				if (richace_change_mask(x, &ace, denied |
 						(ace->e_mask & ~allowed)))
 					return -1;
 			}
 		}
 	}
 	if (allowed & ~ACE4_POSIX_ALWAYS_ALLOWED) {
-		struct nfs4ace *last_ace = ace - 1;
+		struct richace *last_ace = ace - 1;
 
-		if (nfs4ace_is_everyone(last_ace) &&
-		    nfs4ace_is_allow(last_ace) &&
-		    nfs4ace_is_inherit_only(last_ace) &&
+		if (richace_is_everyone(last_ace) &&
+		    richace_is_allow(last_ace) &&
+		    richace_is_inherit_only(last_ace) &&
 		    last_ace->e_mask == allowed)
 			last_ace->e_flags &= ~ACE4_INHERIT_ONLY_ACE;
 		else {
-			if (nfs4acl_insert_entry(x, &ace))
+			if (richacl_insert_entry(x, &ace))
 				return -1;
 			ace->e_type = ACE4_ACCESS_ALLOWED_ACE_TYPE;
 			ace->e_flags = ACE4_SPECIAL_WHO;
 			ace->e_mask = allowed;
-			ace->u.e_who = nfs4ace_everyone_who;
+			ace->u.e_who = richace_everyone_who;
 		}
 	}
 	return 0;
 }
 
 /**
- * __nfs4acl_propagate_everyone  -  propagate everyone@ mask flags up for @who
+ * __richacl_propagate_everyone  -  propagate everyone@ mask flags up for @who
  * @x:		acl and number of allocated entries
  * @who:	identifier to propagate mask flags for
  * @allow:	mask flags to propagate up
@@ -204,25 +204,25 @@ nfs4acl_move_everyone_aces_down(struct nfs4acl_alloc *x)
  * with mask flags that overlap the flags we care about.
  */
 static int
-__nfs4acl_propagate_everyone(struct nfs4acl_alloc *x, struct nfs4ace *who,
+__richacl_propagate_everyone(struct richacl_alloc *x, struct richace *who,
 			  unsigned int allow)
 {
-	struct nfs4ace *allow_last = NULL, *ace;
+	struct richace *allow_last = NULL, *ace;
 
 	/* Remove the mask flags from allow that are already determined for
 	   this who value, and figure out if there is an ALLOW entry for
 	   this who value that is "reachable" from the trailing EVERYONE@
 	   ALLOW ACE. */
-	nfs4acl_for_each_entry(ace, x->acl) {
-		if (nfs4ace_is_inherit_only(ace))
+	richacl_for_each_entry(ace, x->acl) {
+		if (richace_is_inherit_only(ace))
 			continue;
-		if (nfs4ace_is_allow(ace)) {
-			if (nfs4ace_is_same_identifier(ace, who)) {
+		if (richace_is_allow(ace)) {
+			if (richace_is_same_identifier(ace, who)) {
 				allow &= ~ace->e_mask;
 				allow_last = ace;
 			}
-		} else if (nfs4ace_is_deny(ace)) {
-			if (nfs4ace_is_same_identifier(ace, who))
+		} else if (richace_is_deny(ace)) {
+			if (richace_is_same_identifier(ace, who))
 				allow &= ~ace->e_mask;
 			if (allow & ace->e_mask)
 				allow_last = NULL;
@@ -231,18 +231,18 @@ __nfs4acl_propagate_everyone(struct nfs4acl_alloc *x, struct nfs4ace *who,
 
 	if (allow) {
 		if (allow_last)
-			return nfs4ace_change_mask(x, &allow_last,
+			return richace_change_mask(x, &allow_last,
 						   allow_last->e_mask | allow);
 		else {
-			struct nfs4ace who_copy;
+			struct richace who_copy;
 
 			ace = x->acl->a_entries + x->acl->a_count - 1;
-			memcpy(&who_copy, who, sizeof(struct nfs4ace));
-			if (nfs4acl_insert_entry(x, &ace))
+			memcpy(&who_copy, who, sizeof(struct richace));
+			if (richacl_insert_entry(x, &ace))
 				return -1;
-			memcpy(ace, &who_copy, sizeof(struct nfs4ace));
+			memcpy(ace, &who_copy, sizeof(struct richace));
 			ace->e_type = ACE4_ACCESS_ALLOWED_ACE_TYPE;
-			nfs4ace_clear_inheritance_flags(ace);
+			richace_clear_inheritance_flags(ace);
 			ace->e_mask = allow;
 		}
 	}
@@ -250,7 +250,7 @@ __nfs4acl_propagate_everyone(struct nfs4acl_alloc *x, struct nfs4ace *who,
 }
 
 /**
- * nfs4acl_propagate_everyone  -  propagate everyone@ mask flags up the acl
+ * richacl_propagate_everyone  -  propagate everyone@ mask flags up the acl
  * @x:		acl and number of allocated entries
  *
  * Make sure for owner@, group@, and all other users, groups, and
@@ -305,11 +305,11 @@ __nfs4acl_propagate_everyone(struct nfs4acl_alloc *x, struct nfs4ace *who,
  * who value, no matter how many entries each who value has already.
  */
 static int
-nfs4acl_propagate_everyone(struct nfs4acl_alloc *x)
+richacl_propagate_everyone(struct richacl_alloc *x)
 {
 	int write_through = x->acl->a_flags & ACL4_WRITE_THROUGH;
-	struct nfs4ace who = { .e_flags = ACE4_SPECIAL_WHO };
-	struct nfs4ace *ace;
+	struct richace who = { .e_flags = ACE4_SPECIAL_WHO };
+	struct richace *ace;
 	unsigned int owner_allow, group_allow;
 
 	if (!((x->acl->a_owner_mask | x->acl->a_group_mask) &
@@ -318,7 +318,7 @@ nfs4acl_propagate_everyone(struct nfs4acl_alloc *x)
 	if (!x->acl->a_count)
 		return 0;
 	ace = x->acl->a_entries + x->acl->a_count - 1;
-	if (nfs4ace_is_inherit_only(ace) || !nfs4ace_is_everyone(ace))
+	if (richace_is_inherit_only(ace) || !richace_is_everyone(ace))
 		return 0;
 	if (!(ace->e_mask & ~x->acl->a_other_mask)) {
 		/* None of the allowed permissions will get masked. */
@@ -330,8 +330,8 @@ nfs4acl_propagate_everyone(struct nfs4acl_alloc *x)
 	/* Propagate everyone@ permissions through to owner@. */
 	if (owner_allow && !write_through &&
 	    (x->acl->a_owner_mask & ~x->acl->a_other_mask)) {
-		who.u.e_who = nfs4ace_owner_who;
-		if (__nfs4acl_propagate_everyone(x, &who, owner_allow))
+		who.u.e_who = richace_owner_who;
+		if (__richacl_propagate_everyone(x, &who, owner_allow))
 			return -1;
 	}
 
@@ -340,8 +340,8 @@ nfs4acl_propagate_everyone(struct nfs4acl_alloc *x)
 
 		if (!write_through) {
 			/* Propagate everyone@ permissions through to group@. */
-			who.u.e_who = nfs4ace_group_who;
-			if (__nfs4acl_propagate_everyone(x, &who, group_allow))
+			who.u.e_who = richace_group_who;
+			if (__richacl_propagate_everyone(x, &who, group_allow))
 				return -1;
 		}
 
@@ -350,14 +350,14 @@ nfs4acl_propagate_everyone(struct nfs4acl_alloc *x)
 		for (n = x->acl->a_count - 2; n != -1; n--) {
 			ace = x->acl->a_entries + n;
 
-			if (nfs4ace_is_inherit_only(ace) ||
-			    nfs4ace_is_owner(ace) ||
-			    nfs4ace_is_group(ace))
+			if (richace_is_inherit_only(ace) ||
+			    richace_is_owner(ace) ||
+			    richace_is_group(ace))
 				continue;
-			if (nfs4ace_is_allow(ace) || nfs4ace_is_deny(ace)) {
+			if (richace_is_allow(ace) || richace_is_deny(ace)) {
 				/* Any inserted entry will end up below the
 				   current entry. */
-				if (__nfs4acl_propagate_everyone(x, ace, group_allow))
+				if (__richacl_propagate_everyone(x, ace, group_allow))
 					return -1;
 			}
 		}
@@ -366,7 +366,7 @@ nfs4acl_propagate_everyone(struct nfs4acl_alloc *x)
 }
 
 /**
- * __nfs4acl_apply_masks  -  apply the masks to the acl entries
+ * __richacl_apply_masks  -  apply the masks to the acl entries
  * @x:		acl and number of allocated entries
  *
  * Apply the owner file mask to owner@ entries, the intersection of the
@@ -374,43 +374,43 @@ nfs4acl_propagate_everyone(struct nfs4acl_alloc *x)
  * mask to all other entries.
  */
 static int
-__nfs4acl_apply_masks(struct nfs4acl_alloc *x)
+__richacl_apply_masks(struct richacl_alloc *x)
 {
-	struct nfs4ace *ace;
+	struct richace *ace;
 
-	nfs4acl_for_each_entry(ace, x->acl) {
+	richacl_for_each_entry(ace, x->acl) {
 		unsigned int mask;
 
-		if (nfs4ace_is_inherit_only(ace) || !nfs4ace_is_allow(ace))
+		if (richace_is_inherit_only(ace) || !richace_is_allow(ace))
 			continue;
-		if (nfs4ace_is_owner(ace))
+		if (richace_is_owner(ace))
 			mask = x->acl->a_owner_mask;
-		else if (nfs4ace_is_everyone(ace))
+		else if (richace_is_everyone(ace))
 			mask = x->acl->a_other_mask;
 		else
 			mask = x->acl->a_group_mask;
-		if (nfs4ace_change_mask(x, &ace, ace->e_mask & mask))
+		if (richace_change_mask(x, &ace, ace->e_mask & mask))
 			return -1;
 	}
 	return 0;
 }
 
 /**
- * nfs4acl_max_allowed  -  maximum mask flags that anybody is allowed
+ * richacl_max_allowed  -  maximum mask flags that anybody is allowed
  */
 static unsigned int
-nfs4acl_max_allowed(struct nfs4acl *acl)
+richacl_max_allowed(struct richacl *acl)
 {
-	struct nfs4ace *ace;
+	struct richace *ace;
 	unsigned int allowed = 0;
 
-	nfs4acl_for_each_entry_reverse(ace, acl) {
-		if (nfs4ace_is_inherit_only(ace))
+	richacl_for_each_entry_reverse(ace, acl) {
+		if (richace_is_inherit_only(ace))
 			continue;
-		if (nfs4ace_is_allow(ace))
+		if (richace_is_allow(ace))
 			allowed |= ace->e_mask;
-		else if (nfs4ace_is_deny(ace)) {
-			if (nfs4ace_is_everyone(ace))
+		else if (richace_is_deny(ace)) {
+			if (richace_is_everyone(ace))
 				allowed &= ~ace->e_mask;
 		}
 	}
@@ -418,7 +418,7 @@ nfs4acl_max_allowed(struct nfs4acl *acl)
 }
 
 /**
- * nfs4acl_isolate_owner_class  -  limit the owner class to the owner file mask
+ * richacl_isolate_owner_class  -  limit the owner class to the owner file mask
  * @x:		acl and number of allocated entries
  *
  * Make sure the owner class (owner@) is granted no more than the owner
@@ -426,45 +426,45 @@ nfs4acl_max_allowed(struct nfs4acl *acl)
  * denying owner@ all permissions beyond that.
  */
 static int
-nfs4acl_isolate_owner_class(struct nfs4acl_alloc *x)
+richacl_isolate_owner_class(struct richacl_alloc *x)
 {
-	struct nfs4ace *ace;
+	struct richace *ace;
 	unsigned int allowed = 0;
 
-	allowed = nfs4acl_max_allowed(x->acl);
+	allowed = richacl_max_allowed(x->acl);
 	if (allowed & ~x->acl->a_owner_mask) {
 		/* Figure out if we can update an existig OWNER@ DENY entry. */
-		nfs4acl_for_each_entry(ace, x->acl) {
-			if (nfs4ace_is_inherit_only(ace))
+		richacl_for_each_entry(ace, x->acl) {
+			if (richace_is_inherit_only(ace))
 				continue;
-			if (nfs4ace_is_deny(ace)) {
-				if (nfs4ace_is_owner(ace))
+			if (richace_is_deny(ace)) {
+				if (richace_is_owner(ace))
 					break;
-			} else if (nfs4ace_is_allow(ace)) {
+			} else if (richace_is_allow(ace)) {
 				ace = x->acl->a_entries + x->acl->a_count;
 				break;
 			}
 		}
 		if (ace != x->acl->a_entries + x->acl->a_count) {
-			if (nfs4ace_change_mask(x, &ace, ace->e_mask |
+			if (richace_change_mask(x, &ace, ace->e_mask |
 					(allowed & ~x->acl->a_owner_mask)))
 				return -1;
 		} else {
 			/* Insert an owner@ deny entry at the front. */
 			ace = x->acl->a_entries;
-			if (nfs4acl_insert_entry(x, &ace))
+			if (richacl_insert_entry(x, &ace))
 				return -1;
 			ace->e_type = ACE4_ACCESS_DENIED_ACE_TYPE;
 			ace->e_flags = ACE4_SPECIAL_WHO;
 			ace->e_mask = allowed & ~x->acl->a_owner_mask;
-			ace->u.e_who = nfs4ace_owner_who;
+			ace->u.e_who = richace_owner_who;
 		}
 	}
 	return 0;
 }
 
 /**
- * __nfs4acl_isolate_who  -  isolate entry from EVERYONE@ ALLOW entry
+ * __richacl_isolate_who  -  isolate entry from EVERYONE@ ALLOW entry
  * @x:		acl and number of allocated entries
  * @who:	identifier to isolate
  * @deny:	mask flags this identifier should not be allowed
@@ -475,20 +475,20 @@ nfs4acl_isolate_owner_class(struct nfs4acl_alloc *x)
  * entry, or inserting such an entry.
  */
 static int
-__nfs4acl_isolate_who(struct nfs4acl_alloc *x, struct nfs4ace *who,
+__richacl_isolate_who(struct richacl_alloc *x, struct richace *who,
 		      unsigned int deny)
 {
-	struct nfs4ace *ace;
+	struct richace *ace;
 	unsigned int allowed = 0, n;
 
 	/* Compute the mask flags granted to this who value. */
-	nfs4acl_for_each_entry_reverse(ace, x->acl) {
-		if (nfs4ace_is_inherit_only(ace))
+	richacl_for_each_entry_reverse(ace, x->acl) {
+		if (richace_is_inherit_only(ace))
 			continue;
-		if (nfs4ace_is_same_identifier(ace, who)) {
-			if (nfs4ace_is_allow(ace))
+		if (richace_is_same_identifier(ace, who)) {
+			if (richace_is_allow(ace))
 				allowed |= ace->e_mask;
-			else if (nfs4ace_is_deny(ace))
+			else if (richace_is_deny(ace))
 				allowed &= ~ace->e_mask;
 			deny &= ~ace->e_mask;
 		}
@@ -501,39 +501,39 @@ __nfs4acl_isolate_who(struct nfs4acl_alloc *x, struct nfs4ace *who,
 	   will not hit EVERYONE@ entries in the loop. */
 	for (n = x->acl->a_count - 2; n != -1; n--) {
 		ace = x->acl->a_entries + n;
-		if (nfs4ace_is_inherit_only(ace))
+		if (richace_is_inherit_only(ace))
 			continue;
-		if (nfs4ace_is_deny(ace)) {
-			if (nfs4ace_is_same_identifier(ace, who))
+		if (richace_is_deny(ace)) {
+			if (richace_is_same_identifier(ace, who))
 				break;
-		} else if (nfs4ace_is_allow(ace) &&
+		} else if (richace_is_allow(ace) &&
 			   (ace->e_mask & deny)) {
 			n = -1;
 			break;
 		}
 	}
 	if (n != -1) {
-		if (nfs4ace_change_mask(x, &ace, ace->e_mask | deny))
+		if (richace_change_mask(x, &ace, ace->e_mask | deny))
 			return -1;
 	} else {
 		/* Insert a eny entry before the trailing EVERYONE@ DENY
 		   entry. */
-		struct nfs4ace who_copy;
+		struct richace who_copy;
 
 		ace = x->acl->a_entries + x->acl->a_count - 1;
-		memcpy(&who_copy, who, sizeof(struct nfs4ace));
-		if (nfs4acl_insert_entry(x, &ace))
+		memcpy(&who_copy, who, sizeof(struct richace));
+		if (richacl_insert_entry(x, &ace))
 			return -1;
-		memcpy(ace, &who_copy, sizeof(struct nfs4ace));
+		memcpy(ace, &who_copy, sizeof(struct richace));
 		ace->e_type = ACE4_ACCESS_DENIED_ACE_TYPE;
-		nfs4ace_clear_inheritance_flags(ace);
+		richace_clear_inheritance_flags(ace);
 		ace->e_mask = deny;
 	}
 	return 0;
 }
 
 /**
- * nfs4acl_isolate_group_class  -  limit the group class to the group file mask
+ * richacl_isolate_group_class  -  limit the group class to the group file mask
  * @x:		acl and number of allocated entries
  *
  * Make sure the group class (all entries except owner@ and everyone@) is
@@ -541,26 +541,26 @@ __nfs4acl_isolate_who(struct nfs4acl_alloc *x, struct nfs4ace *who,
  * class entries where necessary.
  */
 static int
-nfs4acl_isolate_group_class(struct nfs4acl_alloc *x)
+richacl_isolate_group_class(struct richacl_alloc *x)
 {
-	struct nfs4ace who = {
+	struct richace who = {
 		.e_flags = ACE4_SPECIAL_WHO,
-		.u.e_who = nfs4ace_group_who,
+		.u.e_who = richace_group_who,
 	};
-	struct nfs4ace *ace;
+	struct richace *ace;
 	unsigned int deny;
 
 	if (!x->acl->a_count)
 		return 0;
 	ace = x->acl->a_entries + x->acl->a_count - 1;
-	if (nfs4ace_is_inherit_only(ace) || !nfs4ace_is_everyone(ace))
+	if (richace_is_inherit_only(ace) || !richace_is_everyone(ace))
 		return 0;
 	deny = ace->e_mask & ~x->acl->a_group_mask;
 
 	if (deny) {
 		unsigned int n;
 
-		if (__nfs4acl_isolate_who(x, &who, deny))
+		if (__richacl_isolate_who(x, &who, deny))
 			return -1;
 
 		/* Start from the entry before the trailing EVERYONE@ ALLOW
@@ -568,11 +568,11 @@ nfs4acl_isolate_group_class(struct nfs4acl_alloc *x)
 		for (n = x->acl->a_count - 2; n != -1; n--) {
 			ace = x->acl->a_entries + n;
 
-			if (nfs4ace_is_inherit_only(ace) ||
-			    nfs4ace_is_owner(ace) ||
-			    nfs4ace_is_group(ace))
+			if (richace_is_inherit_only(ace) ||
+			    richace_is_owner(ace) ||
+			    richace_is_group(ace))
 				continue;
-			if (__nfs4acl_isolate_who(x, ace, deny))
+			if (__richacl_isolate_who(x, ace, deny))
 				return -1;
 		}
 	}
@@ -580,7 +580,7 @@ nfs4acl_isolate_group_class(struct nfs4acl_alloc *x)
 }
 
 /**
- * nfs4acl_apply_masks  -  apply the masks to the acl
+ * richacl_apply_masks  -  apply the masks to the acl
  *
  * Apply the masks so that the acl allows no more flags than the
  * intersection between the flags that the original acl allows and the
@@ -590,19 +590,19 @@ nfs4acl_isolate_group_class(struct nfs4acl_alloc *x)
  * ACL4_XATTR_MAX_COUNT, so a read-modify-write cycle would fail.
  */
 int
-nfs4acl_apply_masks(struct nfs4acl **acl)
+richacl_apply_masks(struct richacl **acl)
 {
-	struct nfs4acl_alloc x = {
+	struct richacl_alloc x = {
 		.acl = *acl,
 		.count = (*acl)->a_count,
 	};
 	int retval = 0;
 
-	if (nfs4acl_move_everyone_aces_down(&x) ||
-	    nfs4acl_propagate_everyone(&x) ||
-	    __nfs4acl_apply_masks(&x) ||
-	    nfs4acl_isolate_owner_class(&x) ||
-	    nfs4acl_isolate_group_class(&x))
+	if (richacl_move_everyone_aces_down(&x) ||
+	    richacl_propagate_everyone(&x) ||
+	    __richacl_apply_masks(&x) ||
+	    richacl_isolate_owner_class(&x) ||
+	    richacl_isolate_group_class(&x))
 			retval = -1;
 
 	*acl = x.acl;

@@ -7,7 +7,7 @@ TOPDIR = ..
 LTLDFLAGS += -Wl,--version-script,$(TOPDIR)/exports
 include $(TOPDIR)/include/builddefs
 
-LTLIBRARY = libnfs4acl.la
+LTLIBRARY = librichacl.la
 LTLIBS = -lattr $(LIBMISC)
 LTDEPENDENCIES = $(LIBMISC)
 LT_CURRENT = 2
@@ -17,7 +17,7 @@ LT_AGE = 1
 LCFLAGS =
 
 HFILES =
-CFILES = nfs4acl.c  nfs4acl_compat.c  string_buffer.c
+CFILES = richacl.c  richacl_compat.c  string_buffer.c
 
 default: $(LTLIBRARY)
 

@@ -11,26 +11,26 @@ Group: System Environment/Base
 URL: http://acl.bestbits.at/
 
 %description
-This package contains the nfs4acl utility needed for
+This package contains the richacl utility needed for
 manipulating NFS version 4 access control lists.
 
-%package -n libnfs4acl
+%package -n librichacl
 Summary: Dynamic library for NFS v4 access control list support.
 Group: Development/Libraries
 Prereq: /sbin/ldconfig
 
-%description -n libnfs4acl
-This package contains the libnfs4acl.so dynamic library which contains
+%description -n librichacl
+This package contains the librichacl.so dynamic library which contains
 functions for manipulating NFS v4 access control lists.
 
-%package -n libnfs4acl-devel
+%package -n librichacl-devel
 Summary: NFS v4 Access control list static libraries and headers.
 Group: Development/Libraries
-Requires: libnfs4acl
-Provides: libnfs4acl-devel
-Obsoletes: libnfs4acl-devel
+Requires: librichacl
+Provides: librichacl-devel
+Obsoletes: librichacl-devel
 
-%description -n libnfs4acl-devel
+%description -n librichacl-devel
 This package contains static libraries and header files needed to develop
 programs which make use of the NFS v4 access control list programming interface.
 
@@ -66,12 +66,12 @@ export DIST_ROOT DIST_INSTALL DIST_INSTALL_DEV DIST_INSTALL_LIB
 %clean
 rm -rf $RPM_BUILD_ROOT
 
-%post -n libnfs4acl -p /sbin/ldconfig
+%post -n librichacl -p /sbin/ldconfig
 
-%postun -n libnfs4acl -p /sbin/ldconfig
+%postun -n librichacl -p /sbin/ldconfig
 
 %files -f build/rpm/rpmfiles
 
-%files -n libnfs4acl-devel -f build/rpm/rpmfiles-dev
+%files -n librichacl-devel -f build/rpm/rpmfiles-dev
 
-%files -n libnfs4acl -f build/rpm/rpmfiles-lib
+%files -n librichacl -f build/rpm/rpmfiles-lib

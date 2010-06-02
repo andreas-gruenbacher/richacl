@@ -5,12 +5,12 @@
 TOPDIR = ..
 include $(TOPDIR)/include/builddefs
 
-LTCOMMAND = nfs4acl
-CFILES = nfs4acl.c
+LTCOMMAND = richacl
+CFILES = richacl.c
 HFILES =
 
-LLDLIBS = $(LIBNFS4ACL) $(LIBATTR)
-LTDEPENDENCIES = $(LIBNFS4ACL)
+LLDLIBS = $(LIBRICHACL) $(LIBATTR)
+LTDEPENDENCIES = $(LIBRICHACL)
 
 default: $(LTCOMMAND)
 

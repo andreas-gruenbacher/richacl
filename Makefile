@@ -16,10 +16,10 @@ LSRCFILES = configure configure.in aclocal.m4 Makepkgs install-sh \
 LDIRT = config.log .dep config.status config.cache confdefs.h conftest* \
 	Logs/* built .census install.* install-dev.* install-lib.* *.gz
 
-#SUBDIRS = include libnfs4acl nfs4acl m4 man doc po \
+#SUBDIRS = include librichacl richacl m4 man doc po \
 #	  test examples build debian
-LIB_SUBDIRS = include libnfs4acl
-TOOL_SUBDIRS = nfs4acl m4 doc test build
+LIB_SUBDIRS = include librichacl
+TOOL_SUBDIRS = richacl m4 doc test build
 
 SUBDIRS = $(LIB_SUBDIRS) $(TOOL_SUBDIRS)
 
@@ -31,7 +31,7 @@ else
 endif
 
 # tool/lib dependencies
-nfs4acl: libnfs4acl
+richacl: librichacl
 
 ifeq ($(HAVE_BUILDDEFS), yes)
 include $(BUILDRULES)

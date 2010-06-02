@@ -12,7 +12,7 @@ OPTIMIZER = @opt_build@
 MALLOCLIB = @malloc_lib@
 LOADERFLAGS = @LDFLAGS@
 
-LIBNFS4ACL = $(TOPDIR)/libnfs4acl/libnfs4acl.la
+LIBRICHACL = $(TOPDIR)/librichacl/librichacl.la
 LIBATTR = @libattr@
 
 prefix = @prefix@

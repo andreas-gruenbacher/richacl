@@ -13,7 +13,7 @@
  */
 
 /*
- * FIXME: Make ls show a `+' for nfs4acls (in coreutils).
+ * FIXME: Make ls show a `+' for richacls (in coreutils).
  */
 
 #include <stdio.h>
@@ -27,7 +27,7 @@
 #include <unistd.h>
 #include <sys/xattr.h>
 
-#include "nfs4acl.h"
+#include "richacl.h"
 #include "string_buffer.h"
 
 static const char *progname;
@@ -41,17 +41,17 @@ void printf_stderr(const char *fmt, ...)
 	va_end(ap);
 }
 
-int modify_nfs4acl(struct nfs4acl **acl2, struct nfs4acl *acl, int acl_has)
+int modify_richacl(struct richacl **acl2, struct richacl *acl, int acl_has)
 {
-	struct nfs4ace *ace2, *ace;
+	struct richace *ace2, *ace;
 
-	nfs4acl_for_each_entry(ace, acl) {
-		struct nfs4acl *acl3;
-		struct nfs4ace *ace3;
+	richacl_for_each_entry(ace, acl) {
+		struct richacl *acl3;
+		struct richace *ace3;
 
-		nfs4acl_for_each_entry(ace2, *acl2) {
+		richacl_for_each_entry(ace2, *acl2) {
 			if (ace2->e_type == ace->e_type &&
-			    nfs4ace_is_same_identifier(ace, ace2)) {
+			    richace_is_same_identifier(ace, ace2)) {
 				ace2->e_mask = ace->e_mask;
 				ace2->e_flags = ace->e_flags;
 				break;
@@ -60,66 +60,66 @@ int modify_nfs4acl(struct nfs4acl **acl2, struct nfs4acl *acl, int acl_has)
 		if (ace2 != (*acl2)->a_entries + (*acl2)->a_count)
 			continue;
 
-		acl3 = nfs4acl_alloc((*acl2)->a_count + 1);
+		acl3 = richacl_alloc((*acl2)->a_count + 1);
 		if (!acl3)
 			return -1;
 		ace3 = acl3->a_entries;
-		if (nfs4ace_is_deny(ace)) {
-			nfs4acl_for_each_entry(ace2, *acl2) {
-				if (!nfs4ace_is_deny(ace2))
+		if (richace_is_deny(ace)) {
+			richacl_for_each_entry(ace2, *acl2) {
+				if (!richace_is_deny(ace2))
 					break;
-				nfs4ace_copy(ace3++, ace2);
+				richace_copy(ace3++, ace2);
 			}
-			nfs4ace_copy(ace3++, ace);
+			richace_copy(ace3++, ace);
 			while (ace2 != (*acl2)->a_entries + (*acl2)->a_count)
-				nfs4ace_copy(ace3++, ace2++);
+				richace_copy(ace3++, ace2++);
 		} else {
-			nfs4acl_for_each_entry(ace2, *acl2)
-				nfs4ace_copy(ace3++, ace2);
-			nfs4ace_copy(ace3++, ace);
+			richacl_for_each_entry(ace2, *acl2)
+				richace_copy(ace3++, ace2);
+			richace_copy(ace3++, ace);
 		}
 
-		nfs4acl_free(*acl2);
+		richacl_free(*acl2);
 		*acl2 = acl3;
 	}
 
-	if (acl_has & NFS4ACL_TEXT_FLAGS)
+	if (acl_has & RICHACL_TEXT_FLAGS)
 		(*acl2)->a_flags = acl->a_flags;
 
-	if (!((acl_has & NFS4ACL_TEXT_OWNER_MASK) && 
-	      (acl_has & NFS4ACL_TEXT_GROUP_MASK) && 
-	      (acl_has & NFS4ACL_TEXT_OTHER_MASK)))
-		nfs4acl_compute_max_masks(*acl2);
-	if (acl_has & NFS4ACL_TEXT_OWNER_MASK)
+	if (!((acl_has & RICHACL_TEXT_OWNER_MASK) && 
+	      (acl_has & RICHACL_TEXT_GROUP_MASK) && 
+	      (acl_has & RICHACL_TEXT_OTHER_MASK)))
+		richacl_compute_max_masks(*acl2);
+	if (acl_has & RICHACL_TEXT_OWNER_MASK)
 		(*acl2)->a_owner_mask = acl->a_owner_mask;
-	if (acl_has & NFS4ACL_TEXT_GROUP_MASK)
+	if (acl_has & RICHACL_TEXT_GROUP_MASK)
 		(*acl2)->a_group_mask = acl->a_group_mask;
-	if (acl_has & NFS4ACL_TEXT_OTHER_MASK)
+	if (acl_has & RICHACL_TEXT_OTHER_MASK)
 		(*acl2)->a_other_mask = acl->a_other_mask;
 
 	return 0;
 }
 
-static struct nfs4acl *get_nfs4acl(const char *file, mode_t mode)
+static struct richacl *get_richacl(const char *file, mode_t mode)
 {
-	struct nfs4acl *acl;
+	struct richacl *acl;
 
-	acl = nfs4acl_get_file(file);
+	acl = richacl_get_file(file);
 	if (!acl && (errno == ENODATA || errno == ENOTSUP || errno == ENOSYS)) {
-		acl = nfs4acl_from_mode(mode);
+		acl = richacl_from_mode(mode);
 	}
 	return acl;
 }
 
-static int print_nfs4acl(const char *file, struct nfs4acl **acl, int fmt)
+static int print_richacl(const char *file, struct richacl **acl, int fmt)
 {
 	char *text;
 
-	if (!(fmt & NFS4ACL_TEXT_SHOW_MASKS)) {
-		if (nfs4acl_apply_masks(acl))
+	if (!(fmt & RICHACL_TEXT_SHOW_MASKS)) {
+		if (richacl_apply_masks(acl))
 			goto fail;
 	}
-	text = nfs4acl_to_text(*acl, fmt);
+	text = richacl_to_text(*acl, fmt);
 	if (!text)
 		goto fail;
 	printf("%s:\n", file);
@@ -134,9 +134,9 @@ fail:
 int format_for_mode(mode_t mode)
 {
 	if (S_ISDIR(mode))
-		return NFS4ACL_TEXT_DIRECTORY_CONTEXT;
+		return RICHACL_TEXT_DIRECTORY_CONTEXT;
 	else
-		return NFS4ACL_TEXT_FILE_CONTEXT;
+		return RICHACL_TEXT_FILE_CONTEXT;
 }
 
 static struct option long_options[] = {
@@ -216,11 +216,11 @@ int main(int argc, char *argv[])
 	int opt_get = 0, opt_remove = 0, opt_dry_run = 0;
 	int opt_modify = 0, opt_set = 0;
 	char *acl_text = NULL, *acl_file = NULL;
-	int format = NFS4ACL_TEXT_SIMPLIFY;
+	int format = RICHACL_TEXT_SIMPLIFY;
 	int status = 0;
 	int c;
 
-	struct nfs4acl *acl = NULL;
+	struct richacl *acl = NULL;
 	int acl_has;
 
 	progname = argv[0];
@@ -255,7 +255,7 @@ int main(int argc, char *argv[])
 				break;
 
 			case 'l':
-				format |= NFS4ACL_TEXT_LONG;
+				format |= RICHACL_TEXT_LONG;
 				break;
 
 			case 'v':
@@ -267,8 +267,8 @@ int main(int argc, char *argv[])
 				break;
 
 			case 1:  /* --raw */
-				format |= NFS4ACL_TEXT_SHOW_MASKS;
-				format &= ~NFS4ACL_TEXT_SIMPLIFY;
+				format |= RICHACL_TEXT_SHOW_MASKS;
+				format &= ~RICHACL_TEXT_SIMPLIFY;
 				break;
 
 			case 2:  /* --dry-run */
@@ -286,7 +286,7 @@ int main(int argc, char *argv[])
 		synopsis(argc == 1);
 
 	if (acl_text) {
-		acl = nfs4acl_from_text(acl_text, &acl_has, printf_stderr);
+		acl = richacl_from_text(acl_text, &acl_has, printf_stderr);
 		if (!acl)
 			return 1;
 	}
@@ -321,35 +321,35 @@ int main(int argc, char *argv[])
 			return 1;
 		}
 
-		acl = nfs4acl_from_text(buffer->buffer, &acl_has, printf_stderr);
+		acl = richacl_from_text(buffer->buffer, &acl_has, printf_stderr);
 		if (!acl)
 			return 1;
 		free_string_buffer(buffer);
 	}
 
 	/* Compute all masks which haven't been set explicitly. */
-	if (opt_set && acl && !((acl_has & NFS4ACL_TEXT_OWNER_MASK) &&
-				(acl_has & NFS4ACL_TEXT_GROUP_MASK) &&
-				(acl_has & NFS4ACL_TEXT_OTHER_MASK))) {
+	if (opt_set && acl && !((acl_has & RICHACL_TEXT_OWNER_MASK) &&
+				(acl_has & RICHACL_TEXT_GROUP_MASK) &&
+				(acl_has & RICHACL_TEXT_OTHER_MASK))) {
 		unsigned int owner_mask = acl->a_owner_mask;
 		unsigned int group_mask = acl->a_group_mask;
 		unsigned int other_mask = acl->a_other_mask;
 
-		nfs4acl_compute_max_masks(acl);
-		if (acl_has & NFS4ACL_TEXT_OWNER_MASK)
+		richacl_compute_max_masks(acl);
+		if (acl_has & RICHACL_TEXT_OWNER_MASK)
 			acl->a_owner_mask = owner_mask;
-		if (acl_has & NFS4ACL_TEXT_GROUP_MASK)
+		if (acl_has & RICHACL_TEXT_GROUP_MASK)
 			acl->a_group_mask = group_mask;
-		if (acl_has & NFS4ACL_TEXT_OTHER_MASK)
+		if (acl_has & RICHACL_TEXT_OTHER_MASK)
 			acl->a_other_mask = other_mask;
 	}
 
 	if (opt_dry_run && opt_set) {
 		const char *file = "<no filename>";
 
-		if (print_nfs4acl(file, &acl, format |
-				NFS4ACL_TEXT_FILE_CONTEXT |
-				NFS4ACL_TEXT_DIRECTORY_CONTEXT)) {
+		if (print_richacl(file, &acl, format |
+				RICHACL_TEXT_FILE_CONTEXT |
+				RICHACL_TEXT_DIRECTORY_CONTEXT)) {
 			perror(file);
 			return 1;
 		}
@@ -358,31 +358,31 @@ int main(int argc, char *argv[])
 
 	for (; optind < argc; optind++) {
 		const char *file = argv[optind];
-		struct nfs4acl *acl2 = NULL;
+		struct richacl *acl2 = NULL;
 
 		if (opt_set) {
-			if (nfs4acl_set_file(file, acl))
+			if (richacl_set_file(file, acl))
 				goto fail;
 		} else if (opt_modify) {
 			struct stat st;
 
 			if (stat(file, &st))
 				goto fail;
-			acl2 = get_nfs4acl(file, st.st_mode);
+			acl2 = get_richacl(file, st.st_mode);
 			if (!acl2)
 				goto fail;
-			if (modify_nfs4acl(&acl2, acl, acl_has))
+			if (modify_richacl(&acl2, acl, acl_has))
 				goto fail;
 			if (opt_dry_run) {
-				if (print_nfs4acl(file, &acl2, format |
+				if (print_richacl(file, &acl2, format |
 						format_for_mode(st.st_mode)))
 					goto fail;
 			} else {
-				if (nfs4acl_set_file(file, acl2))
+				if (richacl_set_file(file, acl2))
 					goto fail;
 			}
 		} else if (opt_remove) {
-			if (removexattr(file, "system.nfs4acl")) {
+			if (removexattr(file, "system.richacl")) {
 				if (errno != ENODATA)
 					goto fail;
 			}
@@ -391,22 +391,22 @@ int main(int argc, char *argv[])
 
 			if (stat(file, &st))
 				goto fail;
-			acl2 = get_nfs4acl(file, st.st_mode);
+			acl2 = get_richacl(file, st.st_mode);
 			if (!acl2)
 				goto fail;
-			if (print_nfs4acl(file, &acl2, format |
+			if (print_richacl(file, &acl2, format |
 					format_for_mode(st.st_mode)))
 				goto fail;
 		}
-		nfs4acl_free(acl2);
+		richacl_free(acl2);
 		continue;
 
 	fail:
-		nfs4acl_free(acl2);
+		richacl_free(acl2);
 		perror(file);
 		status = 1;
 	}
 
-	nfs4acl_free(acl);
+	richacl_free(acl);
 	return status;
 }
