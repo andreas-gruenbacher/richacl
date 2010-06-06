@@ -312,7 +312,6 @@ __richacl_propagate_everyone(struct richacl_alloc *x, struct richace *who,
 static int
 richacl_propagate_everyone(struct richacl_alloc *x)
 {
-	int write_through = x->acl->a_flags & ACL4_WRITE_THROUGH;
 	struct richace who = { .e_flags = ACE4_SPECIAL_WHO };
 	struct richace *ace;
 	unsigned int owner_allow, group_allow;
@@ -333,8 +332,7 @@ richacl_propagate_everyone(struct richacl_alloc *x)
 	group_allow = ace->e_mask & x->acl->a_group_mask;
 
 	/* Propagate everyone@ permissions through to owner@. */
-	if (!write_through &&
-	    (owner_allow & ~x->acl->a_other_mask)) {
+	if (owner_allow & ~x->acl->a_other_mask) {
 		who.u.e_who = richace_owner_who;
 		if (__richacl_propagate_everyone(x, &who, owner_allow))
 			return -1;
@@ -343,12 +341,10 @@ richacl_propagate_everyone(struct richacl_alloc *x)
 	if (group_allow & ~x->acl->a_other_mask) {
 		int n;
 
-		if (!write_through) {
-			/* Propagate everyone@ permissions through to group@. */
-			who.u.e_who = richace_group_who;
-			if (__richacl_propagate_everyone(x, &who, group_allow))
-				return -1;
-		}
+		/* Propagate everyone@ permissions through to group@. */
+		who.u.e_who = richace_group_who;
+		if (__richacl_propagate_everyone(x, &who, group_allow))
+			return -1;
 
 		/* Start from the entry before the trailing EVERYONE@ ALLOW
 		   entry. We will not hit EVERYONE@ entries in the loop. */

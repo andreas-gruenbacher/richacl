@@ -211,7 +211,7 @@ static void synopsis(int help)
 "\tidentifier_group (g), inherited_ace (a)\n"
 "\n"
 "Per-ACL flag values are:\n"
-"\tauto_inherit (a), protected (p), defaulted (d), write_through (w)\n",
+"\tauto_inherit (a), protected (p), defaulted (d)\n",
 	basename(progname));
 	exit(0);
 }

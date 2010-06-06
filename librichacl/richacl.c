@@ -60,7 +60,6 @@ static struct {
 	{ 'p', ACL4_PROTECTED, "protected" },
 	{ 'd', ACL4_DEFAULTED, "defaulted" },
 	{ 'P', ACL4_POSIX_MAPPED, "posix_mapped"},
-	{ 'w', ACL4_WRITE_THROUGH, "write_through" },
 };
 
 static struct {
