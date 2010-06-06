@@ -6,8 +6,8 @@ TOPDIR = ..
 include $(TOPDIR)/include/builddefs
 
 LTCOMMAND = richacl
-CFILES = richacl.c
-HFILES =
+CFILES = richacl.c user_group.c
+HFILES = user_group.h
 
 LLDLIBS = $(LIBRICHACL) $(LIBATTR)
 LTDEPENDENCIES = $(LIBRICHACL)

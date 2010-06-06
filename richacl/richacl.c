@@ -34,6 +34,7 @@
 
 #include "richacl.h"
 #include "string_buffer.h"
+#include "user_group.h"
 
 static const char *progname;
 
@@ -116,24 +117,15 @@ static struct richacl *get_richacl(const char *file, mode_t mode)
 	return acl;
 }
 
-static int print_richacl(const char *file, struct richacl **acl, int fmt)
+static const char *flagstr(mode_t mode)
 {
-	char *text;
+	static char str[4];
 
-	if (!(fmt & RICHACL_TEXT_SHOW_MASKS)) {
-		if (richacl_apply_masks(acl))
-			goto fail;
-	}
-	text = richacl_to_text(*acl, fmt);
-	if (!text)
-		goto fail;
-	printf("%s:\n", file);
-	puts(text);
-	free(text);
-	return 0;
-
-fail:
-	return -1;
+	str[0] = (mode & S_ISUID) ? 's' : '-';
+	str[1] = (mode & S_ISGID) ? 's' : '-';
+	str[2] = (mode & S_ISVTX) ? 't' : '-';
+	str[3] = '\0';
+	return str;
 }
 
 int format_for_mode(mode_t mode)
@@ -142,6 +134,58 @@ int format_for_mode(mode_t mode)
 		return RICHACL_TEXT_DIRECTORY_CONTEXT;
 	else
 		return RICHACL_TEXT_FILE_CONTEXT;
+}
+
+static int print_richacl(const char *file, struct richacl **acl,
+			 struct stat *st, int fmt)
+{
+	char *text;
+
+	if (!(fmt & RICHACL_TEXT_SHOW_MASKS)) {
+		if (richacl_apply_masks(acl))
+			goto fail;
+	}
+	text = richacl_to_text(*acl, fmt | format_for_mode(st->st_mode));
+	if (!text)
+		goto fail;
+	printf("# file: %s\n# owner: %s\n# group: %s\n",
+	       file,
+	       user_name(st->st_uid, 0),
+	       group_name(st->st_gid, 0));
+	if ((st->st_mode & (S_ISVTX | S_ISUID | S_ISGID)))
+		printf("# flags: %s\n", flagstr(st->st_mode));
+
+	puts(text);
+	free(text);
+	return 0;
+
+fail:
+	return -1;
+}
+
+void remove_comments(struct string_buffer *buffer)
+{
+	char *c = NULL, *d = buffer->buffer;
+
+	for (;;) {
+		if (c && (*d == '\n' || *d == 0)) {
+			size_t sz = buffer->buffer + buffer->offset - d;
+			memmove(c, d, sz + 1);
+			buffer->offset -= d - c;
+			d = c;
+			c = NULL;
+		} else if (*d == 0)
+			break;
+		else if (*d == '#') {
+			if (!c && (d == buffer->buffer || isspace(d[-1]))) {
+				c = d;
+				while (c != buffer->buffer &&
+				       *c != '\n' && isspace(*c))
+					c--;
+			}
+		}
+		d++;
+	}
 }
 
 static struct option long_options[] = {
@@ -230,7 +274,7 @@ int main(int argc, char *argv[])
 
 	progname = argv[0];
 
-	while ((c = getopt_long(argc, argv, "gm:M:s:S:nrlvh",
+	while ((c = getopt_long(argc, argv, "gm:M:s:S:nrlnvh",
 				long_options, NULL)) != -1) {
 		switch(c) {
 			case 'g':
@@ -326,6 +370,7 @@ int main(int argc, char *argv[])
 			return 1;
 		}
 
+		remove_comments(buffer);
 		acl = richacl_from_text(buffer->buffer, &acl_has, printf_stderr);
 		if (!acl)
 			return 1;
@@ -349,38 +394,30 @@ int main(int argc, char *argv[])
 			acl->a_other_mask = other_mask;
 	}
 
-	if (opt_dry_run && opt_set) {
-		const char *file = "<no filename>";
-
-		if (print_richacl(file, &acl, format |
-				RICHACL_TEXT_FILE_CONTEXT |
-				RICHACL_TEXT_DIRECTORY_CONTEXT)) {
-			perror(file);
-			return 1;
-		}
-		return 0;
-	}
-
 	for (; optind < argc; optind++) {
 		const char *file = argv[optind];
 		struct richacl *acl2 = NULL;
+		struct stat st;
+
+		if (opt_get || opt_modify || opt_dry_run)
+			if (stat(file, &st))
+				goto fail;
 
 		if (opt_set) {
+			if (opt_dry_run) {
+				if (print_richacl(file, &acl, &st, format))
+					goto fail;
+			}
 			if (richacl_set_file(file, acl))
 				goto fail;
 		} else if (opt_modify) {
-			struct stat st;
-
-			if (stat(file, &st))
-				goto fail;
 			acl2 = get_richacl(file, st.st_mode);
 			if (!acl2)
 				goto fail;
 			if (modify_richacl(&acl2, acl, acl_has))
 				goto fail;
 			if (opt_dry_run) {
-				if (print_richacl(file, &acl2, format |
-						format_for_mode(st.st_mode)))
+				if (print_richacl(file, &acl2, &st, format))
 					goto fail;
 			} else {
 				if (richacl_set_file(file, acl2))
@@ -392,15 +429,10 @@ int main(int argc, char *argv[])
 					goto fail;
 			}
 		} else {
-			struct stat st;
-
-			if (stat(file, &st))
-				goto fail;
 			acl2 = get_richacl(file, st.st_mode);
 			if (!acl2)
 				goto fail;
-			if (print_richacl(file, &acl2, format |
-					format_for_mode(st.st_mode)))
+			if (print_richacl(file, &acl2, &st, format))
 				goto fail;
 		}
 		richacl_free(acl2);
