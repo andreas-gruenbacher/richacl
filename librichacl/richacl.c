@@ -740,8 +740,6 @@ static int acl_flags_from_text(const char *str, struct richacl *acl,
 
 		/* Recognize single-character flags */
 		for (c = dup; *c; c++) {
-			if (*c == '-')
-				continue;
 			for (i = 0; i < ARRAY_SIZE(acl_flag_bits); i++) {
 				if (*c == acl_flag_bits[i].a_char) {
 					acl->a_flags |= acl_flag_bits[i].a_flag;
@@ -935,6 +933,8 @@ static int mask_from_text(const char *str, unsigned int *mask,
 
 		/* Recognize single-character masks */
 		for (c = dup; *c; c++) {
+			if (*c == '-')
+				continue;
 			for (i = 0; i < ARRAY_SIZE(mask_flags); i++) {
 				if (*c == mask_flags[i].e_char) {
 					*mask |= mask_flags[i].e_mask;
