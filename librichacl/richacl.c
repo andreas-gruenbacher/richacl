@@ -111,8 +111,6 @@ struct mask_flag_struct mask_flags[] = {
 	DIRECTORY_MASK_BIT('w', ADD_FILE, "add_file"),
 	FILE_MASK_BIT('a', APPEND_DATA, "append_data"),
 	DIRECTORY_MASK_BIT('a', ADD_SUBDIRECTORY, "add_subdirectory"),
-	MASK_BIT('N', READ_NAMED_ATTRS, "read_named_attrs"),
-	MASK_BIT('n', WRITE_NAMED_ATTRS, "write_named_attrs"),
 	MASK_BIT('x', EXECUTE, "execute"),
 	MASK_BIT('d', DELETE_CHILD, "delete_child"),
 	MASK_BIT('T', READ_ATTRIBUTES, "read_attributes"),
@@ -122,13 +120,13 @@ struct mask_flag_struct mask_flags[] = {
 	MASK_BIT('m', WRITE_ACL, "write_acl"),
 	MASK_BIT('o', WRITE_OWNER, "take_ownership"),
 	MASK_BIT('s', SYNCHRONIZE, "synchronize"),
+	MASK_BIT('N', READ_NAMED_ATTRS, "read_named_attrs"),
+	MASK_BIT('n', WRITE_NAMED_ATTRS, "write_named_attrs"),
 };
 struct mask_flag_struct mask_bits[] = {
 	MASK_BIT('r', READ_DATA, NULL),
 	MASK_BIT('w', WRITE_DATA, NULL),
 	MASK_BIT('a', APPEND_DATA, NULL),
-	MASK_BIT('N', READ_NAMED_ATTRS, "read_named_attrs"),
-	MASK_BIT('n', WRITE_NAMED_ATTRS, "write_named_attrs"),
 	MASK_BIT('x', EXECUTE, "execute"),
 	MASK_BIT('d', DELETE_CHILD, "delete_child"),
 	MASK_BIT('T', READ_ATTRIBUTES, "read_attributes"),
@@ -138,6 +136,8 @@ struct mask_flag_struct mask_bits[] = {
 	MASK_BIT('m', WRITE_ACL, "write_acl"),
 	MASK_BIT('o', WRITE_OWNER, "take_ownership"),
 	MASK_BIT('s', SYNCHRONIZE, "synchronize"),
+	MASK_BIT('N', READ_NAMED_ATTRS, "read_named_attrs"),
+	MASK_BIT('n', WRITE_NAMED_ATTRS, "write_named_attrs"),
 };
 
 #undef MASK_BIT
