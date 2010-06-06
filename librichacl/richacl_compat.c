@@ -333,14 +333,14 @@ richacl_propagate_everyone(struct richacl_alloc *x)
 	group_allow = ace->e_mask & x->acl->a_group_mask;
 
 	/* Propagate everyone@ permissions through to owner@. */
-	if (owner_allow && !write_through &&
-	    (x->acl->a_owner_mask & ~x->acl->a_other_mask)) {
+	if (!write_through &&
+	    (owner_allow & ~x->acl->a_other_mask)) {
 		who.u.e_who = richace_owner_who;
 		if (__richacl_propagate_everyone(x, &who, owner_allow))
 			return -1;
 	}
 
-	if (group_allow && (x->acl->a_group_mask & ~x->acl->a_other_mask)) {
+	if (group_allow & ~x->acl->a_other_mask) {
 		int n;
 
 		if (!write_through) {
