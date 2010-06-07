@@ -19,6 +19,7 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
 #include <alloca.h>
@@ -580,9 +581,12 @@ static void write_mask(struct string_buffer *buffer, uint32_t mask, int fmt)
 		if (fmt & RICHACL_TEXT_SIMPLIFY)
 			mask &= ~ACE4_POSIX_ALWAYS_ALLOWED;
 		for (i = 0; i < ARRAY_SIZE(mask_bits); i++) {
-			buffer_sprintf(buffer, "%c",
-				       (mask & mask_bits[i].e_mask) ?
-				       mask_bits[i].e_char : '-');
+			if (mask & mask_bits[i].e_mask)
+				buffer_sprintf(buffer, "%c",
+					       mask_bits[i].e_char);
+			else if (fmt & RICHACL_TEXT_ALIGN)
+				buffer_sprintf(buffer, "-");
+
 			mask &= ~mask_bits[i].e_mask;
 		}
 		stuff_written = 1;
@@ -595,7 +599,7 @@ static void write_mask(struct string_buffer *buffer, uint32_t mask, int fmt)
 }
 
 static void write_identifier(struct string_buffer *buffer,
-			     const struct richace *ace)
+			     const struct richace *ace, int align)
 {
 	/* FIXME: switch to getpwuid_r() and getgrgid_r() here. */
 
@@ -607,21 +611,21 @@ static void write_identifier(struct string_buffer *buffer,
 		for (c = dup; *c; c++)
 			*c = tolower(*c);
 
-		buffer_sprintf(buffer, "%10s", dup);
+		buffer_sprintf(buffer, "%*s", align, dup);
 	} else if (ace->e_flags & ACE4_IDENTIFIER_GROUP) {
 		struct group *group = getgrgid(ace->u.e_id);
 
 		if (group)
-			buffer_sprintf(buffer, "%10s", group->gr_name);
+			buffer_sprintf(buffer, "%*s", align, group->gr_name);
 		else
-			buffer_sprintf(buffer, "%10d", ace->u.e_id);
+			buffer_sprintf(buffer, "%*d", align, ace->u.e_id);
 	} else {
 		struct passwd *passwd = getpwuid(ace->u.e_id);
 
 		if (passwd)
-			buffer_sprintf(buffer, "%10s", passwd->pw_name);
+			buffer_sprintf(buffer, "%*s", align, passwd->pw_name);
 		else
-			buffer_sprintf(buffer, "%10d", ace->u.e_id);
+			buffer_sprintf(buffer, "%*d", align, ace->u.e_id);
 	}
 }
 
@@ -629,7 +633,36 @@ char *richacl_to_text(const struct richacl *acl, int fmt)
 {
 	struct string_buffer *buffer;
 	const struct richace *ace;
-	int fmt2;
+	int fmt2, align = 0;
+
+	if (fmt & RICHACL_TEXT_ALIGN) {
+		if (fmt & RICHACL_TEXT_SHOW_MASKS)
+			align = 6;
+		richacl_for_each_entry(ace, acl) {
+			int a;
+			if (richace_is_owner(ace) || richace_is_group(ace))
+				a = 6;
+			else if (richace_is_everyone(ace))
+				a = 9;
+			else if (ace->e_flags & ACE4_IDENTIFIER_GROUP) {
+				struct group *group = getgrgid(ace->u.e_id);
+
+				if (group)
+					a = strlen(group->gr_name);
+				else
+					a = snprintf(NULL, 0, "%d", ace->u.e_id);
+			} else {
+				struct passwd *passwd = getpwuid(ace->u.e_id);
+
+				if (passwd)
+					a = strlen(passwd->pw_name);
+				else
+					a = snprintf(NULL, 0, "%d", ace->u.e_id);
+			}
+			if (a >= align)
+				align = a + 1;
+		}
+	}
 
 	buffer = alloc_string_buffer(128);
 	if (!buffer)
@@ -656,19 +689,19 @@ char *richacl_to_text(const struct richacl *acl, int fmt)
 		if (!(fmt & RICHACL_TEXT_SIMPLIFY))
 			allowed = ~0;
 
-		buffer_sprintf(buffer, "%11s", "owner:");
+		buffer_sprintf(buffer, "%*s:", align, "owner");
 		write_mask(buffer, acl->a_owner_mask & allowed, fmt2);
 		buffer_sprintf(buffer, "::mask\n");
-		buffer_sprintf(buffer, "%11s", "group:");
+		buffer_sprintf(buffer, "%*s:", align, "group");
 		write_mask(buffer, acl->a_group_mask & allowed, fmt2);
 		buffer_sprintf(buffer, "::mask\n");
-		buffer_sprintf(buffer, "%11s", "other:");
+		buffer_sprintf(buffer, "%*s:", align, "other");
 		write_mask(buffer, acl->a_other_mask & allowed, fmt2);
 		buffer_sprintf(buffer, "::mask\n");
 	}
 
 	richacl_for_each_entry(ace, acl) {
-		write_identifier(buffer, ace);
+		write_identifier(buffer, ace, align);
 		buffer_sprintf(buffer, ":");
 
 		fmt2 = fmt;

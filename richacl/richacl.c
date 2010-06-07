@@ -31,6 +31,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <sys/xattr.h>
+#include <ctype.h>
 
 #include "richacl.h"
 #include "string_buffer.h"
@@ -265,7 +266,7 @@ int main(int argc, char *argv[])
 	int opt_get = 0, opt_remove = 0, opt_dry_run = 0;
 	int opt_modify = 0, opt_set = 0;
 	char *acl_text = NULL, *acl_file = NULL;
-	int format = RICHACL_TEXT_SIMPLIFY;
+	int format = RICHACL_TEXT_SIMPLIFY | RICHACL_TEXT_ALIGN;
 	int status = 0;
 	int c;
 
