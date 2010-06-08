@@ -578,15 +578,15 @@ static void write_mask(struct string_buffer *buffer, uint32_t mask, int fmt)
 		}
 		mask &= (nondir_mask | dir_mask);
 	} else {
-		if (fmt & RICHACL_TEXT_SIMPLIFY)
-			mask &= ~ACE4_POSIX_ALWAYS_ALLOWED;
 		for (i = 0; i < ARRAY_SIZE(mask_bits); i++) {
-			if (mask & mask_bits[i].e_mask)
-				buffer_sprintf(buffer, "%c",
-					       mask_bits[i].e_char);
-			else if (fmt & RICHACL_TEXT_ALIGN)
-				buffer_sprintf(buffer, "-");
-
+			if (!((fmt & RICHACL_TEXT_SIMPLIFY) &&
+			      (mask_bits[i].e_mask & ACE4_POSIX_ALWAYS_ALLOWED))) {
+				if (mask & mask_bits[i].e_mask)
+					buffer_sprintf(buffer, "%c",
+						       mask_bits[i].e_char);
+				else if (fmt & RICHACL_TEXT_ALIGN)
+					buffer_sprintf(buffer, "-");
+			}
 			mask &= ~mask_bits[i].e_mask;
 		}
 		stuff_written = 1;
