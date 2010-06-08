@@ -1,4 +1,16 @@
-*.o
 *.a
+*.la
+*.lo
+*.o
+.libs
 
-richacl/richacl
+/.census
+/autom4te.cache/
+/config.log
+/config.status
+/configure
+/doc/CHANGES.gz
+/include/builddefs
+/include/config.h
+/include/sys
+/richacl/richacl
