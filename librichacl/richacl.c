@@ -112,7 +112,7 @@ struct mask_flag_struct mask_flags[] = {
 	FILE_MASK_BIT('a', APPEND_DATA, "append_data"),
 	DIRECTORY_MASK_BIT('a', ADD_SUBDIRECTORY, "add_subdirectory"),
 	MASK_BIT('x', EXECUTE, "execute"),
-	MASK_BIT('d', DELETE_CHILD, "delete_child"),
+	DIRECTORY_MASK_BIT('d', DELETE_CHILD, "delete_child"),
 	MASK_BIT('T', READ_ATTRIBUTES, "read_attributes"),
 	MASK_BIT('t', WRITE_ATTRIBUTES, "write_attributes"),
 	MASK_BIT('D', DELETE, "delete"),
@@ -578,9 +578,16 @@ static void write_mask(struct string_buffer *buffer, uint32_t mask, int fmt)
 		}
 		mask &= (nondir_mask | dir_mask);
 	} else {
+		unsigned int hide = 0;
+
+		if (fmt & RICHACL_TEXT_SIMPLIFY) {
+			hide = ACE4_POSIX_ALWAYS_ALLOWED;
+			if (!(fmt & RICHACL_TEXT_DIRECTORY_CONTEXT))
+				hide |= ACE4_VALID_MASK & ~ACE4_VALID_FILE_MASK;
+		}
+
 		for (i = 0; i < ARRAY_SIZE(mask_bits); i++) {
-			if (!((fmt & RICHACL_TEXT_SIMPLIFY) &&
-			      (mask_bits[i].e_mask & ACE4_POSIX_ALWAYS_ALLOWED))) {
+			if (!(mask_bits[i].e_mask & hide)) {
 				if (mask & mask_bits[i].e_mask)
 					buffer_sprintf(buffer, "%c",
 						       mask_bits[i].e_char);
@@ -1190,6 +1197,7 @@ struct richacl *richacl_from_mode(mode_t mode)
 {
 	struct richacl *acl;
 	struct richace *ace;
+	int is_dir = S_ISDIR(mode) || !(mode & S_IFMT);
 
 	acl = richacl_alloc(1);
 	if (!acl)
@@ -1202,7 +1210,7 @@ struct richacl *richacl_from_mode(mode_t mode)
 
 	ace->e_type = ACE4_ACCESS_ALLOWED_ACE_TYPE;
 	ace->e_flags = ACE4_SPECIAL_WHO;
-	ace->e_mask = ACE4_VALID_MASK;
+	ace->e_mask = is_dir ? ACE4_VALID_MASK : ACE4_VALID_FILE_MASK;
 	ace->u.e_who = richace_everyone_who;
 	
 	if (richacl_apply_masks(&acl)) {
