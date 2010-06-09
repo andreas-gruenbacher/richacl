@@ -174,7 +174,8 @@ richacl_move_everyone_aces_down(struct richacl_alloc *x)
 	if (allowed & ~ACE4_POSIX_ALWAYS_ALLOWED) {
 		struct richace *last_ace = ace - 1;
 
-		if (richace_is_everyone(last_ace) &&
+		if (x->acl->a_entries &&
+		    richace_is_everyone(last_ace) &&
 		    richace_is_allow(last_ace) &&
 		    richace_is_inherit_only(last_ace) &&
 		    last_ace->e_mask == allowed)
