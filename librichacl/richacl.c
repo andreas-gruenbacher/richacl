@@ -112,7 +112,9 @@ struct mask_flag_struct mask_flags[] = {
 	FILE_MASK_BIT('a', APPEND_DATA, "append_data"),
 	DIRECTORY_MASK_BIT('a', ADD_SUBDIRECTORY, "add_subdirectory"),
 	MASK_BIT('x', EXECUTE, "execute"),
-	DIRECTORY_MASK_BIT('d', DELETE_CHILD, "delete_child"),
+	/* DELETE_CHILD is only meaningful for directories but it might also
+	   be set in an ACE of a file, so print it in file context as well.  */
+	MASK_BIT('d', DELETE_CHILD, "delete_child"),
 	MASK_BIT('T', READ_ATTRIBUTES, "read_attributes"),
 	MASK_BIT('t', WRITE_ATTRIBUTES, "write_attributes"),
 	MASK_BIT('D', DELETE, "delete"),
