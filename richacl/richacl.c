@@ -32,6 +32,8 @@
 #include <unistd.h>
 #include <sys/xattr.h>
 #include <ctype.h>
+#include <pwd.h>
+#include <grp.h>
 
 #include "richacl.h"
 #include "string_buffer.h"
@@ -190,7 +192,7 @@ void remove_comments(struct string_buffer *buffer)
 }
 
 static struct option long_options[] = {
-	{"access",		0, 0,  3 },
+	{"access",		2, 0,  3 },
 	{"get",			0, 0, 'g'},
 	{"modify",		1, 0, 'm'},
 	{"modify-file",		1, 0, 'M'},
@@ -230,8 +232,11 @@ static void synopsis(int help)
 "              Identical to --set, but read the ACL from a file\n"
 "              instead. If the file is `-', read from standard input.\n"
 "  --remove    Delete the ACL of file(s).\n"
-"  --access    Show which permissions the caller has for file(s). Does not\n"
-"              include permissions allowed through capabilities.\n"
+"  --access[=user[:group:...]}\n"
+"              Show which permissions the caller or a specified user has for\n"
+"              file(s).  When a list of groups is given, this overrides the\n"
+"              groups the user is in.\n"
+"              capabilities. \n"
 "  --version   Display the version of %s and exit.\n"
 "  --help      This help text.\n"
 "\n"
@@ -267,8 +272,12 @@ int main(int argc, char *argv[])
 {
 	int opt_get = 0, opt_remove = 0, opt_access = 0, opt_dry_run = 0;
 	int opt_modify = 0, opt_set = 0;
+	char *opt_user = NULL;
 	char *acl_text = NULL, *acl_file = NULL;
 	int format = RICHACL_TEXT_SIMPLIFY | RICHACL_TEXT_ALIGN;
+	uid_t user = -1;
+	gid_t *groups = NULL;
+	int n_groups = -1;
 	int status = 0;
 	int c;
 
@@ -329,6 +338,7 @@ int main(int argc, char *argv[])
 
 			case 3:  /* --access */
 				opt_access = 1;
+				opt_user = optarg;
 				break;
 
 			default:
@@ -401,6 +411,59 @@ int main(int argc, char *argv[])
 			acl->a_other_mask = other_mask;
 	}
 
+	if (opt_user) {
+		char *opt_groups;
+		struct passwd *passwd;
+
+		opt_groups = strchr(opt_user, ':');
+		if (opt_groups)
+			*opt_groups++ = 0;
+
+		passwd = getpwnam(opt_user);
+		if (passwd == NULL) {
+			fprintf(stderr, "%s: No such user\n", opt_user);
+			exit(1);
+		}
+		user = passwd->pw_uid;
+
+		n_groups = 32;
+		groups = malloc(sizeof(gid_t) * n_groups);
+		if (!groups)
+			goto fail;
+		if (opt_groups) {
+			int avail = n_groups;
+			char *tok;
+			n_groups = 0;
+			tok = strtok(opt_groups, ":");
+			while (tok) {
+				struct group *group;
+
+				if (n_groups == avail) {
+					gid_t *new_groups;
+					avail *= 2;
+					new_groups = realloc(groups, sizeof(gid_t) * avail);
+					if (!new_groups)
+						goto fail;
+				}
+				group = getgrnam(tok);
+				if (!group) {
+					fprintf(stderr, "%s: No such group\n", tok);
+					exit(1);
+				}
+				groups[n_groups++] = group->gr_gid;
+
+				tok = strtok(NULL, ":");
+			}
+		} else {
+			if (getgrouplist(opt_user, passwd->pw_gid, groups, &n_groups) < 0) {
+				free(groups);
+				groups = malloc(sizeof(gid_t) * n_groups);
+				if (getgrouplist(opt_user, passwd->pw_gid, groups, &n_groups) < 0)
+					goto fail;
+			}
+		}
+	}
+
 	for (; optind < argc; optind++) {
 		const char *file = argv[optind];
 		struct richacl *acl2 = NULL;
@@ -441,7 +504,7 @@ int main(int argc, char *argv[])
 
 			if (stat(file, &st) != 0)
 				goto fail;
-			mask = richacl_access(file, &st, -1, NULL, -1);
+			mask = richacl_access(file, &st, user, groups, n_groups);
 			if (mask < 0)
 				goto fail;
 
