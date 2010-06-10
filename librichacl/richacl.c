@@ -1220,10 +1220,6 @@ struct richacl *richacl_from_mode(mode_t mode)
 	ace->e_mask = is_dir ? ACE4_VALID_MASK : ACE4_VALID_FILE_MASK;
 	ace->u.e_who = richace_everyone_who;
 	
-	if (richacl_apply_masks(&acl)) {
-		free(acl);
-		acl = NULL;
-	}
 	return acl;
 }
 
