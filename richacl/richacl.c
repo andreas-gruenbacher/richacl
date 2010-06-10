@@ -228,7 +228,7 @@ static void synopsis(int help)
 "  --set-file acl_file\n"
 "              Identical to --set, but read the ACL from a file\n"
 "              instead. If the file is `-', read from standard input.\n"
-"  --delete-acl\n"
+"  --remove\n"
 "              Delete the ACL of file(s).\n"
 "  --version   Display the version of %s and exit.\n"
 "  --help      This help text.\n"
@@ -256,7 +256,7 @@ static void synopsis(int help)
 "\tidentifier_group (g), inherited_ace (a)\n"
 "\n"
 "Per-ACL flag values are:\n"
-"\tauto_inherit (a), protected (p), defaulted (d)\n",
+"\tauto_inherit (a), protected (p), defaulted (d), posix_mapped (P)\n",
 	basename(progname));
 	exit(0);
 }
