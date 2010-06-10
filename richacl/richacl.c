@@ -190,6 +190,7 @@ void remove_comments(struct string_buffer *buffer)
 }
 
 static struct option long_options[] = {
+	{"access",		0, 0,  3 },
 	{"get",			0, 0, 'g'},
 	{"modify",		1, 0, 'm'},
 	{"modify-file",		1, 0, 'M'},
@@ -228,8 +229,9 @@ static void synopsis(int help)
 "  --set-file acl_file\n"
 "              Identical to --set, but read the ACL from a file\n"
 "              instead. If the file is `-', read from standard input.\n"
-"  --remove\n"
-"              Delete the ACL of file(s).\n"
+"  --remove    Delete the ACL of file(s).\n"
+"  --access    Show which permissions the caller has for file(s). Does not\n"
+"              include permissions allowed through capabilities.\n"
 "  --version   Display the version of %s and exit.\n"
 "  --help      This help text.\n"
 "\n"
@@ -263,7 +265,7 @@ static void synopsis(int help)
 
 int main(int argc, char *argv[])
 {
-	int opt_get = 0, opt_remove = 0, opt_dry_run = 0;
+	int opt_get = 0, opt_remove = 0, opt_access = 0, opt_dry_run = 0;
 	int opt_modify = 0, opt_set = 0;
 	char *acl_text = NULL, *acl_file = NULL;
 	int format = RICHACL_TEXT_SIMPLIFY | RICHACL_TEXT_ALIGN;
@@ -325,12 +327,16 @@ int main(int argc, char *argv[])
 				opt_dry_run = 1;
 				break;
 
+			case 3:  /* --access */
+				opt_access = 1;
+				break;
+
 			default:
 				synopsis(0);
 				break;
 		}
 	}
-	if (opt_get + opt_remove + opt_modify + opt_set != 1 ||
+	if (opt_get + opt_remove + opt_modify + opt_set + opt_access != 1 ||
 	    (acl_text ? 1 : 0) + (acl_file ? 1 : 0) > 1 ||
 	    optind == argc)
 		synopsis(argc == 1);
@@ -400,7 +406,7 @@ int main(int argc, char *argv[])
 		struct richacl *acl2 = NULL;
 		struct stat st;
 
-		if (opt_get || opt_modify || opt_dry_run)
+		if (opt_get || opt_modify || opt_access || opt_dry_run)
 			if (stat(file, &st))
 				goto fail;
 
@@ -429,6 +435,20 @@ int main(int argc, char *argv[])
 				if (errno != ENODATA)
 					goto fail;
 			}
+		} else if (opt_access) {
+			unsigned int mask;
+			char *mask_text;
+
+			if (stat(file, &st) != 0)
+				goto fail;
+			mask = richacl_access(file, &st, -1, NULL, -1);
+			if (mask < 0)
+				goto fail;
+
+			mask_text = richacl_mask_to_text(mask,
+					format | format_for_mode(st.st_mode));
+			printf("%s  %s\n", mask_text, file);
+			free(mask_text);
 		} else {
 			acl2 = get_richacl(file, st.st_mode);
 			if (!acl2)

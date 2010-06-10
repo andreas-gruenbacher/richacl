@@ -17,6 +17,7 @@
   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 */
 
+#include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <stdio.h>
@@ -584,8 +585,12 @@ static void write_mask(struct string_buffer *buffer, uint32_t mask, int fmt)
 
 		if (fmt & RICHACL_TEXT_SIMPLIFY) {
 			hide = ACE4_POSIX_ALWAYS_ALLOWED;
+#if 0
+			/* Hiding directory-specific flags leads to misaligned,
+			   so disable this. */
 			if (!(fmt & RICHACL_TEXT_DIRECTORY_CONTEXT))
 				hide |= ACE4_VALID_MASK & ~ACE4_VALID_FILE_MASK;
+#endif
 		}
 
 		for (i = 0; i < ARRAY_SIZE(mask_bits); i++) {
@@ -1220,4 +1225,160 @@ struct richacl *richacl_from_mode(mode_t mode)
 		acl = NULL;
 	}
 	return acl;
+}
+
+int richace_is_unix_id(const struct richace *ace)
+{
+	return !(ace->e_flags & ACE4_SPECIAL_WHO);
+}
+
+static int in_groups(gid_t group, gid_t groups[], int n_groups)
+{
+	int n;
+
+	for (n = 0; n < n_groups; n++)
+		if (group == groups[n])
+			return 1;
+	return 0;
+}
+
+int richacl_access(const char *file, const struct stat *st, uid_t user,
+		   const gid_t *const_groups, int n_groups)
+{
+	const struct richacl *acl;
+	struct stat local_st;
+	const struct richace *ace;
+	unsigned int file_mask, mask = ACE4_VALID_MASK, denied = 0;
+	int in_owning_group;
+	int in_owner_or_group_class;
+	gid_t *groups = NULL;
+
+	if (!st) {
+		if (stat(file, &local_st) != 0)
+			return -1;
+		st = &local_st;
+	}
+
+	acl = richacl_get_file(file);
+	if (!acl) {
+		if (errno == ENODATA || errno == ENOTSUP || errno == ENOSYS) {
+			acl = richacl_from_mode(st->st_mode);
+			if (!acl)
+				return -1;
+		} else
+			return -1;
+	}
+
+	if (user == -1)
+		user = geteuid();
+	if (n_groups < 0) {
+		n_groups = getgroups(0, NULL);
+		if (n_groups < 0)
+			return -1;
+		groups = malloc(sizeof(gid_t) * (n_groups + 1));
+		if (!groups)
+			return -1;
+		groups[0] = getegid();
+		if (getgroups(n_groups, groups + 1) < 0) {
+			free(groups);
+			return -1;
+		}
+	} else
+		groups = (gid_t *)const_groups;  /* cast away const */
+
+	in_owning_group = in_groups(st->st_gid, groups, n_groups);
+	in_owner_or_group_class = in_owning_group;
+
+	/*
+	 * A process is
+	 *   - in the owner file class if it owns the file,
+	 *   - in the group file class if it is in the file's owning group or
+	 *     it matches any of the user or group entries, and
+	 *   - in the other file class otherwise.
+	 */
+
+	richacl_for_each_entry(ace, acl) {
+		unsigned int ace_mask = ace->e_mask;
+
+		if (richace_is_inherit_only(ace))
+			continue;
+		if (richace_is_owner(ace)) {
+			if (user != st->st_uid)
+				continue;
+			goto is_owner;
+		} else if (richace_is_group(ace)) {
+			if (!in_owning_group)
+				continue;
+		} else if (richace_is_unix_id(ace)) {
+			if (ace->e_flags & ACE4_IDENTIFIER_GROUP) {
+				if (!in_groups(ace->u.e_id, groups, n_groups))
+					continue;
+			} else {
+				if (user != ace->u.e_id)
+					continue;
+			}
+		} else
+			goto is_everyone;
+
+		/*
+		 * Apply the group file mask to entries other than OWNER@ and
+		 * EVERYONE@. This is not required for correct access checking
+		 * but ensures that we grant the same permissions as the acl
+		 * computed by richacl_apply_masks() would grant.
+		 */
+		if (richace_is_allow(ace))
+			ace_mask &= acl->a_group_mask;
+
+is_owner:
+		/* The process is in the owner or group file class. */
+		in_owner_or_group_class = 1;
+
+is_everyone:
+		/* Check which mask flags the ACE allows or denies. */
+		if (richace_is_deny(ace))
+			denied |= ace_mask & mask;
+		mask &= ~ace_mask;
+		if (!mask)
+			break;
+	}
+	denied |= mask;
+
+	/*
+	 * Figure out which file mask applies.
+	 */
+	if (user == st->st_uid) {
+		file_mask = acl->a_owner_mask |
+			    (ACE4_WRITE_ATTRIBUTES | ACE4_WRITE_ACL);
+		denied &= ~(ACE4_WRITE_ATTRIBUTES | ACE4_WRITE_ACL);
+	} else if (in_owner_or_group_class)
+		file_mask = acl->a_group_mask;
+	else
+		file_mask = acl->a_other_mask;
+	if (!S_ISDIR(st->st_mode))
+		file_mask &= ACE4_VALID_FILE_MASK;
+
+	if (groups != const_groups)
+		free(groups);
+
+	return ACE4_POSIX_ALWAYS_ALLOWED | (file_mask & ~denied);
+}
+
+char *richacl_mask_to_text(unsigned int mask, int fmt)
+{
+	struct string_buffer *buffer;
+
+	buffer = alloc_string_buffer(16);
+	if (!buffer)
+		return NULL;
+	write_mask(buffer, mask, fmt);
+
+	if (string_buffer_okay(buffer)) {
+		char *str = realloc(buffer->buffer, buffer->offset + 1);
+		if (str)
+			return str;
+	}
+
+	free_string_buffer(buffer);
+	errno = ENOMEM;
+	return NULL;
 }

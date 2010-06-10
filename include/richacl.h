@@ -153,6 +153,7 @@ struct richacl {
 extern int richace_is_owner(const struct richace *);
 extern int richace_is_group(const struct richace *);
 extern int richace_is_everyone(const struct richace *);
+extern int richace_is_unix_id(const struct richace *);
 
 static inline int richace_is_allow(const struct richace *ace)
 {
@@ -188,5 +189,10 @@ extern void richacl_free(struct richacl *);
 extern int richacl_apply_masks(struct richacl **);
 extern void richacl_compute_max_masks(struct richacl *);
 extern struct richacl *richacl_from_mode(mode_t);
+
+struct stat;
+extern int richacl_access(const char *, const struct stat *, uid_t,
+			  const gid_t *, int);
+extern char *richacl_mask_to_text(unsigned int, int);
 
 #endif  /* __RICHACL_H */
