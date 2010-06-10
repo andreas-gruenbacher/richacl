@@ -314,43 +314,53 @@ static int
 richacl_propagate_everyone(struct richacl_alloc *x)
 {
 	struct richace who = { .e_flags = ACE4_SPECIAL_WHO };
+	struct richacl *acl = x->acl;
 	struct richace *ace;
 	unsigned int owner_allow, group_allow;
 
-	if (!((x->acl->a_owner_mask | x->acl->a_group_mask) &
-	      ~x->acl->a_other_mask))
+	/*
+	 * If the owner mask contains permissions which are not in the group mask,
+	 * the group mask contains permissions which are not in the other mask,
+	 * or the owner class contains permissions which are not in the other mask,
+	 * we may need to propagate permissions up from the everyone@ allow ace.
+	 * The third condition is implied by the first two.
+	 */
+	if (!((acl->a_owner_mask & ~acl->a_group_mask) ||
+	      (acl->a_group_mask & ~acl->a_other_mask)))
 		return 0;
-	if (!x->acl->a_count)
+	if (!acl->a_count)
 		return 0;
-	ace = x->acl->a_entries + x->acl->a_count - 1;
+	ace = acl->a_entries + acl->a_count - 1;
 	if (richace_is_inherit_only(ace) || !richace_is_everyone(ace))
 		return 0;
-	if (!(ace->e_mask & ~x->acl->a_other_mask)) {
+	if (!(ace->e_mask & ~(acl->a_group_mask & acl->a_other_mask))) {
 		/* None of the allowed permissions will get masked. */
 		return 0;
 	}
-	owner_allow = ace->e_mask & x->acl->a_owner_mask;
-	group_allow = ace->e_mask & x->acl->a_group_mask;
+	owner_allow = ace->e_mask & acl->a_owner_mask;
+	group_allow = ace->e_mask & acl->a_group_mask;
 
 	/* Propagate everyone@ permissions through to owner@. */
-	if (owner_allow & ~x->acl->a_other_mask) {
+	if (owner_allow & ~(acl->a_group_mask & acl->a_other_mask)) {
 		who.u.e_who = richace_owner_who;
 		if (__richacl_propagate_everyone(x, &who, owner_allow))
 			return -1;
+		acl = x->acl;
 	}
 
-	if (group_allow & ~x->acl->a_other_mask) {
+	if (group_allow & ~acl->a_other_mask) {
 		int n;
 
 		/* Propagate everyone@ permissions through to group@. */
 		who.u.e_who = richace_group_who;
 		if (__richacl_propagate_everyone(x, &who, group_allow))
 			return -1;
+		acl = x->acl;
 
 		/* Start from the entry before the trailing EVERYONE@ ALLOW
 		   entry. We will not hit EVERYONE@ entries in the loop. */
-		for (n = x->acl->a_count - 2; n != -1; n--) {
-			ace = x->acl->a_entries + n;
+		for (n = acl->a_count - 2; n != -1; n--) {
+			ace = acl->a_entries + n;
 
 			if (richace_is_inherit_only(ace) ||
 			    richace_is_owner(ace) ||
