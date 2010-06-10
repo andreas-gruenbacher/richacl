@@ -1,0 +1,28 @@
+$ mkdir d
+$ cd d
+
+$ whoami
+> root
+
+$ touch a
+
+richacl set with no write_acl  fails
+	$ su daemon
+	$ richacl --set 'daemon:rwo::allow' a
+	> a: Operation not permitted
+
+Allow write acl to daemon
+	$ su
+	$ richacl --set 'daemon:rwm::allow' a
+
+	$ su daemon
+	$ richacl --set 'daemon:rwmo::allow' a	
+
+chmod cause the extra acl bits to be dropped
+	$ chmod 660 a
+	$ richacl --set 'daemon:rwo::allow' a
+	> a: Operation not permitted
+
+$ su
+$ cd ..
+$ rm -rf d

@@ -14,23 +14,23 @@ $ richacl --set 'bin:w::deny owner@:*::allow bin:a::allow' f
 
 $ su bin
 $ echo a > a
-> /bin/sh: a: Permission denied
+> /bin/sh: cannot create a: Permission denied
 $ echo b > b
 $ echo c > c
-> /bin/sh: c: Permission denied
+> /bin/sh: cannot create c: Permission denied
 $ echo d > d
 $ echo e > e
 $ echo f > f
-> /bin/sh: f: Permission denied
+> /bin/sh: cannot create f: Permission denied
 
 $ echo A >> a
-> /bin/sh: a: Permission denied
+> /bin/sh: cannot create a: Permission denied
 $ echo B >> b
-> /bin/sh: b: Permission denied
+> /bin/sh: cannot create b: Permission denied
 $ echo C >> c
 $ echo D >> d
 $ echo E >> e
-> /bin/sh: e: Permission denied
+> /bin/sh: cannot create e: Permission denied
 $ echo F >> f
 
 $ su

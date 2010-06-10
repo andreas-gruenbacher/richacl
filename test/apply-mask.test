@@ -6,138 +6,175 @@ $ touch x
 
 $ richacl --set 'owner@:rw::allow group@:rw::allow everyone@:r::allow' x
 $ richacl --get x
-> x:
-> owner@:rw::allow
-> group@:rw::allow
-> everyone@:r::allow
+> # file: x
+> # owner: root
+> # group: root
+>     owner@:rw--------::allow
+>     group@:rw--------::allow
+>  everyone@:r---------::allow
 >
 
 $ richacl --set 'everyone@:w::allow owner@:r::allow group@:r::allow' x
 $ chmod 664 x
 $ richacl --get x
-> x:
-> owner@:rw::allow
-> group@:rw::allow
+> # file: x
+> # owner: root
+> # group: root
+>  owner@:rw--------::allow
+>  group@:rw--------::allow
 >
 
 $ richacl --set 'everyone@:w::deny owner@:rw::allow group@:rw::allow' x
 $ chmod 664 x
 $ richacl --get x
-> x:
-> owner@:r::allow
-> group@:r::allow
+> # file: x
+> # owner: root
+> # group: root
+>  owner@:r---------::allow
+>  group@:r---------::allow
 >
 
 $ richacl --set 'owner@:rwmo::allow' x
 $ richacl --get x
-> x:
-> owner@:rwmo::allow
+> # file: x
+> # owner: root
+> # group: root
+>  owner@:rw----mo--::allow
 >
+
 
 $ chmod 644 x
 $ richacl --get x
-> x:
-> owner@:rw::allow
+> # file: x
+> # owner: root
+> # group: root
+>  owner@:rw--------::allow
 >
 
 $ richacl --set 'root:rw::allow' x
 $ chmod 664 x
 $ richacl --get x
-> x:
-> root:rw::allow
+> # file: x
+> # owner: root
+> # group: root
+>  root:rw--------::allow
 >
 
 $ chmod 644 x
 $ richacl --get x
-> x:
-> root:r::allow
+> # file: x
+> # owner: root
+> # group: root
+>  root:r---------::allow
 >
+
 
 $ chmod 664 x
 $ richacl --get x
-> x:
-> root:rw::allow
+> # file: x
+> # owner: root
+> # group: root
+>  root:rw--------::allow
 >
 
 $ richacl --set 'root:rw::allow everyone@:r::allow' x
 $ chmod 664 x
 $ richacl --get x
-> x:
-> root:rw::allow
-> everyone@:r::allow
+> # file: x
+> # owner: root
+> # group: root
+>       root:rw--------::allow
+>  everyone@:r---------::allow
 >
 
 $ richacl --set 'root:r::allow everyone@:rw::allow' x
 $ chmod 664 x
 $ richacl --get x
-> x:
-> root:rw::allow
-> owner@:rw::allow
-> group@:rw::allow
-> everyone@:r::allow
+> # file: x
+> # owner: root
+> # group: root
+>       root:rw--------::allow
+>     owner@:rw--------::allow
+>     group@:rw--------::allow
+>  everyone@:r---------::allow
 >
+
 
 $ richacl --set 'root:w::deny everyone@:rw::allow' x
 $ chmod 664 x
 $ richacl --get x
-> x:
-> root:w::deny
-> owner@:rw::allow
-> group@:rw::allow
-> root:r::allow
-> everyone@:r::allow
+> # file: x
+> # owner: root
+> # group: root
+>       root:-w--------::deny
+>     owner@:rw--------::allow
+>     group@:rw--------::allow
+>       root:r---------::allow
+>  everyone@:r---------::allow
 >
 
 $ richacl --set 'root:rw::allow root:w::deny everyone@:rw::allow' x
 $ chmod 664 x
 $ richacl --get x
-> x:
-> root:rw::allow
-> root:w::deny
-> owner@:rw::allow
-> group@:rw::allow
-> everyone@:r::allow
+> # file: x
+> # owner: root
+> # group: root
+>       root:rw--------::allow
+>       root:-w--------::deny
+>     owner@:rw--------::allow
+>     group@:rw--------::allow
+>  everyone@:r---------::allow
 >
 
 $ richacl --set 'everyone@:rw::allow' x
 $ chmod 066 x
 $ richacl --get x
-> x:
-> owner@:rw::deny
-> everyone@:rw::allow
-> 
+> # file: x
+> # owner: root
+> # group: root
+>     owner@:rw--------::deny
+>  everyone@:rw--------::allow
+>
 
 $ chmod 006 x
 $ richacl --get x
-> x:
-> owner@:rw::deny
-> group@:rw::deny
-> everyone@:rw::allow
+> # file: x
+> # owner: root
+> # group: root
+>     owner@:rw--------::deny
+>     group@:rw--------::deny
+>  everyone@:rw--------::allow
 > 
 
 $ chmod 606 x
 $ richacl --get x
-> x:
-> group@:rw::deny
-> everyone@:rw::allow
+> # file: x
+> # owner: root
+> # group: root
+>     group@:rw--------::deny
+>  everyone@:rw--------::allow
 > 
 
 $ richacl --set 'root:rw::allow everyone@:rw::allow' x
 $ chmod 606 x
 $ richacl --get x
-> x:
-> group@:rw::deny
-> everyone@:rw::allow
+> # file: x
+> # owner: root
+> # group: root
+>     group@:rw--------::deny
+>  everyone@:rw--------::allow
 > 
 
 $ chmod 646 x
 $ richacl --get x
-> x:
-> root:r::allow
-> group@:w::deny
-> root:w::deny
-> everyone@:rw::allow
-> 
+> # file: x
+> # owner: root
+> # group: root
+>       root:r---------::allow
+>     group@:-w--------::deny
+>       root:-w--------::deny
+>  everyone@:rw--------::allow
+>
 
 $ cd ..
 $ rm -rf d

@@ -12,8 +12,11 @@ $ chmod 600 x
 $ ls -l x | cut -d ' ' -f 1
 > -rw-------
 $ richacl --get x
-> x:
+> # file: x
+> # owner: root
+> # group: root
 >
+
 $ rm -f x
 
 $ cd ..

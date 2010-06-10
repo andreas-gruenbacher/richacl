@@ -5,6 +5,7 @@ $ whoami
 > root
 
 $ touch a b
+Need to sleep so that we get some time difference in some file system
 $ sleep 1
 
 Without write access, the ctime cannot be changed.

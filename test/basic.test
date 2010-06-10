@@ -11,8 +11,10 @@ $ ls -l x | cut -d ' ' -f 1
 > -rw-rw-rw-
 
 $ richacl --get x
-> x:
-> everyone@:rw::allow
+> # file: x
+> # owner: bin
+> # group: bin
+>  everyone@:rw--------::allow
 >
 
 $ chmod 664 x
@@ -20,10 +22,12 @@ $ ls -l x | cut -d ' ' -f 1
 > -rw-rw-r--
 
 $ richacl --get x
-> x:
-> owner@:rw::allow
-> group@:rw::allow
-> everyone@:r::allow
+> # file: x
+> # owner: bin
+> # group: bin
+>     owner@:rw--------::allow
+>     group@:rw--------::allow
+>  everyone@:r---------::allow
 >
 
 $ mkdir sub 
@@ -32,19 +36,24 @@ $ ls -dl sub | cut -d ' ' -f 1
 > drwxrwxrwx
 
 $ richacl --get sub
-> sub:
-> everyone@:rwax:fd:allow
+> # file: sub
+> # owner: bin
+> # group: bin
+>  everyone@:rwax-------:fd:allow
 >
 
 $ chmod 775 sub
 $ ls -dl sub | cut -d ' ' -f 1
 > drwxrwxr-x
+
 $ richacl --get sub
-> sub:
-> owner@:rwax::allow
-> group@:rwax::allow
-> everyone@:rwax:fdi:allow
-> everyone@:rx::allow
+> # file: sub
+> # owner: bin
+> # group: bin
+>     owner@:rwax-------::allow
+>     group@:rwax-------::allow
+>  everyone@:rwax-------:fdi:allow
+>  everyone@:r--x-------::allow
 >
 
 $ touch sub/f
@@ -52,8 +61,10 @@ $ ls -l sub/f | cut -d ' ' -f 1
 > -rw-rw-rw-
 
 $ richacl --get sub/f
-> sub/f:
-> everyone@:rwa::allow
+> # file: sub/f
+> # owner: bin
+> # group: bin
+>  everyone@:rwa-------::allow
 >
 
 $ mkdir sub/sub2
@@ -61,8 +72,10 @@ $ ls -dl sub/sub2 | cut -d ' ' -f 1
 > drwxrwxrwx
 
 $ richacl --get sub/sub2
-> sub/sub2:
-> everyone@:rwax:fd:allow
+> # file: sub/sub2
+> # owner: bin
+> # group: bin
+>  everyone@:rwax-------:fd:allow
 >
 
 $ su

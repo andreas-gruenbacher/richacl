@@ -43,7 +43,7 @@ $ rm e/f
 $ richacl --set 'owner@:rx:fi:allow group@:rwx:fi:deny everyone@:rwx:f:allow' e
 $ touch e/f
 $ ls -l e/f | cut -d ' ' -f 1
-> -rw----rw-
+> -rw-rw-rw-
 $ rm e/f
 
 $ richacl --set 'owner@:rx:fi:allow root:rwx:fi:deny everyone@:rwx:f:allow' e

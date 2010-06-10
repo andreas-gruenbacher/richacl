@@ -8,7 +8,7 @@ include $(TOPDIR)/include/builddefs
 LSRCFILES = run \
 	    apply-mask.test chmod.test computed-mode.test ctime.test \
 	    unrepresentable.test basic.test chown.test create.test \
-	    delete.test write-vs-append.test
+	    delete.test write-vs-append.test setacl.test
 
 include $(BUILDRULES)
 
