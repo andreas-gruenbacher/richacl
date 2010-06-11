@@ -9,7 +9,7 @@ LTCOMMAND = richacl
 CFILES = richacl.c user_group.c
 HFILES = user_group.h
 
-LLDLIBS = $(LIBRICHACL) $(LIBATTR)
+LLDLIBS = $(LIBRICHACL) $(LIBATTR) $(TOPDIR)/librichacl/string_buffer.o
 LTDEPENDENCIES = $(LIBRICHACL)
 
 default: $(LTCOMMAND)

@@ -1,15 +1,16 @@
 RICHACL_1.0 {
     global:
 	# ace funcs
-	nfs4ace_is_owner;
-	nfs4ace_is_group;
-	nfs4ace_is_everyone;
-	nfs4ace_get_who;
-	nfs4ace_set_who;
-	nfs4ace_set_uid;
-	nfs4ace_set_gid;
-	nfs4ace_is_same_identifier;
-	nfs4ace_copy;
+	richace_is_owner;
+	richace_is_group;
+	richace_is_everyone;
+	richace_is_unix_id;
+	richace_get_who;
+	richace_set_who;
+	richace_set_uid;
+	richace_set_gid;
+	richace_is_same_identifier;
+	richace_copy;
 
 	# acl funcs
 	richacl_get_file;
@@ -24,18 +25,12 @@ RICHACL_1.0 {
 	richacl_apply_masks;
 	richacl_compute_max_masks;
 	richacl_from_mode;
-
-
-	# string buffer
-	alloc_string_buffer;
-	reset_string_buffer;
-	free_string_buffer;
-	buffer_sprintf;
+	richacl_masks_to_mode;
+	richacl_equiv_mode;
+	richacl_access;
+	richacl_mask_to_text;
 
     local:
     	# Library internal stuff
-	nfs4ace_owner_who;
-	nfs4ace_group_who;
-	nfs4ace_everyone_who;
-
+	*;
 };
