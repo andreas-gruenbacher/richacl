@@ -638,7 +638,7 @@ static void write_mask(struct string_buffer *buffer, uint32_t mask, int fmt)
 }
 
 static void write_identifier(struct string_buffer *buffer,
-			     const struct richace *ace, int align)
+			     const struct richace *ace, int align, int fmt)
 {
 	/* FIXME: switch to getpwuid_r() and getgrgid_r() here. */
 
@@ -652,15 +652,19 @@ static void write_identifier(struct string_buffer *buffer,
 
 		buffer_sprintf(buffer, "%*s", align, dup);
 	} else if (ace->e_flags & ACE4_IDENTIFIER_GROUP) {
-		struct group *group = getgrgid(ace->u.e_id);
+		struct group *group = NULL;
 
+		if (!(fmt & RICHACL_TEXT_NUMERIC_IDS))
+			group = getgrgid(ace->u.e_id);
 		if (group)
 			buffer_sprintf(buffer, "%*s", align, group->gr_name);
 		else
 			buffer_sprintf(buffer, "%*d", align, ace->u.e_id);
 	} else {
-		struct passwd *passwd = getpwuid(ace->u.e_id);
+		struct passwd *passwd = NULL;
 
+		if (!(fmt & RICHACL_TEXT_NUMERIC_IDS))
+			passwd = getpwuid(ace->u.e_id);
 		if (passwd)
 			buffer_sprintf(buffer, "%*s", align, passwd->pw_name);
 		else
@@ -684,15 +688,19 @@ char *richacl_to_text(const struct richacl *acl, int fmt)
 			else if (richace_is_everyone(ace))
 				a = 9;
 			else if (ace->e_flags & ACE4_IDENTIFIER_GROUP) {
-				struct group *group = getgrgid(ace->u.e_id);
+				struct group *group = NULL;
 
+				if (!(fmt & RICHACL_TEXT_NUMERIC_IDS))
+					group = getgrgid(ace->u.e_id);
 				if (group)
 					a = strlen(group->gr_name);
 				else
 					a = snprintf(NULL, 0, "%d", ace->u.e_id);
 			} else {
-				struct passwd *passwd = getpwuid(ace->u.e_id);
+				struct passwd *passwd = NULL;
 
+				if (!(fmt & RICHACL_TEXT_NUMERIC_IDS))
+					passwd = getpwuid(ace->u.e_id);
 				if (passwd)
 					a = strlen(passwd->pw_name);
 				else
@@ -710,7 +718,7 @@ char *richacl_to_text(const struct richacl *acl, int fmt)
 	write_acl_flags(buffer, acl->a_flags, fmt);
 	if (fmt & RICHACL_TEXT_SHOW_MASKS) {
 		unsigned int allowed = 0;
-		
+
 		fmt2 = fmt;
 		richacl_for_each_entry(ace, acl) {
 			if (richace_is_inherit_only(ace))
@@ -740,7 +748,7 @@ char *richacl_to_text(const struct richacl *acl, int fmt)
 	}
 
 	richacl_for_each_entry(ace, acl) {
-		write_identifier(buffer, ace, align);
+		write_identifier(buffer, ace, align, fmt);
 		buffer_sprintf(buffer, ":");
 
 		fmt2 = fmt;
@@ -1255,7 +1263,7 @@ struct richacl *richacl_from_mode(mode_t mode)
 	if (!S_ISDIR(mode))
 		ace->e_mask &= ~ACE4_DELETE_CHILD;
 	ace->u.e_who = richace_everyone_who;
-	
+
 	return acl;
 }
 

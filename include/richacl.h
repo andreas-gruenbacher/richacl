@@ -131,6 +131,7 @@ struct richacl {
 #define RICHACL_TEXT_SHOW_MASKS		8
 #define RICHACL_TEXT_SIMPLIFY		16
 #define RICHACL_TEXT_ALIGN		32
+#define RICHACL_TEXT_NUMERIC_IDS	64
 
 /* richacl_from_text flags */
 #define RICHACL_TEXT_OWNER_MASK		1

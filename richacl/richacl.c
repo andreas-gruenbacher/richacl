@@ -168,8 +168,8 @@ static int print_richacl(const char *file, struct richacl **acl,
 		goto fail;
 	printf("# file: %s\n# owner: %s\n# group: %s\n",
 	       file,
-	       user_name(st->st_uid, 0),
-	       group_name(st->st_gid, 0));
+	       user_name(st->st_uid, fmt & RICHACL_TEXT_NUMERIC_IDS),
+	       group_name(st->st_gid, fmt & RICHACL_TEXT_NUMERIC_IDS));
 	if ((st->st_mode & (S_ISVTX | S_ISUID | S_ISGID)))
 		printf("# flags: %s\n", flagstr(st->st_mode));
 
@@ -217,6 +217,7 @@ static struct option long_options[] = {
 	{"long",		0, 0, 'l'},
 	{"raw",			0, 0,  1 },
 	{"unaligned",		0, 0,  4 },
+	{"numeric-ids",		0, 0,  5 },
 	{"dry-run",		0, 0,  2 },
 	{"version",		0, 0, 'v'},
 	{"help",		0, 0, 'h'},
@@ -359,6 +360,10 @@ int main(int argc, char *argv[])
 
 			case 4:  /* --unaligned */
 				format &= ~RICHACL_TEXT_ALIGN;
+				break;
+
+			case 5:  /* --numeric */
+				format |= RICHACL_TEXT_NUMERIC_IDS;
 				break;
 
 			default:
