@@ -95,9 +95,6 @@
 	ACE4_WRITE_OWNER |				\
 	ACE4_SYNCHRONIZE)
 
-/* Valid ACE4_* flags for non-directories */
-#define ACE4_VALID_FILE_MASK (ACE4_VALID_MASK & ~ACE4_DELETE_CHILD)
-
 struct richace {
 	unsigned short	e_type;
 	unsigned short	e_flags;

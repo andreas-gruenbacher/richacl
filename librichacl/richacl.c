@@ -68,6 +68,9 @@ const char *richace_everyone_who = "EVERYONE@";
 	ACE4_DELETE_CHILD )
 #define ACE4_POSIX_MODE_EXEC ( \
 	ACE4_EXECUTE)
+#define ACE4_POSIX_MODE_ALL (ACE4_POSIX_MODE_READ | ACE4_POSIX_MODE_WRITE | \
+			     ACE4_POSIX_MODE_EXEC)
+
 
 static struct {
 	char		a_char;
@@ -608,8 +611,10 @@ static void write_mask(struct string_buffer *buffer, uint32_t mask, int fmt)
 #if 0
 			/* Hiding directory-specific flags leads to misaligned,
 			   so disable this. */
+
+			/* ACE4_DELETE_CHILD is meaningless for non-directories. */
 			if (!(fmt & RICHACL_TEXT_DIRECTORY_CONTEXT))
-				hide |= ACE4_VALID_MASK & ~ACE4_VALID_FILE_MASK;
+				hide |= ACE4_DELETE_CHILD;
 #endif
 		}
 
@@ -1206,6 +1211,11 @@ void richace_copy(struct richace *dst, const struct richace *src)
 	memcpy(dst, src, sizeof(struct richace));
 }
 
+/**
+ * richacl_mode_to_mask  - compute a file mask from the lowest three mode bits
+ *
+ * See richacl_masks_to_mode().
+ */
 static unsigned int richacl_mode_to_mask(mode_t mode)
 {
 	unsigned int mask = ACE4_POSIX_ALWAYS_ALLOWED;
@@ -1220,11 +1230,14 @@ static unsigned int richacl_mode_to_mask(mode_t mode)
 	return mask;
 }
 
+/**
+ * richacl_from_mode  -  create an acl which corresponds to @mode
+ * @mode:       file mode including the file type
+ */
 struct richacl *richacl_from_mode(mode_t mode)
 {
 	struct richacl *acl;
 	struct richace *ace;
-	int is_dir = S_ISDIR(mode) || !(mode & S_IFMT);
 
 	acl = richacl_alloc(1);
 	if (!acl)
@@ -1237,7 +1250,10 @@ struct richacl *richacl_from_mode(mode_t mode)
 
 	ace->e_type = ACE4_ACCESS_ALLOWED_ACE_TYPE;
 	ace->e_flags = ACE4_SPECIAL_WHO;
-	ace->e_mask = is_dir ? ACE4_VALID_MASK : ACE4_VALID_FILE_MASK;
+	ace->e_mask = ACE4_POSIX_MODE_ALL;
+	/* ACE4_DELETE_CHILD is meaningless for non-directories. */
+	if (!S_ISDIR(mode))
+		ace->e_mask &= ~ACE4_DELETE_CHILD;
 	ace->u.e_who = richace_everyone_who;
 	
 	return acl;
@@ -1370,8 +1386,9 @@ is_everyone:
 		file_mask = acl->a_group_mask;
 	else
 		file_mask = acl->a_other_mask;
+	/* ACE4_DELETE_CHILD is meaningless for non-directories. */
 	if (!S_ISDIR(st->st_mode))
-		file_mask &= ACE4_VALID_FILE_MASK;
+		file_mask &= ~ACE4_DELETE_CHILD;
 
 	if (groups != const_groups)
 		free(groups);
@@ -1472,7 +1489,7 @@ richacl_equiv_mode(const struct richacl *acl, mode_t *mode_p)
 	if (!S_ISDIR(*mode_p))
 		x &= ~ACE4_DELETE_CHILD;
 
-	if ((ace->e_mask & x) != (ACE4_VALID_MASK & x))
+	if ((ace->e_mask & x) != (ACE4_POSIX_MODE_ALL & x))
 		return -1;
 
 	mode = richacl_masks_to_mode(acl);
