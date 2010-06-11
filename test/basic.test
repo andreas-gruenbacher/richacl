@@ -14,7 +14,7 @@ $ richacl --get x
 > # file: x
 > # owner: bin
 > # group: bin
->  everyone@:rw---------::allow
+>  everyone@:rw-----------::allow
 >
 
 $ chmod 664 x
@@ -25,9 +25,9 @@ $ richacl --get x
 > # file: x
 > # owner: bin
 > # group: bin
->     owner@:rw---------::allow
->     group@:rw---------::allow
->  everyone@:r----------::allow
+>     owner@:rw-----------::allow
+>     group@:rw-----------::allow
+>  everyone@:r------------::allow
 >
 
 $ mkdir sub 
@@ -50,10 +50,10 @@ $ richacl --get sub
 > # file: sub
 > # owner: bin
 > # group: bin
->     owner@:rwax-------::allow
->     group@:rwax-------::allow
+>     owner@:rwax---------::allow
+>     group@:rwax---------::allow
 >  everyone@:rwax-------:fdi:allow
->  everyone@:r--x-------::allow
+>  everyone@:r--x---------::allow
 >
 
 $ touch sub/f
@@ -64,7 +64,7 @@ $ richacl --get sub/f
 > # file: sub/f
 > # owner: bin
 > # group: bin
->  everyone@:rwa--------::allow
+>  everyone@:rwa----------::allow
 >
 
 $ mkdir sub/sub2
