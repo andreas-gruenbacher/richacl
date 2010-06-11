@@ -438,55 +438,72 @@ int main(int argc, char *argv[])
 	}
 
 	if (opt_user) {
+		int n_groups_alloc;
 		char *opt_groups;
-		struct passwd *passwd;
+		struct passwd *passwd = NULL;
+		char *endp;
 
 		opt_groups = strchr(opt_user, ':');
 		if (opt_groups)
 			*opt_groups++ = 0;
 
-		passwd = getpwnam(opt_user);
-		if (passwd == NULL) {
-			fprintf(stderr, "%s: No such user\n", opt_user);
-			exit(1);
+		user = strtoul(opt_user, &endp, 10);
+		if (*endp) {
+			passwd = getpwnam(opt_user);
+			if (passwd == NULL) {
+				fprintf(stderr, "%s: No such user\n", opt_user);
+				exit(1);
+			}
+			user = passwd->pw_uid;
 		}
-		user = passwd->pw_uid;
 
-		n_groups = 32;
-		groups = malloc(sizeof(gid_t) * n_groups);
+		n_groups_alloc = 32;
+		groups = malloc(sizeof(gid_t) * n_groups_alloc);
 		if (!groups)
 			goto fail;
 		if (opt_groups) {
-			int avail = n_groups;
 			char *tok;
 			n_groups = 0;
 			tok = strtok(opt_groups, ":");
 			while (tok) {
 				struct group *group;
 
-				if (n_groups == avail) {
+				if (n_groups == n_groups_alloc) {
 					gid_t *new_groups;
-					avail *= 2;
-					new_groups = realloc(groups, sizeof(gid_t) * avail);
+					n_groups_alloc *= 2;
+					new_groups = realloc(groups, sizeof(gid_t) * n_groups_alloc);
 					if (!new_groups)
 						goto fail;
 				}
-				group = getgrnam(tok);
-				if (!group) {
-					fprintf(stderr, "%s: No such group\n", tok);
-					exit(1);
+
+				groups[n_groups] = strtoul(tok, &endp, 10);
+				if (*endp) {
+					group = getgrnam(tok);
+					if (!group) {
+						fprintf(stderr, "%s: No such group\n", tok);
+						exit(1);
+					}
+					groups[n_groups] = group->gr_gid;
 				}
-				groups[n_groups++] = group->gr_gid;
+				n_groups++;
 
 				tok = strtok(NULL, ":");
 			}
 		} else {
-			if (getgrouplist(opt_user, passwd->pw_gid, groups, &n_groups) < 0) {
-				free(groups);
-				groups = malloc(sizeof(gid_t) * n_groups);
-				if (getgrouplist(opt_user, passwd->pw_gid, groups, &n_groups) < 0)
-					goto fail;
-			}
+			if (!passwd)
+				passwd = getpwuid(user);
+			if (passwd) {
+				n_groups = n_groups_alloc;
+				if (getgrouplist(passwd->pw_name, passwd->pw_gid,
+					         groups, &n_groups) < 0) {
+					free(groups);
+					groups = malloc(sizeof(gid_t) * n_groups);
+					if (getgrouplist(passwd->pw_name, passwd->pw_gid,
+							 groups, &n_groups) < 0)
+						goto fail;
+				}
+			} else
+				n_groups = 0;
 		}
 	} else
 		user = geteuid();
@@ -498,35 +515,35 @@ int main(int argc, char *argv[])
 
 		if (opt_get || opt_modify || opt_access || opt_dry_run) {
 			if (stat(file, &st))
-				goto fail;
+				goto fail2;
 		} else
 			memset(&st, 0, sizeof(st));
 
 		if (opt_set) {
 			if (opt_dry_run) {
 				if (print_richacl(file, &acl, &st, format))
-					goto fail;
+					goto fail2;
 			} else {
 				if (set_richacl(file, acl))
-					goto fail;
+					goto fail2;
 			}
 		} else if (opt_modify) {
 			acl2 = get_richacl(file, st.st_mode);
 			if (!acl2)
-				goto fail;
+				goto fail2;
 			if (modify_richacl(&acl2, acl, acl_has))
-				goto fail;
+				goto fail2;
 			if (opt_dry_run) {
 				if (print_richacl(file, &acl2, &st, format))
-					goto fail;
+					goto fail2;
 			} else {
 				if (set_richacl(file, acl2))
-					goto fail;
+					goto fail2;
 			}
 		} else if (opt_remove) {
 			if (removexattr(file, "system.richacl")) {
 				if (errno != ENODATA)
-					goto fail;
+					goto fail2;
 			}
 		} else if (opt_access) {
 			unsigned int mask;
@@ -534,7 +551,7 @@ int main(int argc, char *argv[])
 
 			mask = richacl_access(file, &st, user, groups, n_groups);
 			if (mask < 0)
-				goto fail;
+				goto fail2;
 
 			mask_text = richacl_mask_to_text(mask,
 					format | format_for_mode(st.st_mode));
@@ -543,14 +560,14 @@ int main(int argc, char *argv[])
 		} else {
 			acl2 = get_richacl(file, st.st_mode);
 			if (!acl2)
-				goto fail;
+				goto fail2;
 			if (print_richacl(file, &acl2, &st, format))
-				goto fail;
+				goto fail2;
 		}
 		richacl_free(acl2);
 		continue;
 
-	fail:
+	fail2:
 		richacl_free(acl2);
 		perror(file);
 		status = 1;
@@ -558,4 +575,8 @@ int main(int argc, char *argv[])
 
 	richacl_free(acl);
 	return status;
+
+fail:
+	perror(basename(progname));
+	return 1;
 }
