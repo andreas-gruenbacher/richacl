@@ -120,6 +120,20 @@ static struct richacl *get_richacl(const char *file, mode_t mode)
 	return acl;
 }
 
+static int set_richacl(const char *file, struct richacl *acl)
+{
+	if (richacl_set_file(file, acl)) {
+		struct stat st;
+
+		if (stat(file, &st))
+			return -1;
+		if (!richacl_equiv_mode(acl, &st.st_mode))
+			return chmod(file, st.st_mode);
+		return -1;
+	}
+	return 0;
+}
+
 static const char *flagstr(mode_t mode)
 {
 	static char str[4];
@@ -395,6 +409,7 @@ int main(int argc, char *argv[])
 	}
 
 	/* Compute all masks which haven't been set explicitly. */
+	/* FIXME: how about --modify? */
 	if (opt_set && acl && !((acl_has & RICHACL_TEXT_OWNER_MASK) &&
 				(acl_has & RICHACL_TEXT_GROUP_MASK) &&
 				(acl_has & RICHACL_TEXT_OTHER_MASK))) {
@@ -469,17 +484,20 @@ int main(int argc, char *argv[])
 		struct richacl *acl2 = NULL;
 		struct stat st;
 
-		if (opt_get || opt_modify || opt_access || opt_dry_run)
+		if (opt_get || opt_modify || opt_access || opt_dry_run) {
 			if (stat(file, &st))
 				goto fail;
+		} else
+			memset(&st, 0, sizeof(st));
 
 		if (opt_set) {
 			if (opt_dry_run) {
 				if (print_richacl(file, &acl, &st, format))
 					goto fail;
+			} else {
+				if (set_richacl(file, acl))
+					goto fail;
 			}
-			if (richacl_set_file(file, acl))
-				goto fail;
 		} else if (opt_modify) {
 			acl2 = get_richacl(file, st.st_mode);
 			if (!acl2)
@@ -490,7 +508,7 @@ int main(int argc, char *argv[])
 				if (print_richacl(file, &acl2, &st, format))
 					goto fail;
 			} else {
-				if (richacl_set_file(file, acl2))
+				if (set_richacl(file, acl2))
 					goto fail;
 			}
 		} else if (opt_remove) {
@@ -502,8 +520,6 @@ int main(int argc, char *argv[])
 			unsigned int mask;
 			char *mask_text;
 
-			if (stat(file, &st) != 0)
-				goto fail;
 			mask = richacl_access(file, &st, user, groups, n_groups);
 			if (mask < 0)
 				goto fail;
