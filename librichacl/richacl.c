@@ -37,6 +37,22 @@
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 #define ALIGN(x,a) (((x)+(a)-1)&~((a)-1))
 
+#ifndef MAY_READ
+# define MAY_READ S_IROTH
+#endif
+
+#ifndef MAY_WRITE
+# define MAY_WRITE S_IWOTH
+#endif
+
+#ifndef MAY_EXEC
+# define MAY_EXEC S_IXOTH
+#endif
+
+#ifndef S_IRWXUGO
+# define S_IRWXUGO (S_IRWXU|S_IRWXG|S_IRWXO)
+#endif
+
 const char *richace_owner_who	 = "OWNER@";
 const char *richace_group_who	 = "GROUP@";
 const char *richace_everyone_who = "EVERYONE@";
@@ -1377,4 +1393,90 @@ char *richacl_mask_to_text(unsigned int mask, int fmt)
 	free_string_buffer(buffer);
 	errno = ENOMEM;
 	return NULL;
+}
+
+/**
+ * richacl_mask_to_mode  -  compute the file permission bits which correspond to @mask
+ * @mask:	%ACE4_* permission mask
+ *
+ * See richacl_masks_to_mode().
+ */
+static int
+richacl_mask_to_mode(unsigned int mask)
+{
+	int mode = 0;
+
+	if (mask & ACE4_POSIX_MODE_READ)
+		mode |= MAY_READ;
+	if (mask & ACE4_POSIX_MODE_WRITE)
+		mode |= MAY_WRITE;
+	if (mask & ACE4_POSIX_MODE_EXEC)
+		mode |= MAY_EXEC;
+
+	return mode;
+}
+
+/**
+ * richacl_masks_to_mode  -  compute the file permission bits from the file masks
+ *
+ * When the file permission bits of a file are set with chmod(), this specifies
+ * the maximum permissions that processes will get.  All permissions beyond
+ * that are removed from the file masks, and become ineffective.
+ *
+ * Conversely, when setting a richacl, we set the file permission bits to
+ * indicate maximum permissions: for example, we set the Write permission when
+ * a mask contains ACE4_APPEND_DATA even if it does not also contain
+ * ACE4_WRITE_DATA.
+ *
+ * Permissions which are not in ACE4_POSIX_MODE_READ, ACE4_POSIX_MODE_WRITE, or
+ * ACE4_POSIX_MODE_EXEC cannot be represented in the file permission bits.
+ * Those permissions can still be effective, but only if the masks were set
+ * explicitly (for example, by setting the richacl xattr), and not for new
+ * files or after a chmod().
+ */
+int
+richacl_masks_to_mode(const struct richacl *acl)
+{
+	return richacl_mask_to_mode(acl->a_owner_mask) << 6 |
+	       richacl_mask_to_mode(acl->a_group_mask) << 3 |
+	       richacl_mask_to_mode(acl->a_other_mask);
+}
+
+/**
+ * richacl_equiv_mode  -  determine if @acl is equivalent to a file mode
+ * @mode_p:	the file mode
+ *
+ * The file type in @mode_p must be set when calling richacl_equiv_mode().
+ * Returns with 0 if @acl is equivalent to a file mode; in that case, the
+ * file permission bits in @mode_p are set to the mode equivalent to @acl.
+ */
+int
+richacl_equiv_mode(const struct richacl *acl, mode_t *mode_p)
+{
+	const struct richace *ace = acl->a_entries;
+	unsigned int x = ~ACE4_POSIX_ALWAYS_ALLOWED;  /* mask flags we care about */
+	mode_t mode;
+
+	if (acl->a_count != 1 ||
+	    acl->a_flags ||
+	    !richace_is_everyone(ace) ||
+	    !richace_is_allow(ace) ||
+	    ace->e_flags & ~ACE4_SPECIAL_WHO)
+		return -1;
+
+	/* ACE4_DELETE_CHILD is meaningless for non-directories. */
+	if (!S_ISDIR(*mode_p))
+		x &= ~ACE4_DELETE_CHILD;
+
+	if ((ace->e_mask & x) != (ACE4_VALID_MASK & x))
+		return -1;
+
+	mode = richacl_masks_to_mode(acl);
+	if ((acl->a_owner_mask & x) != (richacl_mode_to_mask(mode >> 6) & x) ||
+	    (acl->a_group_mask & x) != (richacl_mode_to_mask(mode >> 3) & x) ||
+	    (acl->a_other_mask & x) != (richacl_mode_to_mask(mode) & x))
+		return -1;
+
+	*mode_p = (*mode_p & ~S_IRWXUGO) | mode;
+	return 0;
 }
