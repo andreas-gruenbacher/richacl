@@ -39,7 +39,7 @@ $ richacl --get sub
 > # file: sub
 > # owner: bin
 > # group: bin
->  everyone@:rwax-------:fd:allow
+>  everyone@:rwax---------:fd:allow
 >
 
 $ chmod 775 sub
@@ -52,7 +52,7 @@ $ richacl --get sub
 > # group: bin
 >     owner@:rwax---------::allow
 >     group@:rwax---------::allow
->  everyone@:rwax-------:fdi:allow
+>  everyone@:rwax---------:fdi:allow
 >  everyone@:r--x---------::allow
 >
 
@@ -75,7 +75,7 @@ $ richacl --get sub/sub2
 > # file: sub/sub2
 > # owner: bin
 > # group: bin
->  everyone@:rwax-------:fd:allow
+>  everyone@:rwax---------:fd:allow
 >
 
 $ su
