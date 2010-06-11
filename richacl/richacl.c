@@ -216,6 +216,7 @@ static struct option long_options[] = {
 	{"remove",		0, 0, 'r'},
 	{"long",		0, 0, 'l'},
 	{"raw",			0, 0,  1 },
+	{"unaligned",		0, 0,  4 },
 	{"dry-run",		0, 0,  2 },
 	{"version",		0, 0, 'v'},
 	{"help",		0, 0, 'h'},
@@ -354,6 +355,10 @@ int main(int argc, char *argv[])
 			case 3:  /* --access */
 				opt_access = 1;
 				opt_user = optarg;
+				break;
+
+			case 4:  /* --unaligned */
+				format &= ~RICHACL_TEXT_ALIGN;
 				break;
 
 			default:
