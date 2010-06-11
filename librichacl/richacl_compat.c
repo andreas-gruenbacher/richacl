@@ -192,22 +192,30 @@ richacl_move_everyone_aces_down(struct richacl_alloc *x)
 	return 0;
 }
 
-/**
- * __richacl_propagate_everyone  -  propagate everyone@ mask flags up for @who
+/*
+ * __richacl_propagate_everyone  -  propagate everyone@ permissions up for @who
  * @x:		acl and number of allocated entries
- * @who:	identifier to propagate mask flags for
- * @allow:	mask flags to propagate up
+ * @who:	identifier to propagate permissions for
+ * @allow:	permissions to propagate up
  *
- * Propagate mask flags from the trailing everyone@ allow acl entry up
- * for the specified @who.
+ * Propagate the permissions in @allow up from the end of the acl to the start
+ * for the specified principal @who.
  *
- * The idea here is to precede the trailing EVERYONE@ ALLOW entry by an
- * additional @who ALLOW entry, but with the following optimizations:
- * (1) we don't bother setting any flags in the new @who ALLOW entry
- * that has already been allowed or denied by a previous @who entry, (2)
- * we merge the new @who entry with a previous @who entry if there is
- * such a previous @who entry and there are no intervening DENY entries
- * with mask flags that overlap the flags we care about.
+ * The simplest possible approach to achieve this would be to insert a
+ * "<who>:<allow>::allow" ace before the final everyone@ allow ace.  Since this
+ * would often result in aces which are not needed or which could be merged
+ * with an existing ace, we make the following optimizations:
+ *
+ *   - We go through the acl and determine which permissions are already
+ *     allowed or denied to @who, and we remove those permissions from
+ *     @allow.
+ *
+ *   - If the acl contains an allow ace for @who and no aces after this entry
+ *     deny permissions in @allow, we add the permissions in @allow to this
+ *     ace.  (Propagating permissions across a deny ace which can match the
+ *     process can elevate permissions.)
+ *
+ * This transformation does not alter the permissions that the acl grants.
  */
 static int
 __richacl_propagate_everyone(struct richacl_alloc *x, struct richace *who,
@@ -215,10 +223,12 @@ __richacl_propagate_everyone(struct richacl_alloc *x, struct richace *who,
 {
 	struct richace *allow_last = NULL, *ace;
 
-	/* Remove the mask flags from allow that are already determined for
-	   this who value, and figure out if there is an ALLOW entry for
-	   this who value that is "reachable" from the trailing EVERYONE@
-	   ALLOW ACE. */
+	/*
+	 * Remove the permissions from allow that are already determined for
+	 * this who value, and figure out if there is an ALLOW entry for
+	 * this who value that is "reachable" from the trailing EVERYONE@
+	 * ALLOW ACE
+	 */
 	richacl_for_each_entry(ace, x->acl) {
 		if (richace_is_inherit_only(ace))
 			continue;
@@ -230,7 +240,7 @@ __richacl_propagate_everyone(struct richacl_alloc *x, struct richace *who,
 		} else if (richace_is_deny(ace)) {
 			if (richace_is_same_identifier(ace, who))
 				allow &= ~ace->e_mask;
-			if (allow & ace->e_mask)
+			else if (allow & ace->e_mask)
 				allow_last = NULL;
 		}
 	}
