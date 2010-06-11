@@ -489,38 +489,34 @@ richacl_isolate_owner_class(struct richacl_alloc *x)
  * __richacl_isolate_who  -  isolate entry from EVERYONE@ ALLOW entry
  * @x:		acl and number of allocated entries
  * @who:	identifier to isolate
- * @deny:	mask flags this identifier should not be allowed
+ * @deny:	permissions this identifier should not be allowed
  *
- * Make sure that @who is not allowed any mask flags in @deny by checking
- * which mask flags this identifier is allowed, and adding excess allowed
- * mask flags to an existing DENY entry before the trailing EVERYONE@ ALLOW
- * entry, or inserting such an entry.
+ * See richacl_isolate_group_class().
  */
 static int
 __richacl_isolate_who(struct richacl_alloc *x, struct richace *who,
 		      unsigned int deny)
 {
 	struct richace *ace;
-	unsigned int allowed = 0, n;
-
-	/* Compute the mask flags granted to this who value. */
-	richacl_for_each_entry_reverse(ace, x->acl) {
+	unsigned int n;
+	/*
+	 * Compute the permissions already denied to @who.
+	 */
+	richacl_for_each_entry(ace, x->acl) {
 		if (richace_is_inherit_only(ace))
 			continue;
-		if (richace_is_same_identifier(ace, who)) {
-			if (richace_is_allow(ace))
-				allowed |= ace->e_mask;
-			else if (richace_is_deny(ace))
-				allowed &= ~ace->e_mask;
+		if (richace_is_same_identifier(ace, who) &&
+		    richace_is_deny(ace))
 			deny &= ~ace->e_mask;
-		}
 	}
 	if (!deny)
 		return 0;
 
-	/* Figure out if we can update an existig DENY entry.  Start
-	   from the entry before the trailing EVERYONE@ ALLOW entry. We
-	   will not hit EVERYONE@ entries in the loop. */
+	/*
+	 * Figure out if we can update an existig DENY entry.  Start from the
+	 * entry before the trailing EVERYONE@ ALLOW entry. We will not hit
+	 * EVERYONE@ entries in the loop.
+	 */
 	for (n = x->acl->a_count - 2; n != -1; n--) {
 		ace = x->acl->a_entries + n;
 		if (richace_is_inherit_only(ace))
@@ -538,8 +534,9 @@ __richacl_isolate_who(struct richacl_alloc *x, struct richace *who,
 		if (richace_change_mask(x, &ace, ace->e_mask | deny))
 			return -1;
 	} else {
-		/* Insert a eny entry before the trailing EVERYONE@ DENY
-		   entry. */
+		/*
+		 * Insert a new entry before the trailing EVERYONE@ DENY entry.
+		 */
 		struct richace who_copy;
 
 		ace = x->acl->a_entries + x->acl->a_count - 1;
