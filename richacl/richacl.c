@@ -483,7 +483,8 @@ int main(int argc, char *argv[])
 					goto fail;
 			}
 		}
-	}
+	} else
+		user = geteuid();
 
 	for (; optind < argc; optind++) {
 		const char *file = argv[optind];

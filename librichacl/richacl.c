@@ -1301,8 +1301,6 @@ int richacl_access(const char *file, const struct stat *st, uid_t user,
 			return -1;
 	}
 
-	if (user == -1)
-		user = geteuid();
 	if (n_groups < 0) {
 		n_groups = getgroups(0, NULL);
 		if (n_groups < 0)
