@@ -129,6 +129,7 @@ static int set_richacl(const char *file, struct richacl *acl)
 			return -1;
 		if (!richacl_equiv_mode(acl, &st.st_mode))
 			return chmod(file, st.st_mode);
+		/* FIXME: We could try POSIX ACLs here as well. */
 		return -1;
 	}
 	return 0;

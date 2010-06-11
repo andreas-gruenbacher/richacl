@@ -141,6 +141,8 @@ struct mask_flag_struct mask_flags[] = {
 	MASK_BIT('s', SYNCHRONIZE, "synchronize"),
 	MASK_BIT('N', READ_NAMED_ATTRS, "read_named_attrs"),
 	MASK_BIT('n', WRITE_NAMED_ATTRS, "write_named_attrs"),
+	MASK_BIT('e', WRITE_RETENTION, "write_retention"),
+	MASK_BIT('E', WRITE_RETENTION_HOLD, "write_retention_hold"),
 };
 struct mask_flag_struct mask_bits[] = {
 	MASK_BIT('r', READ_DATA, NULL),
@@ -157,6 +159,8 @@ struct mask_flag_struct mask_bits[] = {
 	MASK_BIT('s', SYNCHRONIZE, "synchronize"),
 	MASK_BIT('N', READ_NAMED_ATTRS, "read_named_attrs"),
 	MASK_BIT('n', WRITE_NAMED_ATTRS, "write_named_attrs"),
+	MASK_BIT('e', WRITE_RETENTION, "write_retention"),
+	MASK_BIT('E', WRITE_RETENTION_HOLD, "write_retention_hold"),
 };
 
 #undef MASK_BIT
