@@ -35,7 +35,8 @@ static struct richacl *richacl_from_xattr(const void *value, size_t size)
 	int count;
 
 	if (size < sizeof(struct richacl_xattr) ||
-	    xattr_acl->a_version != ACL4_XATTR_VERSION)
+	    xattr_acl->a_version != ACL4_XATTR_VERSION ||
+	    (xattr_acl->a_flags & ~ACL4_VALID_FLAGS))
 		goto fail_einval;
 
 	count = le16_to_cpu(xattr_acl->a_count);
