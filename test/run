@@ -187,7 +187,7 @@ sub set_uid_gids
 	}
     }
 
-  my $groups = join(" ", ($gid, $gid, @groups));
+  my $groups = join(" ", ($gid, $gid, @gids));
   #print STDERR "[[$groups]]\n";
   $! = 0;  # reset errno
   $> = 0;
