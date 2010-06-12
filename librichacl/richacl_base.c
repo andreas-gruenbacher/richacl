@@ -291,11 +291,11 @@ void richacl_max_masks(struct richacl *acl)
 				acl->a_owner_mask &= ~ace->e_mask;
 		} else if (richace_is_everyone(ace)) {
 			if (richace_is_allow(ace)) {
-				acl->a_other_mask |= ace->e_mask;
 				acl->a_owner_mask |= ace->e_mask;
+				acl->a_other_mask |= ace->e_mask;
 			} else if (richace_is_deny(ace)) {
-				acl->a_other_mask &= ~ace->e_mask;
 				acl->a_owner_mask &= ~ace->e_mask;
+				acl->a_other_mask &= ~ace->e_mask;
 			}
 		} else {
 			unsigned int mask =
@@ -309,16 +309,8 @@ void richacl_max_masks(struct richacl *acl)
 		}
 	}
 
-	if (!had_group_ace) {
-		struct richace who = {
-			.e_flags = ACE4_SPECIAL_WHO,
-			.u.e_who = richace_group_who,
-		};
-		unsigned int mask = richacl_allowed_to_who(acl, &who);
-
-		acl->a_owner_mask |= mask;
-		acl->a_group_mask |= mask;
-	}
+	if (!had_group_ace)
+		acl->a_group_mask |= acl->a_other_mask;
 }
 
 static struct richacl *richacl_from_xattr(const void *value, size_t size)
