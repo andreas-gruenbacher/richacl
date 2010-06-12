@@ -22,55 +22,19 @@
 #include <sys/stat.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <ctype.h>
 #include <alloca.h>
 #include <errno.h>
 #include <pwd.h>
 #include <grp.h>
-#include <attr/xattr.h>
 #include "string_buffer.h"
 #include "richacl.h"
-#include "richacl_xattr.h"
 #include "richacl-internal.h"
-#include "byteorder.h"
-
-#define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
-#define ALIGN(x,a) (((x)+(a)-1)&~((a)-1))
-
-#ifndef MAY_READ
-# define MAY_READ S_IROTH
-#endif
-
-#ifndef MAY_WRITE
-# define MAY_WRITE S_IWOTH
-#endif
-
-#ifndef MAY_EXEC
-# define MAY_EXEC S_IXOTH
-#endif
-
-#ifndef S_IRWXUGO
-# define S_IRWXUGO (S_IRWXU|S_IRWXG|S_IRWXO)
-#endif
 
 const char *richace_owner_who	 = "OWNER@";
 const char *richace_group_who	 = "GROUP@";
 const char *richace_everyone_who = "EVERYONE@";
-
-/*
- * The POSIX permissions are supersets of the following mask flags.
- */
-#define ACE4_POSIX_MODE_READ ( \
-	ACE4_READ_DATA | ACE4_LIST_DIRECTORY )
-#define ACE4_POSIX_MODE_WRITE ( \
-	ACE4_WRITE_DATA | ACE4_ADD_FILE | \
-	ACE4_APPEND_DATA | ACE4_ADD_SUBDIRECTORY | \
-	ACE4_DELETE_CHILD )
-#define ACE4_POSIX_MODE_EXEC ( \
-	ACE4_EXECUTE)
-#define ACE4_POSIX_MODE_ALL (ACE4_POSIX_MODE_READ | ACE4_POSIX_MODE_WRITE | \
-			     ACE4_POSIX_MODE_EXEC)
-
 
 static struct {
 	char		a_char;
@@ -311,167 +275,6 @@ void richacl_max_masks(struct richacl *acl)
 
 	if (!had_group_ace)
 		acl->a_group_mask |= acl->a_other_mask;
-}
-
-static struct richacl *richacl_from_xattr(const void *value, size_t size)
-{
-	const struct richacl_xattr *xattr_acl = value;
-	const struct richace_xattr *xattr_ace = (void *)(xattr_acl + 1);
-	struct richacl *acl = NULL;
-	struct richace *ace;
-	int count;
-
-	if (size < sizeof(struct richacl_xattr) ||
-	    xattr_acl->a_version != ACL4_XATTR_VERSION)
-		goto fail_einval;
-
-	count = le16_to_cpu(xattr_acl->a_count);
-	if (count > ACL4_XATTR_MAX_COUNT)
-		goto fail_einval;
-
-	acl = richacl_alloc(count);
-	if (!acl)
-		return NULL;
-
-	acl->a_flags = xattr_acl->a_flags;
-	acl->a_owner_mask = le32_to_cpu(xattr_acl->a_owner_mask);
-	acl->a_group_mask = le32_to_cpu(xattr_acl->a_group_mask);
-	acl->a_other_mask = le32_to_cpu(xattr_acl->a_other_mask);
-
-	richacl_for_each_entry(ace, acl) {
-		const char *who = (void *)(xattr_ace + 1), *end;
-		ssize_t used = (void *)who - value;
-
-		if (used > size)
-			goto fail_einval;
-		end = memchr(who, 0, size - used);
-		if (!end)
-			goto fail_einval;
-
-		ace->e_type = le16_to_cpu(xattr_ace->e_type);
-		ace->e_flags = le16_to_cpu(xattr_ace->e_flags);
-		ace->e_mask = le32_to_cpu(xattr_ace->e_mask);
-		ace->u.e_id = le32_to_cpu(xattr_ace->e_id);
-
-		if (who == end) {
-			if (ace->u.e_id == -1)
-				goto fail_einval;  /* uid/gid needed */
-		} else if (richace_set_who(ace, who))
-			goto fail_einval;
-
-		xattr_ace = (void *)who + ALIGN(end - who + 1, 4);
-	}
-
-	return acl;
-
-fail_einval:
-	richacl_free(acl);
-	errno = EINVAL;
-	return NULL;
-}
-
-static size_t richacl_xattr_size(const struct richacl *acl)
-{
-	size_t size = sizeof(struct richacl_xattr);
-	const struct richace *ace;
-
-	richacl_for_each_entry(ace, acl) {
-		size += sizeof(struct richace_xattr) +
-			(richace_get_who(ace) ?
-			 ALIGN(strlen(ace->u.e_who) + 1, 4) : 4);
-	}
-	return size;
-}
-
-static void richacl_to_xattr(const struct richacl *acl, void *buffer)
-{
-	struct richacl_xattr *xattr_acl = buffer;
-	struct richace_xattr *xattr_ace;
-	const struct richace *ace;
-
-	xattr_acl->a_version = ACL4_XATTR_VERSION;
-	xattr_acl->a_flags = acl->a_flags;
-	xattr_acl->a_count = cpu_to_le16(acl->a_count);
-
-	xattr_acl->a_owner_mask = cpu_to_le32(acl->a_owner_mask);
-	xattr_acl->a_group_mask = cpu_to_le32(acl->a_group_mask);
-	xattr_acl->a_other_mask = cpu_to_le32(acl->a_other_mask);
-
-	xattr_ace = (void *)(xattr_acl + 1);
-	richacl_for_each_entry(ace, acl) {
-		xattr_ace->e_type = cpu_to_le16(ace->e_type);
-		xattr_ace->e_flags =
-			cpu_to_le16(ace->e_flags & ACE4_VALID_FLAGS);
-		xattr_ace->e_mask = cpu_to_le32(ace->e_mask);
-		if (richace_get_who(ace)) {
-			int sz = ALIGN(strlen(ace->u.e_who) + 1, 4);
-
-			xattr_ace->e_id = cpu_to_le32(-1);
-			memset(xattr_ace->e_who + sz - 4, 0, 4);
-			strcpy(xattr_ace->e_who, ace->u.e_who);
-			xattr_ace = (void *)xattr_ace->e_who + sz;
-		} else {
-			xattr_ace->e_id = cpu_to_le32(ace->u.e_id);
-			memset(xattr_ace->e_who, 0, 4);
-			xattr_ace = (void *)xattr_ace->e_who + 4;
-		}
-	}
-}
-
-struct richacl *richacl_get_file(const char *path)
-{
-	void *value;
-	ssize_t retval;
-	struct richacl *acl;
-
-	retval = getxattr(path, SYSTEM_RICHACL, NULL, 0);
-	if (retval <= 0)
-		return NULL;
-
-	value = alloca(retval);
-	if (!value)
-		return NULL;
-	retval = getxattr(path, SYSTEM_RICHACL, value, retval);
-	acl = richacl_from_xattr(value, retval);
-
-	return acl;
-}
-
-struct richacl *richacl_get_fd(int fd)
-{
-	void *value;
-	ssize_t retval;
-	struct richacl *acl;
-
-	retval = fgetxattr(fd, SYSTEM_RICHACL, NULL, 0);
-	if (retval <= 0)
-		return NULL;
-
-	value = alloca(retval);
-	if (!value)
-		return NULL;
-	retval = fgetxattr(fd, SYSTEM_RICHACL, value, retval);
-	acl = richacl_from_xattr(value, retval);
-
-	return acl;
-}
-
-int richacl_set_file(const char *path, const struct richacl *acl)
-{
-	size_t size = richacl_xattr_size(acl);
-	void *value = alloca(size);
-
-	richacl_to_xattr(acl, value);
-	return setxattr(path, SYSTEM_RICHACL, value, size, 0);
-}
-
-int richacl_set_fd(int fd, const struct richacl *acl)
-{
-	size_t size = richacl_xattr_size(acl);
-	void *value = alloca(size);
-
-	richacl_to_xattr(acl, value);
-	return fsetxattr(fd, SYSTEM_RICHACL, value, size, 0);
 }
 
 static void write_acl_flags(struct string_buffer *buffer, unsigned char flags, int fmt)

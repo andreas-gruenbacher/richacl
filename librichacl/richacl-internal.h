@@ -20,6 +20,39 @@
 #ifndef __RICHACL_INTERNAL_H
 #define __RICHACL_INTERNAL_H
 
+#define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
+#define ALIGN(x,a) (((x)+(a)-1)&~((a)-1))
+
+#ifndef MAY_READ
+# define MAY_READ S_IROTH
+#endif
+
+#ifndef MAY_WRITE
+# define MAY_WRITE S_IWOTH
+#endif
+
+#ifndef MAY_EXEC
+# define MAY_EXEC S_IXOTH
+#endif
+
+#ifndef S_IRWXUGO
+# define S_IRWXUGO (S_IRWXU|S_IRWXG|S_IRWXO)
+#endif
+
+/*
+ * The POSIX permissions are supersets of the following mask flags.
+ */
+#define ACE4_POSIX_MODE_READ ( \
+	ACE4_READ_DATA | ACE4_LIST_DIRECTORY )
+#define ACE4_POSIX_MODE_WRITE ( \
+	ACE4_WRITE_DATA | ACE4_ADD_FILE | \
+	ACE4_APPEND_DATA | ACE4_ADD_SUBDIRECTORY | \
+	ACE4_DELETE_CHILD )
+#define ACE4_POSIX_MODE_EXEC ( \
+	ACE4_EXECUTE)
+#define ACE4_POSIX_MODE_ALL (ACE4_POSIX_MODE_READ | ACE4_POSIX_MODE_WRITE | \
+			     ACE4_POSIX_MODE_EXEC)
+
 /*
  * The ACE4_READ_ATTRIBUTES and ACE4_READ_ACL flags are always granted
  * in POSIX. The ACE4_SYNCHRONIZE flag has no meaning under POSIX.
