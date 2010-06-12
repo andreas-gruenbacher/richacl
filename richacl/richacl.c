@@ -98,7 +98,7 @@ int modify_richacl(struct richacl **acl2, struct richacl *acl, int acl_has)
 	if (!((acl_has & RICHACL_TEXT_OWNER_MASK) && 
 	      (acl_has & RICHACL_TEXT_GROUP_MASK) && 
 	      (acl_has & RICHACL_TEXT_OTHER_MASK)))
-		richacl_compute_max_masks(*acl2);
+		richacl_max_masks(*acl2);
 	if (acl_has & RICHACL_TEXT_OWNER_MASK)
 		(*acl2)->a_owner_mask = acl->a_owner_mask;
 	if (acl_has & RICHACL_TEXT_GROUP_MASK)
@@ -428,7 +428,7 @@ int main(int argc, char *argv[])
 		unsigned int group_mask = acl->a_group_mask;
 		unsigned int other_mask = acl->a_other_mask;
 
-		richacl_compute_max_masks(acl);
+		richacl_max_masks(acl);
 		if (acl_has & RICHACL_TEXT_OWNER_MASK)
 			acl->a_owner_mask = owner_mask;
 		if (acl_has & RICHACL_TEXT_GROUP_MASK)
