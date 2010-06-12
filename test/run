@@ -164,6 +164,48 @@ sub su($) {
   return [];
 }
 
+#ex: set_uid_gids uid:10;gid:10;agid:20,30;
+sub set_uid_gids
+{
+    my ($t) = @_;
+    my @args = split(/;/, $t);
+    my ($uid, $gid, $agid, @gids);
+
+    foreach my $arg (@args) {
+	if ($arg =~ /^uid:/) {
+	    my @value = split(/:/, $arg);
+	    $uid = $value[1];
+	}
+	if ($arg =~ /^gid:/) {
+	    my @value = split(/:/, $arg);
+	    $gid = $value[1];
+	}
+	if ($arg =~ /^agid:/) {
+	    my @value = split(/:/, $arg);
+	    $agid = $value[1];
+	    @gids  = split(/,/, $agid);
+	}
+    }
+
+  my $groups = join(" ", ($gid, $gid, @groups));
+  #print STDERR "[[$groups]]\n";
+  $! = 0;  # reset errno
+  $> = 0;
+  $( = $gid;
+  $) = $groups;
+  if ($!) {
+    return [ "su: $!\n" ];
+  }
+  if ($uid != 0) {
+    $> = $uid;
+    #$< = $uid;
+    if ($!) {
+      return [ "su: $prog->[1]: $!\n" ];
+    }
+  }
+  #print STDERR "[($>,$<)($(,$))]";
+  return [];
+}
 
 sub sg($) {
   my ($group) = @_;
@@ -212,6 +254,8 @@ sub exec_test($$) {
     return su($prog->[1]);
   } elsif ($prog->[0] eq "sg") {
     return sg($prog->[1]);
+  } elsif ($prog->[0] eq "set_uid_gids") {
+    return set_uid_gids($prog->[1]);
   } elsif ($prog->[0] eq "export") {
     my ($name, $value) = split /=/, $prog->[1];
     # FIXME: need to evaluate $value, so that things like this will work:
