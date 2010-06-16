@@ -179,6 +179,7 @@ extern int richacl_apply_masks(struct richacl **);
 extern void richacl_max_masks(struct richacl *);
 extern struct richacl *richacl_from_mode(mode_t);
 extern int richacl_masks_to_mode(const struct richacl *);
+extern struct richacl *richacl_inherit(const struct richacl *, int isdir);
 extern int richacl_equiv_mode(const struct richacl *, mode_t *);
 
 struct stat;
