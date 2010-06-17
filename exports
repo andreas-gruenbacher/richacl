@@ -23,7 +23,7 @@ RICHACL_1.0 {
 	richacl_clone;
 	richacl_free;
 	richacl_apply_masks;
-	richacl_max_masks;
+	richacl_compute_max_masks;
 	richacl_from_mode;
 	richacl_masks_to_mode;
 	richacl_equiv_mode;

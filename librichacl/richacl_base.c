@@ -125,13 +125,13 @@ static unsigned int richacl_allowed_to_who(struct richacl *acl,
 }
 
 /**
- * richacl_max_masks  -  compute upper bound masks
+ * richacl_compute_max_masks  -  compute upper bound masks
  *
  * Computes upper bound owner, group, and other masks so that none of
  * the mask flags allowed by the acl are disabled (for any choice of the
  * file owner or group membership).
  */
-void richacl_max_masks(struct richacl *acl)
+void richacl_compute_max_masks(struct richacl *acl)
 {
 	struct richace *ace;
 	int had_group_ace = 0;
