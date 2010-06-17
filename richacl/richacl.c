@@ -55,6 +55,16 @@ void printf_stderr(const char *fmt, ...)
 	va_end(ap);
 }
 
+#define richacl_for_each_entry_continue(_ace, _acl) \
+	for ((_ace)++; \
+	     (_ace) != (_acl)->a_entries + (_acl)->a_count; \
+	     (_ace)++)
+
+static inline int richace_is_inherited(const struct richace *ace)
+{
+	return ace->e_flags & ACE4_INHERITED_ACE;
+}
+
 int modify_richacl(struct richacl **acl2, struct richacl *acl, int acl_has)
 {
 	struct richace *ace2, *ace;
@@ -68,37 +78,90 @@ int modify_richacl(struct richacl **acl2, struct richacl *acl, int acl_has)
 
 		richacl_for_each_entry(ace2, *acl2) {
 			if (ace2->e_type == ace->e_type &&
+			    richace_is_inherited(ace2) == richace_is_inherited(ace) &&
 			    richace_is_same_identifier(ace, ace2)) {
 				ace2->e_mask = ace->e_mask;
 				ace2->e_flags = ace->e_flags;
-				break;
+				goto next_change;
 			}
 		}
-		if (ace2 != (*acl2)->a_entries + (*acl2)->a_count)
-			continue;
 
 		acl3 = richacl_alloc((*acl2)->a_count + 1);
 		if (!acl3)
 			return -1;
 		acl3->a_flags = (*acl2)->a_flags;
 		ace3 = acl3->a_entries;
-		if (richace_is_deny(ace)) {
+		if (!(ace->e_flags & ACE4_INHERITED_ACE)) {
+			if (richace_is_deny(ace)) {
+				/*
+				 * Insert the new deny entry after the existing
+				 * initial non-inherited deny entries.
+				 */
+				richacl_for_each_entry(ace2, *acl2) {
+					if (!richace_is_deny(ace2) ||
+					    richace_is_inherited(ace2))
+						break;
+					richace_copy(ace3++, ace2);
+				}
+			} else {
+				/*
+				 * Append the new allow entry at the end of the
+				 * non-inherited aces.
+				 */
+				richacl_for_each_entry(ace2, *acl2) {
+					if (richace_is_inherited(ace2))
+						break;
+					richace_copy(ace3++, ace2);
+				}
+			}
+			richace_copy(ace3++, ace);
+			ace2--;
+			richacl_for_each_entry_continue(ace2, *acl2)
+				richace_copy(ace3++, ace2);
+		} else {
+			struct richace *last_inherited;
+
+			last_inherited = (*acl2)->a_entries + (*acl2)->a_count;
+			while (last_inherited > (*acl2)->a_entries &&
+			       richace_is_inherited(last_inherited - 1))
+				last_inherited--;
+
 			richacl_for_each_entry(ace2, *acl2) {
-				if (!richace_is_deny(ace2))
+				if (ace2 == last_inherited)
 					break;
 				richace_copy(ace3++, ace2);
 			}
+			if (richace_is_deny(ace)) {
+				/*
+				 * Insert the new deny entry after the existing
+				 * initial inherited deny entries.
+				 */
+				ace2--;
+				richacl_for_each_entry_continue(ace2, *acl2) {
+					if (!richace_is_deny(ace2))
+						break;
+					richace_copy(ace3++, ace2);
+				}
+			} else {
+				/*
+				 * Append the new allow entry at the end of the
+				 * inherited aces.
+				 */
+				ace2--;
+				richacl_for_each_entry_continue(ace2, *acl2)
+					richace_copy(ace3++, ace2);
+			}
 			richace_copy(ace3++, ace);
-			while (ace2 != (*acl2)->a_entries + (*acl2)->a_count)
-				richace_copy(ace3++, ace2++);
-		} else {
-			richacl_for_each_entry(ace2, *acl2)
+			ace2--;
+			richacl_for_each_entry_continue(ace2, *acl2)
 				richace_copy(ace3++, ace2);
-			richace_copy(ace3++, ace);
 		}
 
 		richacl_free(*acl2);
 		*acl2 = acl3;
+
+	next_change:
+		/* gcc is unhappy without a statement behind the label ... */ ;
 	}
 
 	if (acl_has & RICHACL_TEXT_FLAGS)

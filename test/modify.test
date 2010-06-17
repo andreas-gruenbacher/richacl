@@ -1,0 +1,70 @@
+$ mkdir d
+$ cd d
+
+$ touch f
+
+$ richacl --set 'flags:a 101:w::deny 101:rw::allow 101:w:a:deny 101:rw:a:allow' f
+$ richacl --modify ' 202:w::deny' f
+$ richacl --get --numeric f
+> f:
+>  flags:a
+>    101:-w-----------::deny
+>    202:-w-----------::deny
+>    101:r------------::allow
+>    101:-w-----------:a:deny
+>    101:r------------:a:allow
+>
+
+$ richacl --set 'flags:a 101:w::deny 101:rw::allow 101:w:a:deny 101:rw:a:allow' f
+$ richacl --modify ' 202:rw::allow' f
+$ richacl --get --numeric f
+> f:
+>  flags:a
+>    101:-w-----------::deny
+>    101:r------------::allow
+>    202:rw-----------::allow
+>    101:-w-----------:a:deny
+>    101:r------------:a:allow
+>
+
+$ richacl --set 'flags:a 101:w::deny 101:rw::allow 101:w:a:deny 101:rw:a:allow' f
+$ richacl --modify ' 202:w:a:deny' f
+$ richacl --get --numeric f
+> f:
+>  flags:a
+>    101:-w-----------::deny
+>    101:r------------::allow
+>    101:-w-----------:a:deny
+>    202:-w-----------:a:deny
+>    101:r------------:a:allow
+>
+
+$ richacl --set 'flags:a 101:w::deny 101:rw::allow 101:w:a:deny 101:rw:a:allow' f
+$ richacl --modify ' 202:rw:a:allow' f
+$ richacl --get --numeric f
+> f:
+>  flags:a
+>    101:-w-----------::deny
+>    101:r------------::allow
+>    101:-w-----------:a:deny
+>    101:r------------:a:allow
+>    202:rw-----------:a:allow
+>
+
+# FIXME: The result of this rather surprising ... maybe we can make it less
+# surprising somehow?
+# $ richacl --set-file - f
+# < flags:a
+# < everyone@:w::deny
+# < everyone@:rw::allow
+# < everyone@:w:a:deny
+# < everyone@:rw:a:allow' f
+#
+# $ richacl --get --numeric f
+# > f:
+# >      flags:a
+# >  everyone@:r------------::allow
+# >
+
+$ cd ..
+$ rm -rf d
