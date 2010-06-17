@@ -159,7 +159,8 @@ extern const char *richace_get_who(const struct richace *);
 extern int richace_set_who(struct richace *, const char *);
 extern void richace_set_uid(struct richace *, uid_t);
 extern void richace_set_gid(struct richace *, gid_t);
-extern int richace_is_same_identifier(const struct richace *, const struct richace *);
+extern int richace_is_same_identifier(const struct richace *,
+				      const struct richace *);
 extern void richace_copy(struct richace *, const struct richace *);
 
 extern struct richacl *richacl_get_file(const char *);
@@ -172,7 +173,7 @@ extern struct richacl *richacl_from_text(const char *, int *,
 					 void (*)(const char *, ...));
 
 extern struct richacl *richacl_alloc(size_t);
-extern struct richacl *richacl_clone(struct richacl *);
+extern struct richacl *richacl_clone(const struct richacl *);
 extern void richacl_free(struct richacl *);
 
 extern int richacl_apply_masks(struct richacl **);
@@ -181,10 +182,14 @@ extern struct richacl *richacl_from_mode(mode_t);
 extern int richacl_masks_to_mode(const struct richacl *);
 extern struct richacl *richacl_inherit(const struct richacl *, int isdir);
 extern int richacl_equiv_mode(const struct richacl *, mode_t *);
+extern int richacl_compare(const struct richacl *, const struct richacl *);
 
 struct stat;
 extern int richacl_access(const char *, const struct stat *, uid_t,
 			  const gid_t *, int);
 extern char *richacl_mask_to_text(unsigned int, int);
+
+extern struct richacl *richacl_auto_inherit(const struct richacl *,
+					    const struct richacl *);
 
 #endif  /* __RICHACL_H */

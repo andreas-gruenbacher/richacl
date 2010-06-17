@@ -88,6 +88,35 @@ richacl_insert_entry(struct richacl_alloc *x, struct richace **ace)
 }
 
 /**
+ * richacl_append_entry  -  append an entry to an acl
+ * @x:		acl and number of allocated entries
+ *
+ * Append a new entry to @x->acl and zero-initialize it.
+ * This may require reallocating @x->acl.
+ */
+static struct richace *
+richacl_append_entry(struct richacl_alloc *x)
+{
+	struct richace *ace;
+
+	if (x->count == x->acl->a_count) {
+		size_t size = sizeof(struct richacl) +
+			      (x->count + 1) * sizeof(struct richace);
+		struct richacl *acl2;
+
+		acl2 = realloc(x->acl, size);
+		if (!acl2)
+			return NULL;
+		x->count++;
+		x->acl = acl2;
+	}
+	ace = x->acl->a_entries + x->acl->a_count;
+	x->acl->a_count++;
+	memset(ace, 0, sizeof(struct richace));
+	return ace;
+}
+
+/**
  * richace_change_mask  -  change the mask in @ace to @mask
  * @x:		acl and number of allocated entries
  * @ace:	entry to modify
@@ -626,4 +655,29 @@ richacl_apply_masks(struct richacl **acl)
 
 	*acl = x.acl;
 	return retval;
+}
+
+struct richacl *
+richacl_auto_inherit(const struct richacl *acl, const struct richacl *inherited_acl)
+{
+	struct richacl_alloc x = {
+		.acl = richacl_clone(acl),
+		.count = acl->a_count,
+	};
+	const struct richace *inherited_ace;
+	struct richace *ace;
+
+	richacl_for_each_entry(ace, x.acl) {
+		if (ace->e_flags & ACE4_INHERITED_ACE)
+			richacl_delete_entry(&x, &ace);
+	}
+	richacl_for_each_entry(inherited_ace, inherited_acl) {
+		ace = richacl_append_entry(&x);
+		if (!ace)
+			return NULL;
+		richace_copy(ace, inherited_ace);
+		ace->e_flags |= ACE4_INHERITED_ACE;
+	}
+	richacl_compute_max_masks(x.acl);
+	return x.acl;
 }

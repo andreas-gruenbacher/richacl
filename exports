@@ -30,6 +30,8 @@ RICHACL_1.0 {
 	richacl_access;
 	richacl_mask_to_text;
 	richacl_inherit;
+	richacl_auto_inherit;
+	richacl_compare;
 
     local:
     	# Library internal stuff

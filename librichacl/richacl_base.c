@@ -79,7 +79,7 @@ struct richacl *richacl_alloc(size_t count)
 	return acl;
 }
 
-struct richacl *richacl_clone(struct richacl *acl)
+struct richacl *richacl_clone(const struct richacl *acl)
 {
 	size_t size;
 	struct richacl *acl2;
@@ -591,5 +591,41 @@ richacl_equiv_mode(const struct richacl *acl, mode_t *mode_p)
 		return -1;
 
 	*mode_p = (*mode_p & ~S_IRWXUGO) | mode;
+	return 0;
+}
+
+/**
+ * richacl_compare  -  compare two acls
+ *
+ * Returns 0 if the two acls are identical.
+ */
+int
+richacl_compare(const struct richacl *a1, const struct richacl *a2)
+{
+	const struct richace *e1, *e2;
+
+	if (a1->a_flags != a2->a_flags ||
+	    a1->a_count != a2->a_count ||
+	    a1->a_owner_mask != a2->a_owner_mask ||
+	    a1->a_group_mask != a2->a_group_mask ||
+	    a1->a_other_mask != a2->a_other_mask)
+		return -1;
+
+	e1 = a1->a_entries;
+	richacl_for_each_entry(e2, a2) {
+		if (e1->e_type != e2->e_type ||
+		    e1->e_flags != e2->e_flags ||
+		    e1->e_mask != e2->e_mask)
+			return -1;
+		if (e1->e_flags & ACE4_SPECIAL_WHO) {
+			if (e1->u.e_who != e2->u.e_who)
+				return -1;
+		} else {
+			if (e1->u.e_id != e2->u.e_id)
+				return -1;
+		}
+
+		e1++;
+	}
 	return 0;
 }

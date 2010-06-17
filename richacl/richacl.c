@@ -18,7 +18,10 @@
 */
 
 /*
- * FIXME: Make ls show a `+' for richacls (in coreutils).
+ * FIXME:
+ * Make ls show a `+' for richacls (in coreutils).
+ * Add a way to show only expicitly set acls, and hide inherited ones.
+ * Convert a non-Automatic-Inheritance tree into an Automatic Inheritance one?
  */
 
 #include <stdio.h>
@@ -29,6 +32,8 @@
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <fcntl.h>
+#include <dirent.h>
 #include <unistd.h>
 #include <sys/xattr.h>
 #include <ctype.h>
@@ -39,6 +44,7 @@
 #include "string_buffer.h"
 
 static const char *progname;
+int opt_repropagate;
 
 void printf_stderr(const char *fmt, ...)
 {
@@ -111,6 +117,118 @@ int modify_richacl(struct richacl **acl2, struct richacl *acl, int acl_has)
 	return 0;
 }
 
+static int auto_inherit(const char *dirname, struct richacl *dir_acl)
+{
+	DIR *dir;
+	struct richacl *dir_inheritable, *file_inheritable;
+	struct dirent *dirent;
+	char *path = NULL;
+	size_t dirname_len;
+	int status = 0;
+
+	dir = opendir(dirname);
+	if (!dir) {
+		if (errno == ENOTDIR)
+			return 0;
+		return -1;
+	}
+
+	dirname_len = strlen(dirname);
+	path = malloc(dirname_len + 2);
+	if (!path)
+		goto fail;
+	sprintf(path, "%s/", dirname);
+
+	errno = 0;
+	file_inheritable = richacl_inherit(dir_acl, 0);
+	if (!file_inheritable && errno != 0)
+		goto fail;
+	dir_inheritable = richacl_inherit(dir_acl, 1);
+	if (!dir_inheritable && errno != 0)
+		goto fail;
+
+	while ((errno = 0, dirent = readdir(dir))) {
+		struct richacl *old_acl = NULL, *new_acl = NULL;
+		int isdir;
+		char *p;
+
+		if (!strcmp(dirent->d_name, ".") ||
+		    !strcmp(dirent->d_name, ".."))
+			continue;
+
+		p = realloc(path, strlen(dirname) + strlen(dirent->d_name) + 2);
+		if (!p)
+			goto fail;
+		path = p;
+		strcpy(path + dirname_len + 1, dirent->d_name);
+
+		if (dirent->d_type == DT_UNKNOWN) {
+			struct stat st;
+
+			if (lstat(path, &st))
+				goto fail2;
+			dirent->d_type = IFTODT(st.st_mode);
+		}
+		if (dirent->d_type == DT_LNK)
+			continue;
+		isdir = (dirent->d_type == DT_DIR);
+
+		old_acl = richacl_get_file(path);
+		if (!old_acl) {
+			if (errno == ENODATA || errno == ENOTSUP || errno == ENOSYS)
+				goto next;
+			goto fail2;
+		}
+		if (!(old_acl->a_flags & ACL4_AUTO_INHERIT))
+			goto next;
+		if (old_acl->a_flags & ACL4_PROTECTED) {
+			if (!opt_repropagate)
+				goto next;
+			new_acl = old_acl;
+			old_acl = NULL;
+		} else {
+			int equal;
+			new_acl = richacl_auto_inherit(old_acl,
+					isdir ? dir_inheritable :
+						file_inheritable);
+			equal = !richacl_compare(old_acl, new_acl);
+			if (equal && !opt_repropagate)
+				goto next;
+			if (!equal && richacl_set_file(path, new_acl))
+				goto fail2;
+		}
+
+		if (isdir)
+			if (auto_inherit(path, new_acl))
+				goto fail2;
+
+	next:
+		free(old_acl);
+		free(new_acl);
+		continue;
+
+	fail2:
+		perror(path);
+		free(old_acl);
+		free(new_acl);
+		free(path);
+		status = -1;
+	}
+	if (errno != 0) {
+		perror(dirname);
+		status = -1;
+	}
+	free(path);
+	closedir(dir);
+	return status;
+
+fail:
+	perror(basename(progname));
+	free(path);
+	closedir(dir);
+	return -1;
+}
+
 static struct richacl *get_richacl(const char *file, mode_t mode)
 {
 	struct richacl *acl;
@@ -130,17 +248,23 @@ static struct richacl *get_richacl(const char *file, mode_t mode)
 	return acl;
 }
 
-static int set_richacl(const char *file, struct richacl *acl)
+static int set_richacl(const char *path, struct richacl *acl)
 {
-	if (richacl_set_file(file, acl)) {
+	if (richacl_set_file(path, acl)) {
 		struct stat st;
 
-		if (stat(file, &st))
+		if (stat(path, &st))
 			return -1;
 		if (!richacl_equiv_mode(acl, &st.st_mode))
-			return chmod(file, st.st_mode);
+			return chmod(path, st.st_mode);
 		/* FIXME: We could try POSIX ACLs here as well. */
 		return -1;
+	}
+	if (acl->a_flags & ACL4_AUTO_INHERIT) {
+		int ret;
+
+		ret =  auto_inherit(path, acl);
+		return ret;
 	}
 	return 0;
 }
