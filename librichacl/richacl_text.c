@@ -127,13 +127,13 @@ struct mask_flag_struct mask_bits[] = {
 #undef FILE_MASK_BIT
 #undef DIRECTORY_MASK_BIT
 
-static void write_acl_flags(struct string_buffer *buffer, unsigned char flags, int fmt)
+static void write_acl_flags(struct string_buffer *buffer, unsigned char flags, int align, int fmt)
 {
 	int cont = 0, i;
 
 	if (!flags)
 		return;
-	buffer_sprintf(buffer, "flags:");
+	buffer_sprintf(buffer, "%*s:", align, "flags");
 	for (i = 0; i < ARRAY_SIZE(acl_flag_bits); i++) {
 		if (!(flags & acl_flag_bits[i].a_flag))
 			continue;
@@ -329,7 +329,9 @@ char *richacl_to_text(const struct richacl *acl, int fmt)
 	int fmt2, align = 0;
 
 	if (fmt & RICHACL_TEXT_ALIGN) {
-		if (fmt & RICHACL_TEXT_SHOW_MASKS)
+		if (acl->a_flags && align < 6)
+			align = 6;
+		if ((fmt & RICHACL_TEXT_SHOW_MASKS) && align < 6)
 			align = 6;
 		richacl_for_each_entry(ace, acl) {
 			int a;
@@ -365,7 +367,7 @@ char *richacl_to_text(const struct richacl *acl, int fmt)
 	if (!buffer)
 		return NULL;
 
-	write_acl_flags(buffer, acl->a_flags, fmt);
+	write_acl_flags(buffer, acl->a_flags, align, fmt);
 	if (fmt & RICHACL_TEXT_SHOW_MASKS) {
 		unsigned int allowed = 0;
 
