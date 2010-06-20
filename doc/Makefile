@@ -5,7 +5,7 @@
 TOPDIR = ..
 include $(TOPDIR)/include/builddefs
 
-LSRCFILES = TODO PORTING CHANGES COPYING INSTALL \
+LSRCFILES = TODO PORTING CHANGES COPYING INSTALL solaris-zfs.txt \
 LDIRT = *.gz
 
 default: CHANGES.gz

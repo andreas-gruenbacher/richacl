@@ -1,0 +1,172 @@
+Some test results with acls on zfs (osol-0906-x86.iso)
+======================================================
+
+OpenSolaris uses the following abbreviations for permissions:
+
+	r  read_data / list_directory
+	w  write_data / add_file
+	x  execute
+	p  append_data / add_subdirectory
+	d  delete
+	D  delete_child
+	a  read_attributes
+	A  write_attributes
+	R  read_xattr
+	W  write_xattr
+	c  read_acl
+	C  write_acl
+	o  write_owner
+	s  synchronize
+
+The ls and chmod commands have been extended to also show and manpulate ACLs.
+ZFS no longer supports POSIX ACLs. Instead, all files have an NFS4 ACL:
+
+	$ umask 022
+	$ mkdir d
+	$ ls -dV d
+	drwxr-xr-x   2 agruen   staff          2 Jun 20 13:54 d
+			 owner@:--------------:-------:deny
+			 owner@:rwxp---A-W-Co-:-------:allow
+			 group@:-w-p----------:-------:deny
+			 group@:r-x-----------:-------:allow
+		      everyone@:-w-p---A-W-Co-:-------:deny
+		      everyone@:r-x---a-R-c--s:-------:allow
+
+Solaris always creates deny aces whether they are used or not.  Further weird
+things in this example:
+
+ * group@ and everyone@ are denied permissions which they can never be granted
+   directly or indirectly.  This makes even this trivial acl appear complex.
+
+ * The owner does not have delete_child access even though he can actually
+   delete files in this directory.  Solaris seems to check the add_file
+   permission in this case.  This is probably linked to the "ACE4_DELETE vs.
+   ACE4_DELETE_CHILD" section in NFSv4.1 (RFC5661).  No rationale for this
+   weird behavior seems to be known.
+
+
+If we explicitly set an acl, Solaris shows the expected result:
+
+	$ /bin/chmod A=everyone@:rwxpD::allow d
+	$ ls -dV d
+	drwxrwxrwx+  2 agruen   staff          2 Jun 20 13:54 d
+		      everyone@:rwxp-D--------:-------:allow
+
+Note that we have explicitly allowed everyone the delete_child permission.
+When we try to limit write access to the owner with chmod, we end up with this
+result:
+
+	$ chmod 755 d
+	$ ls -dV d
+	drwxr-xr-x+  2 agruen   staff          2 Jun 20 13:54 d
+		      everyone@:-----D--------:-------:allow
+			 owner@:--------------:-------:deny
+			 owner@:rwxp---A-W-Co-:-------:allow
+			 group@:-w-p----------:-------:deny
+			 group@:r-x-----------:-------:allow
+		      everyone@:-w-p---A-W-Co-:-------:deny
+		      everyone@:r-x---a-R-c--s:-------:allow
+
+Note that everyone is still granted delete_child access, so an arbitrary user
+can still delete files in d.  This clearly goes beyond file mode 0755, and
+violates POSIX.
+
+Next, let's see how an additional user can be given permissions:
+
+	$ mkdir d2
+	$ chmod A+user:sam:rwxp::allow d2
+	$ ls -dV d2
+	drwxr-xr-x+  2 agruen   staff          2 Jun 20 15:00 d2
+		       user:sam:rwxp----------:-------:allow
+			 owner@:--------------:-------:deny
+			 owner@:rwxp---A-W-Co-:-------:allow
+			 group@:-w-p----------:-------:deny
+			 group@:r-x-----------:-------:allow
+		      everyone@:-w-p---A-W-Co-:-------:deny
+		      everyone@:r-x---a-R-c--s:-------:allow
+
+Here, the group class permissions don't indicate that sam has write_data and
+append_data access.  According to POSIX, the group class permissions map to the
+entire group class including additional users and groups, and not only to the
+owning group, and that at least when only additional file access control
+mechanisms are active (there is nothing alternate in this example), the group
+clas permissions should be an upper bound to the permissions granted to any
+member in the group class.
+
+Solaris implements asymmetric behavior here: when mapping from an acl to the
+file permission bits it maps only the owning group to the group class
+permissions.  When mapping from the file permission bits to an acl (upon chmod
+or during create), it applies the group permission bits to all group class
+aces.  (It only masks some permissions and leaves others enabled, which
+creates a security hole; see the delete_child problem above.)
+
+Here is how masking is implemented: when we take away write access from the
+group class, we get:
+
+	$ chmod 755 d2
+	$ ls -dV d2
+	drwxr-xr-x+  2 agruen   staff          2 Jun 20 15:00 d2
+		       user:sam:-w-p----------:-------:deny
+		       user:sam:rwxp----------:-------:allow
+			 owner@:--------------:-------:deny
+			 owner@:rwxp---A-W-Co-:-------:allow
+			 group@:-w-p----------:-------:deny
+			 group@:r-x-----------:-------:allow
+		      everyone@:-w-p---A-W-Co-:-------:deny
+		      everyone@:r-x---a-R-c--s:-------:allow
+
+When we re-add it, we get:
+
+	$ chmod 775 d2
+	$ ls -dV d2
+	drwxrwxr-x+  2 agruen   staff          2 Jun 20 15:00 d2
+		       user:sam:--------------:-------:deny
+		       user:sam:rwxp----------:-------:allow
+			 owner@:--------------:-------:deny
+			 owner@:rwxp---A-W-Co-:-------:allow
+			 group@:--------------:-------:deny
+			 group@:rwxp----------:-------:allow
+		      everyone@:-w-p---A-W-Co-:-------:deny
+		      everyone@:r-x---a-R-c--s:-------:allow
+
+Note that the algorithm relies on the specific entry order in order to
+recignize which explicitly denied permissions it will happily "un-deny".
+The algorithm has no way of knowing for sure if a deny ace was created by
+a previous masking operation, though; if it ends up selecting a user generated
+deny ace, it would "un-deny" explicitly denied permissions.
+
+Also, note that the Windows acl editor would bring all the deny aces to the
+front (which Windows calls its canonical ace order).  This causes havoc to the
+Solaris algorithm.  This demonstrates what will happen:
+
+	$ chmod A='user:sam:-w-p----------:-------:deny,owner@:--------------:-------:deny,group@:-w-p----------:-------:deny,everyone@:-w-p---A-W-Co-:-------:deny,user:sam:rwxp----------:-------:allow,owner@:rwxp---A-W-Co-:-------:allow,group@:rwxp----------:-------:allow,everyone@:r-x---a-R-c--s:-------:allow' d2
+	$ ls -dV d2
+	dr-xr-xr-x+  2 agruen   staff          2 Jun 20 15:00 d2
+		       user:sam:-w-p----------:-------:deny
+			 owner@:--------------:-------:deny
+			 group@:-w-p----------:-------:deny
+		      everyone@:-w-p---A-W-Co-:-------:deny
+		       user:sam:rwxp----------:-------:allow
+			 owner@:rwxp---A-W-Co-:-------:allow
+			 group@:rwxp----------:-------:allow
+		      everyone@:r-x---a-R-c--s:-------:allow
+	$ chmod 775 d2
+	$ ls -dV d2
+	drwxrwxr-x+  2 agruen   staff          2 Jun 20 15:00 d2
+		       user:sam:-w-p----------:-------:deny
+			 owner@:--------------:-------:deny
+			 group@:--------------:-------:deny
+		      everyone@:-------A-W-Co-:-------:deny
+		       user:sam:--------------:-------:deny
+		       user:sam:rwxp----------:-------:allow
+			 owner@:-------A-W-Co-:-------:allow
+			 group@:--------------:-------:allow
+		      everyone@:------a-R-c--s:-------:allow
+			 owner@:--------------:-------:deny
+			 owner@:rwxp---A-W-Co-:-------:allow
+			 group@:--------------:-------:deny
+			 group@:rwxp----------:-------:allow
+		      everyone@:-w-p---A-W-Co-:-------:deny
+		      everyone@:r-x---a-R-c--s:-------:allow
+
+The result is a completely unusable acl.
