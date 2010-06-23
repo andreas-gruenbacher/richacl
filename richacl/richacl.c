@@ -114,8 +114,16 @@ static struct richacl *get_richacl(const char *file, mode_t mode)
 	struct richacl *acl;
 
 	acl = richacl_get_file(file);
-	if (!acl && (errno == ENODATA || errno == ENOTSUP || errno == ENOSYS)) {
-		acl = richacl_from_mode(mode);
+	if (!acl) {
+		if (errno == ENOTSUP &&
+		    (getxattr(file, "system.posix_acl_access", NULL, 0) >= 0 ||
+		    (S_ISDIR(mode) &&
+		     getxattr(file, "system.posix_acl_default", NULL, 0) >= 0))) {
+			fprintf(stderr, "%s: POSIX ACL(s) exist\n", file);
+			errno = 0;
+			return NULL;
+		} else if (errno == ENODATA || errno == ENOTSUP || errno == ENOSYS)
+			acl = richacl_from_mode(mode);
 	}
 	return acl;
 }
@@ -529,8 +537,11 @@ int main(int argc, char *argv[])
 			}
 		} else if (opt_modify) {
 			acl2 = get_richacl(file, st.st_mode);
-			if (!acl2)
+			if (!acl2) {
+				if (!errno)
+					goto fail3;
 				goto fail2;
+			}
 			if (modify_richacl(&acl2, acl, acl_has))
 				goto fail2;
 			if (opt_dry_run) {
@@ -557,10 +568,13 @@ int main(int argc, char *argv[])
 					format | format_for_mode(st.st_mode));
 			printf("%s  %s\n", mask_text, file);
 			free(mask_text);
-		} else {
+		} else /* opt_get */ {
 			acl2 = get_richacl(file, st.st_mode);
-			if (!acl2)
+			if (!acl2) {
+				if (!errno)
+					goto fail3;
 				goto fail2;
+			}
 			if (print_richacl(file, &acl2, &st, format))
 				goto fail2;
 		}
@@ -570,6 +584,7 @@ int main(int argc, char *argv[])
 	fail2:
 		richacl_free(acl2);
 		perror(file);
+	fail3:
 		status = 1;
 	}
 
