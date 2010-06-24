@@ -126,6 +126,68 @@ struct mask_flag_struct mask_bits[] = {
 #undef FILE_MASK_BIT
 #undef DIRECTORY_MASK_BIT
 
+/**
+ * Windows also defines the following sets of permissions:
+ *
+ * Read:
+ * 	ACE4_READ_DATA | ACE4_LIST_DIRECTORY |
+ * 	ACE4_READ_ATTRIBUTES |
+ * 	ACE4_READ_NAMED_ATTRS |
+ * 	ACE4_READ_ACL |
+ * 	ACE4_SYNCHRONIZE
+ *
+ * Write:
+ *	ACE4_WRITE_DATA | ACE4_ADD_FILE |
+ *	ACE4_APPEND_DATA | ACE4_ADD_SUBDIRECTORY |
+ *	ACE4_WRITE_ATTRIBUTES |
+ *	ACE4_WRITE_NAMED_ATTRS |
+ *	ACE4_READ_ACL |
+ *	ACE4_SYNCHRONIZE
+ *
+ * Read & Execute (Files) / List Folder Contents (Directories):
+ * 	ACE4_EXECUTE |
+ * 	ACE4_READ_DATA | ACE4_LIST_DIRECTORY |
+ * 	ACE4_READ_ATTRIBUTES |
+ * 	ACE4_READ_NAMED_ATTRS |
+ * 	ACE4_READ_ACL |
+ * 	ACE4_SYNCHRONIZE
+ *
+ * Modify:
+ * 	ACE4_EXECUTE |
+ * 	ACE4_READ_DATA | ACE4_LIST_DIRECTORY |
+ * 	ACE4_READ_ATTRIBUTES |
+ * 	ACE4_READ_NAMED_ATTRS |
+ * 	ACE4_WRITE_DATA | ACE4_ADD_FILE |
+ * 	ACE4_APPEND_DATA | ACE4_ADD_SUBDIRECTORY |
+ * 	ACE4_WRITE_ATTRIBUTES |
+ * 	ACE4_WRITE_NAMED_ATTRS |
+ * 	ACE4_DELETE |
+ * 	ACE4_READ_ACL |
+ * 	ACE4_SYNCHRONIZE
+ *
+ * Full Control:
+ * 	ACE4_EXECUTE |
+ * 	ACE4_READ_DATA | ACE4_LIST_DIRECTORY |
+ * 	ACE4_READ_ATTRIBUTES |
+ * 	ACE4_READ_NAMED_ATTRS |
+ * 	ACE4_WRITE_DATA | ACE4_ADD_FILE |
+ * 	ACE4_APPEND_DATA | ACE4_ADD_SUBDIRECTORY |
+ * 	ACE4_WRITE_ATTRIBUTES |
+ * 	ACE4_WRITE_NAMED_ATTRS |
+ * 	ACE4_DELETE_CHILD |
+ * 	ACE4_DELETE |
+ * 	ACE4_READ_ACL |
+ * 	ACE4_WRITE_ACL |
+ *	ACE4_WRITE_OWNER |
+ * 	ACE4_SYNCHRONIZE
+ *
+ * The ACE4_WRITE_RETENTION and ACE4_WRITE_RETENTION_HOLD permissions are not
+ * defined in Windows, and are not included in these sets.
+ *
+ * Solaris has similar but not identical sets:
+ *   read_set, write_set, nodify_set, full_set.
+ */
+
 static void write_acl_flags(struct string_buffer *buffer, unsigned char flags, int align, int fmt)
 {
 	int cont = 0, i;
