@@ -81,7 +81,6 @@ struct mask_flag_struct {
 	int		e_context;
 };
 struct mask_flag_struct mask_flags[] = {
-	MASK_BIT('*', VALID_MASK, "*"),
 	FILE_MASK_BIT('r', READ_DATA, "read_data"),
 	DIRECTORY_MASK_BIT('r', LIST_DIRECTORY, "list_directory"),
 	FILE_MASK_BIT('w', WRITE_DATA, "write_data"),
