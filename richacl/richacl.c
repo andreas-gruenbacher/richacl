@@ -481,7 +481,8 @@ int main(int argc, char *argv[])
 				exit(1);
 			}
 			user = passwd->pw_uid;
-		}
+		} else
+			user = -1;
 
 		n_groups_alloc = 32;
 		groups = malloc(sizeof(gid_t) * n_groups_alloc);
