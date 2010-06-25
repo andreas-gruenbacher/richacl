@@ -428,8 +428,8 @@ is_everyone:
 	 */
 	if (user == st->st_uid) {
 		file_mask = acl->a_owner_mask |
-			    (ACE4_WRITE_ATTRIBUTES | ACE4_WRITE_ACL);
-		denied &= ~(ACE4_WRITE_ATTRIBUTES | ACE4_WRITE_ACL);
+			    (ACE4_WRITE_ATTRIBUTES | ACE4_WRITE_OWNER | ACE4_WRITE_ACL);
+		denied &= ~(ACE4_WRITE_ATTRIBUTES | ACE4_WRITE_OWNER | ACE4_WRITE_ACL);
 	} else if (in_owner_or_group_class)
 		file_mask = acl->a_group_mask;
 	else
