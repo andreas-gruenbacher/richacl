@@ -54,6 +54,9 @@ int modify_richacl(struct richacl **acl2, struct richacl *acl, int acl_has)
 {
 	struct richace *ace2, *ace;
 
+	if (richacl_apply_masks(acl2))
+		return -1;
+
 	richacl_for_each_entry(ace, acl) {
 		struct richacl *acl3;
 		struct richace *ace3;
