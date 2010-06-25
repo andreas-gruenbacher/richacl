@@ -11,7 +11,7 @@ endif
 
 CONFIGURE = configure include/builddefs include/config.h
 LSRCFILES = configure configure.in aclocal.m4 Makepkgs install-sh \
-	README VERSION
+	README VERSION exports
 
 LDIRT = config.log .dep config.status config.cache confdefs.h conftest* \
 	Logs/* built .census install.* install-dev.* install-lib.* *.gz

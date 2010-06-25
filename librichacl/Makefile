@@ -16,7 +16,7 @@ LT_AGE = 1
 
 LCFLAGS =
 
-HFILES = byteorder.h
+HFILES = byteorder.h richacl-internal.h richacl_xattr.h
 CFILES = richacl_base.c  richacl_text.c  richacl_xattr.c  richacl_compat.c \
 	 string_buffer.c
 
