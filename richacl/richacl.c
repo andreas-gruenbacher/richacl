@@ -215,7 +215,7 @@ void remove_comments(struct string_buffer *buffer)
 }
 
 static struct option long_options[] = {
-	{"access",		2, 0,  3 },
+	{"access",		2, 0, 'a'},
 	{"get",			0, 0, 'g'},
 	{"modify",		1, 0, 'm'},
 	{"modify-file",		1, 0, 'M'},
@@ -224,9 +224,10 @@ static struct option long_options[] = {
 	{"remove",		0, 0, 'r'},
 	{"long",		0, 0, 'l'},
 	{"raw",			0, 0,  1 },
+	{"dry-run",		0, 0,  2 },
+	{"full",                0, 0,  3 },
 	{"unaligned",		0, 0,  4 },
 	{"numeric-ids",		0, 0,  5 },
-	{"dry-run",		0, 0,  2 },
 	{"version",		0, 0, 'v'},
 	{"help",		0, 0, 'h'},
 	{ NULL,			0, 0,  0 }
@@ -238,57 +239,67 @@ static void synopsis(int help)
 
 	fprintf(file, "SYNOPSIS: %s [options] {command} file ...\n",
 		basename(progname));
-	if (!help)
+	if (!help) {
+		fprintf(file, "Try `%s --help' for more information.\n",
+			basename(progname));
 		exit(1);
+	}
 	fprintf(file,
 "\n"
 "Commands:\n"
-"  --get       Display the ACL of file(s). Multiple ACL entries are separated\n"
+"  --get, -g   Display the ACL of file(s). Multiple ACL entries are separated\n"
 "              by newline.\n"
-"  --modify acl_entries\n"
+"  --modify acl_entries, -m acl_entries\n"
 "              Modify the ACL of file(s) by replacing existing entries with\n"
 "              the entries in acl_entries, and adding all new entries.\n"
-"  --set acl   Set the ACL of file(s) to acl. Multiple ACL entries are\n"
-"              separated by whitespace or commas.\n"
-"  --modify-file acl_entries_file, --set-file acl_file\n"
+"  --set acl, -s acl\n"
+"              Set the ACL of file(s) to acl. Multiple ACL entries are separated\n"
+"              by whitespace or commas.\n"
+"  --modify-file acl_entries_file, -M acl_entries_file\n"
+"  --set-file acl_file, -S acl_file\n"
 "              Identical to --modify / --set, but read the ACL from a file\n"
 "              instead. If the file is `-', read from standard input.\n"
-"  --set-file acl_file\n"
-"              Identical to --set, but read the ACL from a file\n"
-"              instead. If the file is `-', read from standard input.\n"
-"  --remove    Delete the ACL of file(s).\n"
-"  --access[=user[:group:...]}\n"
+"  --remove, -r\n"
+"              Remove the ACL of file(s).\n"
+"  --access[=user[:group:...]}, -a[user[:group:...]}\n"
 "              Show which permissions the caller or a specified user has for\n"
 "              file(s).  When a list of groups is given, this overrides the\n"
 "              groups the user is in.\n"
 "              capabilities. \n"
-"  --version   Display the version of %s and exit.\n"
-"  --help      This help text.\n"
+"  --version, -v\n"
+"              Display the version of %s and exit.\n"
+"  --help, -h  This help text.\n"
 "\n"
 "Options:\n"
-"  --long      Display access masks and flags in their long form.\n"
+"  --long, -l  Display access masks and flags in their long form.\n"
+"  --full      Also show permissions which are always implicitly allowed.\n"
+"  --raw       Show acls as stored on the file system including the file masks.\n"
+"              Implies --full.\n"
+"  --unaligned\n"
+"              When showing the short form, do not align acl entries or pad\n"
+"              missing permissions with '-'.\n"
 "\n"
 "ACL entries are represented by colon separated <who>:<mask>:<flags>:<type>\n"
 "fields. The <who> field may be \"owner@\", \"group@\", \"everyone@\", a user\n"
-"name or ID, or a group name or ID. Groups must have the identifier_group(g)\n"
-"flag set in the <flags> field. The <type> field may be \"allow\" or \"deny\".\n"
+"name or ID, or a group name or ID. Groups have the identifier_group(g) flag\n"
+"set in the <flags> field. The <type> field may be \"allow\" or \"deny\".\n"
 "The <mask> and <flags> fields are lists of single-letter abbreviations or\n"
 "slash-separated names, or a combination of both.\n"
 "\n"
-"The supported <mask> values are:\n"
+"ACL entry <mask> values are:\n"
 "\tread_data (r), list_directory (r), write_data (w), add_file (w),\n"
-"\tappend_data (a), add_subdirectory (a), read_named_attrs (N),\n"
-"\twrite_named_attrs (n), execute (x), delete_child (d),\n"
-"\tread_attributes (T), write_attributes (t), delete (D),\n"
-"\tread_acl (M), write_acl (m), take_ownership (o), synchronize (s)\n"
+"\tappend_data (a), add_subdirectory (a), execute (x), delete_child (d),\n"
+"\tread_attributes (T), write_attributes (t), delete (D), read_acl (M),\n"
+"\twrite_acl (m), take_ownership (o), synchronize (s), read_named_attrs (N),\n"
+"\twrite_named_attrs (n), write_retention (e), write_retention_hold (E)\n"
 "\n"
-"The supported <flags> values are:\n"
+"ACL entry <flags> values are:\n"
 "\tfile_inherit_ace (f), directory_inherit_ace (d),\n"
 "\tno_propagate_inherit_ace (n), inherit_only_ace (i),\n"
 "\tidentifier_group (g), inherited_ace (a)\n"
 "\n"
-"Per-ACL flag values are:\n"
-"\tauto_inherit (a), protected (p), defaulted (d), posix_mapped (P)\n",
+"ACL flag values are:\n"
+"\tauto_inherit (a), protected (p), defaulted (d)" /* ", posix_mapped (P)" */ "\n",
 	basename(progname));
 	exit(0);
 }
@@ -311,7 +322,7 @@ int main(int argc, char *argv[])
 
 	progname = argv[0];
 
-	while ((c = getopt_long(argc, argv, "gm:M:s:S:nrlnvh",
+	while ((c = getopt_long(argc, argv, "gm:M:s:S:a::rlvh",
 				long_options, NULL)) != -1) {
 		switch(c) {
 			case 'g':
@@ -340,6 +351,11 @@ int main(int argc, char *argv[])
 				opt_remove = 1;
 				break;
 
+			case 'a':  /* --access */
+				opt_access = 1;
+				opt_user = optarg;
+				break;
+
 			case 'l':
 				format |= RICHACL_TEXT_LONG;
 				break;
@@ -361,9 +377,8 @@ int main(int argc, char *argv[])
 				opt_dry_run = 1;
 				break;
 
-			case 3:  /* --access */
-				opt_access = 1;
-				opt_user = optarg;
+			case 3:  /* --full */
+				format &= ~RICHACL_TEXT_SIMPLIFY;
 				break;
 
 			case 4:  /* --unaligned */
@@ -382,7 +397,7 @@ int main(int argc, char *argv[])
 	if (opt_get + opt_remove + opt_modify + opt_set + opt_access != 1 ||
 	    (acl_text ? 1 : 0) + (acl_file ? 1 : 0) > 1 ||
 	    optind == argc)
-		synopsis(argc == 1);
+		synopsis(optind != argc);
 
 	if (acl_text) {
 		acl = richacl_from_text(acl_text, &acl_has, printf_stderr);
