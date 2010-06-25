@@ -103,24 +103,6 @@ struct mask_flag_struct mask_flags[] = {
 	MASK_BIT('e', WRITE_RETENTION, "write_retention"),
 	MASK_BIT('E', WRITE_RETENTION_HOLD, "write_retention_hold"),
 };
-struct mask_flag_struct mask_bits[] = {
-	MASK_BIT('r', READ_DATA, NULL),
-	MASK_BIT('w', WRITE_DATA, NULL),
-	MASK_BIT('a', APPEND_DATA, NULL),
-	MASK_BIT('x', EXECUTE, "execute"),
-	MASK_BIT('d', DELETE_CHILD, "delete_child"),
-	MASK_BIT('T', READ_ATTRIBUTES, "read_attributes"),
-	MASK_BIT('t', WRITE_ATTRIBUTES, "write_attributes"),
-	MASK_BIT('D', DELETE, "delete"),
-	MASK_BIT('M', READ_ACL, "read_acl"),
-	MASK_BIT('m', WRITE_ACL, "write_acl"),
-	MASK_BIT('o', WRITE_OWNER, "take_ownership"),
-	MASK_BIT('s', SYNCHRONIZE, "synchronize"),
-	MASK_BIT('N', READ_NAMED_ATTRS, "read_named_attrs"),
-	MASK_BIT('n', WRITE_NAMED_ATTRS, "write_named_attrs"),
-	MASK_BIT('e', WRITE_RETENTION, "write_retention"),
-	MASK_BIT('E', WRITE_RETENTION_HOLD, "write_retention_hold"),
-};
 
 #undef MASK_BIT
 #undef FILE_MASK_BIT
@@ -258,89 +240,64 @@ static void write_ace_flags(struct string_buffer *buffer, uint16_t flags, int fm
 
 static void write_mask(struct string_buffer *buffer, uint32_t mask, int fmt)
 {
+	unsigned int nondir_mask, dir_mask;
 	int stuff_written = 0, i;
 
-	if (fmt & RICHACL_TEXT_LONG) {
-		unsigned int nondir_mask, dir_mask;
+	/*
+	 * In long format, we write the non-directory and/or directory mask
+	 * name depending on the context which applies. The short format
+	 * does not distinguish between the two, so make sure that we won't
+	 * repeat the same mask letters.
+	 */
+	if (!(fmt & RICHACL_TEXT_LONG)) {
+		fmt &= ~RICHACL_TEXT_DIRECTORY_CONTEXT;
+		fmt |= RICHACL_TEXT_FILE_CONTEXT;
+	} else if (!(fmt & (RICHACL_TEXT_FILE_CONTEXT |
+			    RICHACL_TEXT_DIRECTORY_CONTEXT)))
+		fmt |= RICHACL_TEXT_FILE_CONTEXT |
+		       RICHACL_TEXT_DIRECTORY_CONTEXT;
 
-		/*
-		 * In long format, we write the non-directory and/or directory mask
-		 * name depending on the context which applies. The short format
-		 * does not distinguish between the two, so make sure that we won't
-		 * repeat the same mask letters.
-		 */
-		if (!(fmt & (RICHACL_TEXT_FILE_CONTEXT |
-			     RICHACL_TEXT_DIRECTORY_CONTEXT)))
-			fmt |= RICHACL_TEXT_FILE_CONTEXT |
-			       RICHACL_TEXT_DIRECTORY_CONTEXT;
-		if (!(fmt & RICHACL_TEXT_LONG) &&
-		    (fmt & RICHACL_TEXT_FILE_CONTEXT))
-			fmt &= ~RICHACL_TEXT_DIRECTORY_CONTEXT;
+	nondir_mask = (fmt & RICHACL_TEXT_FILE_CONTEXT) ? mask : 0;
+	dir_mask = (fmt & RICHACL_TEXT_DIRECTORY_CONTEXT) ? mask : 0;
 
-		nondir_mask = (fmt & RICHACL_TEXT_FILE_CONTEXT) ? mask : 0;
-		dir_mask = (fmt & RICHACL_TEXT_DIRECTORY_CONTEXT) ? mask : 0;
-
-		for (i = 0; i < ARRAY_SIZE(mask_flags); i++) {
-			int found = 0;
-
-			if ((nondir_mask & mask_flags[i].e_mask) ==
-			    mask_flags[i].e_mask &&
-			    (mask_flags[i].e_context & RICHACL_TEXT_FILE_CONTEXT)) {
-				nondir_mask &= ~mask_flags[i].e_mask;
-				found = 1;
-			}
-			if ((dir_mask & mask_flags[i].e_mask) == mask_flags[i].e_mask &&
-			    (mask_flags[i].e_context & RICHACL_TEXT_DIRECTORY_CONTEXT)) {
-				dir_mask &= ~mask_flags[i].e_mask;
-				found = 1;
-			}
-			if (found) {
-				if (fmt & RICHACL_TEXT_SIMPLIFY) {
-					/* Hide permissions that are always allowed. */
-					if (mask_flags[i].e_mask ==
-					    (mask_flags[i].e_mask &
-					     ACE4_POSIX_ALWAYS_ALLOWED))
-						continue;
-				}
-				if (fmt & RICHACL_TEXT_LONG) {
-					if (stuff_written)
-						buffer_sprintf(buffer, "/");
-					buffer_sprintf(buffer, "%s",
-						       mask_flags[i].e_name);
-				} else
-					buffer_sprintf(buffer, "%c",
-						       mask_flags[i].e_char);
-				stuff_written = 1;
-			}
-		}
-		mask &= (nondir_mask | dir_mask);
-	} else {
-		unsigned int hide = 0;
+	for (i = 0; i < ARRAY_SIZE(mask_flags); i++) {
+		int found = 0;
 
 		if (fmt & RICHACL_TEXT_SIMPLIFY) {
-			hide = ACE4_POSIX_ALWAYS_ALLOWED;
-#if 0
-			/* Hiding directory-specific flags leads to misaligned,
-			   so disable this. */
-
-			/* ACE4_DELETE_CHILD is meaningless for non-directories. */
-			if (!(fmt & RICHACL_TEXT_DIRECTORY_CONTEXT))
-				hide |= ACE4_DELETE_CHILD;
-#endif
+			/* Hide permissions which are always allowed. */
+			if (mask_flags[i].e_mask & ACE4_POSIX_ALWAYS_ALLOWED)
+				continue;
 		}
 
-		for (i = 0; i < ARRAY_SIZE(mask_bits); i++) {
-			if (!(mask_bits[i].e_mask & hide)) {
-				if (mask & mask_bits[i].e_mask)
-					buffer_sprintf(buffer, "%c",
-						       mask_bits[i].e_char);
-				else if (fmt & RICHACL_TEXT_ALIGN)
-					buffer_sprintf(buffer, "-");
-			}
-			mask &= ~mask_bits[i].e_mask;
+		if ((nondir_mask & mask_flags[i].e_mask) &&
+		    (mask_flags[i].e_context & RICHACL_TEXT_FILE_CONTEXT)) {
+			nondir_mask &= ~mask_flags[i].e_mask;
+			found = 1;
 		}
-		stuff_written = 1;
+		if ((dir_mask & mask_flags[i].e_mask) &&
+		    (mask_flags[i].e_context & RICHACL_TEXT_DIRECTORY_CONTEXT)) {
+			dir_mask &= ~mask_flags[i].e_mask;
+			found = 1;
+		}
+
+		if (found) {
+			if (fmt & RICHACL_TEXT_LONG) {
+				if (stuff_written)
+					buffer_sprintf(buffer, "/");
+				buffer_sprintf(buffer, "%s",
+					       mask_flags[i].e_name);
+			} else
+				buffer_sprintf(buffer, "%c",
+					       mask_flags[i].e_char);
+			stuff_written = 1;
+		} else if (!(fmt & RICHACL_TEXT_LONG) &&
+			   (fmt & RICHACL_TEXT_ALIGN) &&
+			   (mask_flags[i].e_context & RICHACL_TEXT_FILE_CONTEXT)) {
+			buffer_sprintf(buffer, "-");
+			stuff_written = 1;
+		}
 	}
+	mask = (nondir_mask | dir_mask);
 	if (mask) {
 		if (stuff_written)
 			buffer_sprintf(buffer, "/");
