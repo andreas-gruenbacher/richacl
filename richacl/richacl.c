@@ -37,7 +37,6 @@
 
 #include "richacl.h"
 #include "string_buffer.h"
-#include "user_group.h"
 
 static const char *progname;
 
@@ -146,17 +145,6 @@ static int set_richacl(const char *file, struct richacl *acl)
 	return 0;
 }
 
-static const char *flagstr(mode_t mode)
-{
-	static char str[4];
-
-	str[0] = (mode & S_ISUID) ? 's' : '-';
-	str[1] = (mode & S_ISGID) ? 's' : '-';
-	str[2] = (mode & S_ISVTX) ? 't' : '-';
-	str[3] = '\0';
-	return str;
-}
-
 int format_for_mode(mode_t mode)
 {
 	if (S_ISDIR(mode))
@@ -177,13 +165,7 @@ static int print_richacl(const char *file, struct richacl **acl,
 	text = richacl_to_text(*acl, fmt | format_for_mode(st->st_mode));
 	if (!text)
 		goto fail;
-	printf("# file: %s\n# owner: %s\n# group: %s\n",
-	       file,
-	       user_name(st->st_uid, fmt & RICHACL_TEXT_NUMERIC_IDS),
-	       group_name(st->st_gid, fmt & RICHACL_TEXT_NUMERIC_IDS));
-	if ((st->st_mode & (S_ISVTX | S_ISUID | S_ISGID)))
-		printf("# flags: %s\n", flagstr(st->st_mode));
-
+	printf("%s:\n", file);
 	puts(text);
 	free(text);
 	return 0;
@@ -192,28 +174,25 @@ fail:
 	return -1;
 }
 
-void remove_comments(struct string_buffer *buffer)
+void remove_filename(struct string_buffer *buffer)
 {
-	char *c = NULL, *d = buffer->buffer;
+	char *c, *end;
 
-	for (;;) {
-		if (c && (*d == '\n' || *d == 0)) {
-			size_t sz = buffer->buffer + buffer->offset - d;
-			memmove(c, d, sz + 1);
-			buffer->offset -= d - c;
-			d = c;
-			c = NULL;
-		} else if (*d == 0)
+	for (c = buffer->buffer, end = buffer->buffer + buffer->offset;
+	     c != end;
+	     c++) {
+		if (*c == '\n')
 			break;
-		else if (*d == '#') {
-			if (!c && (d == buffer->buffer || isspace(d[-1]))) {
-				c = d;
-				while (c != buffer->buffer &&
-				       *c != '\n' && isspace(*c))
-					c--;
-			}
+		if (*c == ':') {
+			c++;
+			if (c == end)
+				break;
+			if (*c != '\n')
+				continue;
+			c++;
+			memmove(buffer->buffer, c, end - c + 1);
+			buffer->offset = end - c;
 		}
-		d++;
 	}
 }
 
@@ -439,7 +418,7 @@ int main(int argc, char *argv[])
 			return 1;
 		}
 
-		remove_comments(buffer);
+		remove_filename(buffer);
 		acl = richacl_from_text(buffer->buffer, &acl_has, printf_stderr);
 		if (!acl)
 			return 1;
