@@ -263,12 +263,6 @@ static void write_mask(struct string_buffer *buffer, uint32_t mask, int fmt)
 	for (i = 0; i < ARRAY_SIZE(mask_flags); i++) {
 		int found = 0;
 
-		if (fmt & RICHACL_TEXT_SIMPLIFY) {
-			/* Hide permissions which are always allowed. */
-			if (mask_flags[i].e_mask & ACE4_POSIX_ALWAYS_ALLOWED)
-				continue;
-		}
-
 		if ((nondir_mask & mask_flags[i].e_mask) &&
 		    (mask_flags[i].e_context & RICHACL_TEXT_FILE_CONTEXT)) {
 			nondir_mask &= ~mask_flags[i].e_mask;
@@ -278,6 +272,12 @@ static void write_mask(struct string_buffer *buffer, uint32_t mask, int fmt)
 		    (mask_flags[i].e_context & RICHACL_TEXT_DIRECTORY_CONTEXT)) {
 			dir_mask &= ~mask_flags[i].e_mask;
 			found = 1;
+		}
+
+		if (fmt & RICHACL_TEXT_SIMPLIFY) {
+			/* Hide permissions which are always allowed. */
+			if (mask_flags[i].e_mask & ACE4_POSIX_ALWAYS_ALLOWED)
+				continue;
 		}
 
 		if (found) {
