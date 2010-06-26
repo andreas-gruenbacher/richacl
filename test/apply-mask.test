@@ -6,9 +6,7 @@ $ touch x
 
 $ richacl --set 'owner@:rw::allow group@:rw::allow everyone@:r::allow' x
 $ richacl --get x
-> # file: x
-> # owner: root
-> # group: root
+> x:
 >     owner@:rw-----------::allow
 >     group@:rw-----------::allow
 >  everyone@:r------------::allow
@@ -17,9 +15,7 @@ $ richacl --get x
 $ richacl --set 'everyone@:w::allow owner@:r::allow group@:r::allow' x
 $ chmod 664 x
 $ richacl --get x
-> # file: x
-> # owner: root
-> # group: root
+> x:
 >  owner@:rw-----------::allow
 >  group@:rw-----------::allow
 >
@@ -27,62 +23,48 @@ $ richacl --get x
 $ richacl --set 'everyone@:w::deny owner@:rw::allow group@:rw::allow' x
 $ chmod 664 x
 $ richacl --get x
-> # file: x
-> # owner: root
-> # group: root
+> x:
 >  owner@:r------------::allow
 >  group@:r------------::allow
 >
 
 $ richacl --set 'owner@:rwmo::allow' x
 $ richacl --get x
-> # file: x
-> # owner: root
-> # group: root
+> x:
 >  owner@:rw-----mo----::allow
 >
 
 
 $ chmod 644 x
 $ richacl --get x
-> # file: x
-> # owner: root
-> # group: root
+> x:
 >  owner@:rw-----------::allow
 >
 
 $ richacl --set 'root:rw::allow' x
 $ chmod 664 x
 $ richacl --get x
-> # file: x
-> # owner: root
-> # group: root
+> x:
 >  root:rw-----------::allow
 >
 
 $ chmod 644 x
 $ richacl --get x
-> # file: x
-> # owner: root
-> # group: root
+> x:
 >  root:r------------::allow
 >
 
 
 $ chmod 664 x
 $ richacl --get x
-> # file: x
-> # owner: root
-> # group: root
+> x:
 >  root:rw-----------::allow
 >
 
 $ richacl --set 'root:rw::allow everyone@:r::allow' x
 $ chmod 664 x
 $ richacl --get x
-> # file: x
-> # owner: root
-> # group: root
+> x:
 >       root:rw-----------::allow
 >  everyone@:r------------::allow
 >
@@ -90,9 +72,7 @@ $ richacl --get x
 $ richacl --set 'root:r::allow everyone@:rw::allow' x
 $ chmod 664 x
 $ richacl --get x
-> # file: x
-> # owner: root
-> # group: root
+> x:
 >       root:rw-----------::allow
 >     owner@:rw-----------::allow
 >     group@:rw-----------::allow
@@ -103,9 +83,7 @@ $ richacl --get x
 $ richacl --set 'root:w::deny everyone@:rw::allow' x
 $ chmod 664 x
 $ richacl --get x
-> # file: x
-> # owner: root
-> # group: root
+> x:
 >       root:-w-----------::deny
 >     owner@:rw-----------::allow
 >     group@:rw-----------::allow
@@ -116,9 +94,7 @@ $ richacl --get x
 $ richacl --set 'root:rw::allow root:w::deny everyone@:rw::allow' x
 $ chmod 664 x
 $ richacl --get x
-> # file: x
-> # owner: root
-> # group: root
+> x:
 >       root:rw-----------::allow
 >       root:-w-----------::deny
 >     owner@:rw-----------::allow
@@ -129,18 +105,14 @@ $ richacl --get x
 $ richacl --set 'everyone@:rw::allow' x
 $ chmod 066 x
 $ richacl --get x
-> # file: x
-> # owner: root
-> # group: root
+> x:
 >     owner@:rw-----------::deny
 >  everyone@:rw-----------::allow
 >
 
 $ chmod 006 x
 $ richacl --get x
-> # file: x
-> # owner: root
-> # group: root
+> x:
 >     owner@:rw-----------::deny
 >     group@:rw-----------::deny
 >  everyone@:rw-----------::allow
@@ -148,9 +120,7 @@ $ richacl --get x
 
 $ chmod 606 x
 $ richacl --get x
-> # file: x
-> # owner: root
-> # group: root
+> x:
 >     owner@:rw-----------::allow
 >     group@:rw-----------::deny
 >  everyone@:rw-----------::allow
@@ -159,9 +129,7 @@ $ richacl --get x
 $ richacl --set 'root:rw::allow everyone@:rw::allow' x
 $ chmod 606 x
 $ richacl --get x
-> # file: x
-> # owner: root
-> # group: root
+> x:
 >     owner@:rw-----------::allow
 >     group@:rw-----------::deny
 >  everyone@:rw-----------::allow
@@ -169,9 +137,7 @@ $ richacl --get x
 
 $ chmod 646 x
 $ richacl --get x
-> # file: x
-> # owner: root
-> # group: root
+> x:
 >       root:r------------::allow
 >     owner@:rw-----------::allow
 >     group@:-w-----------::deny

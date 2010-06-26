@@ -11,9 +11,7 @@ $ ls -l x | cut -d ' ' -f 1
 > -rw-rw-rw-
 
 $ richacl --get x
-> # file: x
-> # owner: bin
-> # group: bin
+> x:
 >  everyone@:rw-----------::allow
 >
 
@@ -22,9 +20,7 @@ $ ls -l x | cut -d ' ' -f 1
 > -rw-rw-r--
 
 $ richacl --get x
-> # file: x
-> # owner: bin
-> # group: bin
+> x:
 >     owner@:rw-----------::allow
 >     group@:rw-----------::allow
 >  everyone@:r------------::allow
@@ -36,9 +32,7 @@ $ ls -dl sub | cut -d ' ' -f 1
 > drwxrwxrwx
 
 $ richacl --get sub
-> # file: sub
-> # owner: bin
-> # group: bin
+> sub:
 >  everyone@:rwax---------:fd:allow
 >
 
@@ -47,9 +41,7 @@ $ ls -dl sub | cut -d ' ' -f 1
 > drwxrwxr-x
 
 $ richacl --get sub
-> # file: sub
-> # owner: bin
-> # group: bin
+> sub:
 >     owner@:rwax---------::allow
 >     group@:rwax---------::allow
 >  everyone@:rwax---------:fdi:allow
@@ -61,9 +53,7 @@ $ ls -l sub/f | cut -d ' ' -f 1
 > -rw-rw-rw-
 
 $ richacl --get sub/f
-> # file: sub/f
-> # owner: bin
-> # group: bin
+> sub/f:
 >  everyone@:rwa----------::allow
 >
 
@@ -72,9 +62,7 @@ $ ls -dl sub/sub2 | cut -d ' ' -f 1
 > drwxrwxrwx
 
 $ richacl --get sub/sub2
-> # file: sub/sub2
-> # owner: bin
-> # group: bin
+> sub/sub2:
 >  everyone@:rwax---------:fd:allow
 >
 
