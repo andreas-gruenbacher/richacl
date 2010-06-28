@@ -5,44 +5,54 @@ $ whoami
 > root
 
 $ mkdir d1
-$ richacl --modify flags:a d1
 $ richacl  --modify daemon:rw:fd:deny d1
 $ richacl  --modify bin:rw:f:deny d1
 $ richacl  --modify sys:rw:d:deny d1
 $ richacl  --modify daemon:rw:fdig:deny d1
 
 set autoinheritance
-$ richacl  --modify flags:a d1
+$ richacl --modify flags:a d1
 
-$ richacl --get d1
+$ richacl --get --raw d1
 > d1:
 >      flags:a
->     daemon:rw-----------:fd:deny
->        bin:rw-----------:f:deny
->        sys:rw-----------:d:deny
->     daemon:rw-----------:fdig:deny
->  everyone@:rwaxd--------::allow
+>      owner:rwaxd-----------::mask
+>      group:r--x------------::mask
+>      other:r--x------------::mask
+>     daemon:rw--------------:fd:deny
+>        bin:rw--------------:f:deny
+>        sys:rw--------------:d:deny
+>     daemon:rw--------------:fdig:deny
+>     owner@:rwaxd-----------::allow
+>  everyone@:r--x------------::allow
 >
 
 
 $ mkdir d1/d2
 $ touch d1/d3
 
-$ richacl  --get d1/d2
+mode bits derived out of inherited ACEs
+$ richacl  --get --raw d1/d2
 > d1/d2:
 >   flags:ap
->  daemon:rw-----------:fda:deny
->     bin:rw-----------:fia:deny
->     sys:rw-----------:da:deny
->  daemon:rw-----------:fdiga:deny
+>   owner:----------------::mask
+>   group:----------------::mask
+>   other:----------------::mask
+>  daemon:rw--------------:fda:deny
+>     bin:rw--------------:fia:deny
+>     sys:rw--------------:da:deny
+>  daemon:rw--------------:fdiga:deny
 >
 
-$ richacl  --get d1/d3
+$ richacl  --get --raw d1/d3
 > d1/d3:
 >   flags:ap
->  daemon:rw-----------:a:deny
->     bin:rw-----------:a:deny
->  daemon:rw-----------:ga:deny
+>   owner:----------------::mask
+>   group:----------------::mask
+>   other:----------------::mask
+>  daemon:rw--------------:a:deny
+>     bin:rw--------------:a:deny
+>  daemon:rw--------------:ga:deny
 >
 
 $ mkdir d1/d2/d4
@@ -53,21 +63,27 @@ $ mkdir d1/d6
 $ touch d1/d7
 
 
-$ richacl  --get d1/d2/d4
+$ richacl  --get --raw d1/d2/d4
 > d1/d2/d4:
 >   flags:ap
->  daemon:rw-----------:fda:deny
->     bin:rw-----------:fia:deny
->     sys:rw-----------:da:deny
->  daemon:rw-----------:fdiga:deny
+>   owner:----------------::mask
+>   group:----------------::mask
+>   other:----------------::mask
+>  daemon:rw--------------:fda:deny
+>     bin:rw--------------:fia:deny
+>     sys:rw--------------:da:deny
+>  daemon:rw--------------:fdiga:deny
 >
 
-$ richacl  --get d1/d2/d4/d5
+$ richacl  --get --raw d1/d2/d4/d5
 > d1/d2/d4/d5:
 >   flags:ap
->  daemon:rw-----------:a:deny
->     bin:rw-----------:a:deny
->  daemon:rw-----------:ga:deny
+>   owner:----------------::mask
+>   group:----------------::mask
+>   other:----------------::mask
+>  daemon:rw--------------:a:deny
+>     bin:rw--------------:a:deny
+>  daemon:rw--------------:ga:deny
 >
 
 
@@ -78,22 +94,35 @@ $ richacl  --modify flags:a d1/d2/d4
 $ richacl  --modify flags:a d1/d2/d4/d5
 
 $ richacl --get d1 | sed -e 's/:fd:deny/:fd:allow/' > acl.txt
+$ cat acl.txt
+> d1:
+>      flags:a
+>     daemon:rw-----------:fd:allow
+>        bin:rw-----------:f:deny
+>        sys:rw-----------:d:deny
+>     daemon:rw-----------:fdig:deny
+>     owner@:rwaxd--------::allow
+>  everyone@:r--x---------::allow
+>
+
 $ richacl --set-file acl.txt d1
 
-$ richacl  --get  --raw d1
+$ richacl  --get   --raw d1
 > d1:
 >      flags:a
 >      owner:rwaxd-----------::mask
->      group:rwaxd-----------::mask
->      other:rwaxd-----------::mask
+>      group:rw-x------------::mask
+>      other:r--x------------::mask
 >     daemon:rw--------------:fd:allow
 >        bin:rw--------------:f:deny
 >        sys:rw--------------:d:deny
 >     daemon:rw--------------:fdig:deny
->  everyone@:rwaxd-----------::allow
+>     owner@:rwaxd-----------::allow
+>  everyone@:r--x------------::allow
 >
 
-$ richacl  --get  --raw d1/d2
+
+$ richacl  --get --raw  --raw d1/d2
 > d1/d2:
 >   flags:a
 >   owner:rw--------------::mask

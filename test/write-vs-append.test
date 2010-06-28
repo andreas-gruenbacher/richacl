@@ -5,12 +5,12 @@ $ whoami
 > root
 
 $ touch a b c d e f
-$ richacl --set 'owner@:*::allow' a
-$ richacl --set 'owner@:*::allow bin:w::allow' b
-$ richacl --set 'owner@:*::allow bin:a::allow' c
-$ richacl --set 'owner@:*::allow bin:wa::allow' d
-$ richacl --set 'bin:a::deny owner@:*::allow bin:w::allow' e
-$ richacl --set 'bin:w::deny owner@:*::allow bin:a::allow' f
+$ richacl --set 'owner@:rwaxdTtDMmosNneE::allow' a
+$ richacl --set 'owner@:rwaxdTtDMmosNneE::allow bin:w::allow' b
+$ richacl --set 'owner@:rwaxdTtDMmosNneE::allow bin:a::allow' c
+$ richacl --set 'owner@:rwaxdTtDMmosNneE::allow bin:wa::allow' d
+$ richacl --set 'bin:a::deny owner@:rwaxdTtDMmosNneE::allow bin:w::allow' e
+$ richacl --set 'bin:w::deny owner@:rwaxdTtDMmosNneE::allow bin:a::allow' f
 
 $ su bin
 $ echo a > a

@@ -10,6 +10,7 @@ get the acl mapped from mode
 $ richacl  --get --raw a | sed -e '/^#/d' > acl.txt
 
 $ cat acl.txt
+> a:
 >      owner:rwa-dT--M--s----::mask
 >      group:r----T--M--s----::mask
 >      other:r----T--M--s----::mask
