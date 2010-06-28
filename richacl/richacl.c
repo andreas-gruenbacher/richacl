@@ -80,6 +80,7 @@ int modify_richacl(struct richacl **acl2, struct richacl *acl, int acl_has)
 		acl3 = richacl_alloc((*acl2)->a_count + 1);
 		if (!acl3)
 			return -1;
+		acl3->a_flags = (*acl2)->a_flags;
 		ace3 = acl3->a_entries;
 		if (richace_is_deny(ace)) {
 			richacl_for_each_entry(ace2, *acl2) {
