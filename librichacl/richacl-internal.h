@@ -74,17 +74,6 @@ richace_clear_inheritance_flags(struct richace *ace)
 			  ACE4_INHERIT_ONLY_ACE);
 }
 
-static inline int richace_is_inheritable(const struct richace *ace)
-{
-	return ace->e_flags & (ACE4_FILE_INHERIT_ACE |
-			       ACE4_DIRECTORY_INHERIT_ACE);
-}
-
-static inline int richace_is_inherit_only(const struct richace *ace)
-{
-	return ace->e_flags & ACE4_INHERIT_ONLY_ACE;
-}
-
 extern const char *richace_owner_who;
 extern const char *richace_group_who;
 extern const char *richace_everyone_who;

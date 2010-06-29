@@ -154,6 +154,17 @@ static inline int richace_is_deny(const struct richace *ace)
 	return ace->e_type == ACE4_ACCESS_DENIED_ACE_TYPE;
 }
 
+static inline int richace_is_inheritable(const struct richace *ace)
+{
+	return ace->e_flags & (ACE4_FILE_INHERIT_ACE |
+			       ACE4_DIRECTORY_INHERIT_ACE);
+}
+
+static inline int richace_is_inherit_only(const struct richace *ace)
+{
+	return ace->e_flags & ACE4_INHERIT_ONLY_ACE;
+}
+
 extern const char *richace_get_who(const struct richace *);
 
 extern int richace_set_who(struct richace *, const char *);
