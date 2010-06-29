@@ -165,6 +165,11 @@ static inline int richace_is_inherit_only(const struct richace *ace)
 	return ace->e_flags & ACE4_INHERIT_ONLY_ACE;
 }
 
+static inline int richacl_is_auto_inherit(const struct richacl *acl)
+{
+	return acl->a_flags & ACL4_AUTO_INHERIT;
+}
+
 extern const char *richace_get_who(const struct richace *);
 
 extern int richace_set_who(struct richace *, const char *);

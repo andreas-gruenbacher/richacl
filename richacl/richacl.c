@@ -243,7 +243,7 @@ static int auto_inherit(const char *dirname, struct richacl *dir_acl)
 				goto next;
 			goto fail2;
 		}
-		if (!(old_acl->a_flags & ACL4_AUTO_INHERIT))
+		if (!richacl_is_auto_inherit(old_acl))
 			goto next;
 		if (old_acl->a_flags & ACL4_PROTECTED) {
 			if (!opt_repropagate)
@@ -324,7 +324,7 @@ static int set_richacl(const char *path, struct richacl *acl)
 		/* FIXME: We could try POSIX ACLs here as well. */
 		return -1;
 	}
-	if (acl->a_flags & ACL4_AUTO_INHERIT) {
+	if (richacl_is_auto_inherit(acl)) {
 		int ret;
 
 		ret =  auto_inherit(path, acl);

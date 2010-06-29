@@ -495,6 +495,10 @@ richacl_masks_to_mode(const struct richacl *acl)
  * richacl_inherit  -  compute the inheritable acl
  * @dir_acl:	acl of the containing direcory
  * @isdir:	inherit by a directory or non-directory?
+ *
+ * A directory can have acl entries which files and/or directories created
+ * inside the directory will inherit.  This function computes the acl for such
+ * a new file.  If there is no inheritable acl, it will return %NULL.
  */
 struct richacl *
 richacl_inherit(const struct richacl *dir_acl, int isdir)
@@ -552,6 +556,13 @@ richacl_inherit(const struct richacl *dir_acl, int isdir)
 			ace++;
 		}
 	}
+
+	if (richacl_is_auto_inherit(dir_acl)) {
+		acl->a_flags = ACL4_AUTO_INHERIT;
+		richacl_for_each_entry(ace, acl)
+			ace->e_flags |= ACE4_INHERITED_ACE;
+	}
+
 	return acl;
 }
 
