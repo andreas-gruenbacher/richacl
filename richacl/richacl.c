@@ -449,6 +449,8 @@ static void synopsis(int help)
 "  --unaligned\n"
 "              When showing the short form, do not align acl entries or pad\n"
 "              missing permissions with '-'.\n"
+"  --numeric-ids\n"
+"              Display numeric user and group IDs instead of names.\n"
 "\n"
 "ACL entries are represented by colon separated <who>:<mask>:<flags>:<type>\n"
 "fields. The <who> field may be \"owner@\", \"group@\", \"everyone@\", a user\n"
@@ -461,8 +463,9 @@ static void synopsis(int help)
 "\tread_data (r), list_directory (r), write_data (w), add_file (w),\n"
 "\tappend_data (a), add_subdirectory (a), execute (x), delete_child (d),\n"
 "\tread_attributes (T), write_attributes (t), delete (D), read_acl (M),\n"
-"\twrite_acl (m), take_ownership (o), synchronize (s), read_named_attrs (N),\n"
-"\twrite_named_attrs (n), write_retention (e), write_retention_hold (E)\n"
+"\twrite_acl (m), take_ownership (o), synchronize (s),\n"
+"\tread_named_attrs (N), \twrite_named_attrs (n), write_retention (e),\n"
+"\twrite_retention_hold (E)\n"
 "\n"
 "ACL entry <flags> values are:\n"
 "\tfile_inherit_ace (f), directory_inherit_ace (d),\n"
@@ -556,7 +559,7 @@ int main(int argc, char *argv[])
 				format &= ~RICHACL_TEXT_ALIGN;
 				break;
 
-			case 5:  /* --numeric */
+			case 5:  /* --numeric-ids */
 				format |= RICHACL_TEXT_NUMERIC_IDS;
 				break;
 
