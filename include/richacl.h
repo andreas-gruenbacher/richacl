@@ -27,6 +27,7 @@
 #define ACL4_AUTO_INHERIT		0x01
 #define ACL4_PROTECTED			0x02
 #define ACL4_DEFAULTED			0x04
+#define ACL4_MASKED			0x08
 #define ACL4_POSIX_MAPPED		0x10
 
 #define ACL4_VALID_FLAGS (	\

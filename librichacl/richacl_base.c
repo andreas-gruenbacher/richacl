@@ -220,6 +220,8 @@ restart:
 			}
 		}
 	}
+
+	acl->a_flags &= ~ACL4_MASKED;
 }
 
 int richace_set_who(struct richace *ace, const char *who)
@@ -292,12 +294,12 @@ struct richacl *richacl_from_mode(mode_t mode)
 	acl = richacl_alloc(1);
 	if (!acl)
 		return NULL;
-	ace = acl->a_entries;
-
+	acl->a_flags = ACL4_MASKED;
 	acl->a_owner_mask = richacl_mode_to_mask(mode >> 6);
 	acl->a_group_mask = richacl_mode_to_mask(mode >> 3);
 	acl->a_other_mask = richacl_mode_to_mask(mode);
 
+	ace = acl->a_entries;
 	ace->e_type = ACE4_ACCESS_ALLOWED_ACE_TYPE;
 	ace->e_flags = ACE4_SPECIAL_WHO;
 	ace->e_mask = ACE4_POSIX_MODE_ALL;
@@ -370,6 +372,13 @@ int richacl_access(const char *file, const struct stat *st, uid_t user,
 	in_owner_or_group_class = in_owning_group;
 
 	/*
+	 * We don't need to know which class the process is in when the acl is
+	 * not masked.
+	 */
+	if (!(acl->a_flags & ACL4_MASKED))
+		in_owner_or_group_class = 1;
+
+	/*
 	 * A process is
 	 *   - in the owner file class if it owns the file,
 	 *   - in the group file class if it is in the file's owning group or
@@ -406,7 +415,7 @@ int richacl_access(const char *file, const struct stat *st, uid_t user,
 		 * but ensures that we grant the same permissions as the acl
 		 * computed by richacl_apply_masks() would grant.
 		 */
-		if (richace_is_allow(ace))
+		if ((acl->a_flags & ACL4_MASKED) && richace_is_allow(ace))
 			ace_mask &= acl->a_group_mask;
 
 is_owner:
@@ -426,7 +435,9 @@ is_everyone:
 	/*
 	 * Figure out which file mask applies.
 	 */
-	if (user == st->st_uid) {
+	if (!(acl->a_flags & ACL4_MASKED))
+		file_mask = ACE4_VALID_MASK;
+	else if (user == st->st_uid) {
 		file_mask = acl->a_owner_mask |
 			    (ACE4_WRITE_ATTRIBUTES | ACE4_WRITE_OWNER | ACE4_WRITE_ACL);
 		denied &= ~(ACE4_WRITE_ATTRIBUTES | ACE4_WRITE_OWNER | ACE4_WRITE_ACL);
@@ -582,7 +593,7 @@ richacl_equiv_mode(const struct richacl *acl, mode_t *mode_p)
 	mode_t mode;
 
 	if (acl->a_count != 1 ||
-	    acl->a_flags ||
+	    acl->a_flags != ACL4_MASKED ||
 	    !richace_is_everyone(ace) ||
 	    !richace_is_allow(ace) ||
 	    ace->e_flags & ~ACE4_SPECIAL_WHO)

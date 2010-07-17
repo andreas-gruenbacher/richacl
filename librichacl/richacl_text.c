@@ -34,6 +34,7 @@ static struct {
 	unsigned char	a_flag;
 	const char	*a_name;
 } acl_flag_bits[] = {
+	{ 'm', ACL4_MASKED, "masked" },
 	{ 'a', ACL4_AUTO_INHERIT, "auto_inherit" },
 	{ 'p', ACL4_PROTECTED, "protected" },
 	{ 'd', ACL4_DEFAULTED, "defaulted" },

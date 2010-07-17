@@ -640,20 +640,23 @@ richacl_isolate_group_class(struct richacl_alloc *x)
 int
 richacl_apply_masks(struct richacl **acl)
 {
-	struct richacl_alloc x = {
-		.acl = *acl,
-		.count = (*acl)->a_count,
-	};
 	int retval = 0;
 
-	if (richacl_move_everyone_aces_down(&x) ||
-	    richacl_propagate_everyone(&x) ||
-	    __richacl_apply_masks(&x) ||
-	    richacl_isolate_owner_class(&x) ||
-	    richacl_isolate_group_class(&x))
-			retval = -1;
+	if ((*acl)->a_flags & ACL4_MASKED) {
+		struct richacl_alloc x = {
+			.acl = *acl,
+			.count = (*acl)->a_count,
+		};
+		if (richacl_move_everyone_aces_down(&x) ||
+		    richacl_propagate_everyone(&x) ||
+		    __richacl_apply_masks(&x) ||
+		    richacl_isolate_owner_class(&x) ||
+		    richacl_isolate_group_class(&x))
+				retval = -1;
 
-	*acl = x.acl;
+		x.acl->a_flags &= ~ACL4_MASKED;
+		*acl = x.acl;
+	}
 	return retval;
 }
 

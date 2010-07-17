@@ -65,6 +65,41 @@ static inline int richace_is_inherited(const struct richace *ace)
 	return ace->e_flags & ACE4_INHERITED_ACE;
 }
 
+static void compute_masks(struct richacl *acl, int acl_has)
+{
+	unsigned int owner_mask = acl->a_owner_mask;
+	unsigned int group_mask = acl->a_group_mask;
+	unsigned int other_mask = acl->a_other_mask;
+
+	if ((acl_has & RICHACL_TEXT_OWNER_MASK) &&
+	    (acl_has & RICHACL_TEXT_GROUP_MASK) &&
+	    (acl_has & RICHACL_TEXT_OTHER_MASK) &&
+	    (acl_has & RICHACL_TEXT_FLAGS))
+		return;
+
+	if (!(acl_has & RICHACL_TEXT_FLAGS))
+		acl->a_flags &= ~ACL4_MASKED;
+	richacl_compute_max_masks(acl);
+	if (acl_has & RICHACL_TEXT_OWNER_MASK) {
+		if (!(acl_has & RICHACL_TEXT_FLAGS) &&
+		    (acl->a_owner_mask & ~owner_mask))
+			acl->a_flags |= ACL4_MASKED;
+		acl->a_owner_mask = owner_mask;
+	}
+	if (acl_has & RICHACL_TEXT_GROUP_MASK) {
+		if (!(acl_has & RICHACL_TEXT_FLAGS) &&
+		    (acl->a_group_mask & ~group_mask))
+			acl->a_flags |= ACL4_MASKED;
+		acl->a_group_mask = group_mask;
+	}
+	if (acl_has & RICHACL_TEXT_OTHER_MASK) {
+		if (!(acl_has & RICHACL_TEXT_FLAGS) &&
+		    (acl->a_other_mask & ~other_mask))
+			acl->a_flags |= ACL4_MASKED;
+		acl->a_other_mask = other_mask;
+	}
+}
+
 int modify_richacl(struct richacl **acl2, struct richacl *acl, int acl_has)
 {
 	struct richace *ace2, *ace;
@@ -166,17 +201,13 @@ int modify_richacl(struct richacl **acl2, struct richacl *acl, int acl_has)
 
 	if (acl_has & RICHACL_TEXT_FLAGS)
 		(*acl2)->a_flags = acl->a_flags;
-
-	if (!((acl_has & RICHACL_TEXT_OWNER_MASK) && 
-	      (acl_has & RICHACL_TEXT_GROUP_MASK) && 
-	      (acl_has & RICHACL_TEXT_OTHER_MASK)))
-		richacl_compute_max_masks(*acl2);
 	if (acl_has & RICHACL_TEXT_OWNER_MASK)
 		(*acl2)->a_owner_mask = acl->a_owner_mask;
 	if (acl_has & RICHACL_TEXT_GROUP_MASK)
 		(*acl2)->a_group_mask = acl->a_group_mask;
 	if (acl_has & RICHACL_TEXT_OTHER_MASK)
 		(*acl2)->a_other_mask = acl->a_other_mask;
+	compute_masks(*acl2, acl_has);
 
 	return 0;
 }
@@ -473,7 +504,7 @@ static void synopsis(int help)
 "\tidentifier_group (g), inherited_ace (a)\n"
 "\n"
 "ACL flag values are:\n"
-"\tauto_inherit (a), protected (p), defaulted (d)" /* ", posix_mapped (P)" */ "\n",
+"\tmasked (m), auto_inherit (a), protected (p), defaulted (d)" /* ", posix_mapped (P)" */ "\n",
 	basename(progname));
 	exit(0);
 }
@@ -618,21 +649,8 @@ int main(int argc, char *argv[])
 
 	/* Compute all masks which haven't been set explicitly. */
 	/* FIXME: how about --modify? */
-	if (opt_set && acl && !((acl_has & RICHACL_TEXT_OWNER_MASK) &&
-				(acl_has & RICHACL_TEXT_GROUP_MASK) &&
-				(acl_has & RICHACL_TEXT_OTHER_MASK))) {
-		unsigned int owner_mask = acl->a_owner_mask;
-		unsigned int group_mask = acl->a_group_mask;
-		unsigned int other_mask = acl->a_other_mask;
-
-		richacl_compute_max_masks(acl);
-		if (acl_has & RICHACL_TEXT_OWNER_MASK)
-			acl->a_owner_mask = owner_mask;
-		if (acl_has & RICHACL_TEXT_GROUP_MASK)
-			acl->a_group_mask = group_mask;
-		if (acl_has & RICHACL_TEXT_OTHER_MASK)
-			acl->a_other_mask = other_mask;
-	}
+	if (opt_set && acl)
+		compute_masks(acl, acl_has);
 
 	if (opt_user) {
 		int n_groups_alloc;
