@@ -11,6 +11,7 @@ $ richacl  --get --raw a | sed -e '/^#/d' > acl.txt
 
 $ cat acl.txt
 > a:
+>      flags:m
 >      owner:rwa-dT--M--s----::mask
 >      group:r----T--M--s----::mask
 >      other:r----T--M--s----::mask
