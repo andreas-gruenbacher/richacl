@@ -589,7 +589,7 @@ int
 richacl_equiv_mode(const struct richacl *acl, mode_t *mode_p)
 {
 	const struct richace *ace = acl->a_entries;
-	unsigned int x = ~ACE4_POSIX_ALWAYS_ALLOWED;  /* mask flags we care about */
+	unsigned int x;
 	mode_t mode;
 
 	if (acl->a_count != 1 ||
@@ -599,17 +599,32 @@ richacl_equiv_mode(const struct richacl *acl, mode_t *mode_p)
 	    ace->e_flags & ~ACE4_SPECIAL_WHO)
 		return -1;
 
-	/* ACE4_DELETE_CHILD is meaningless for non-directories. */
+	/*
+	 * Figure out the permissions we care about: ACE4_DELETE_CHILD is
+	 * meaningless for non-directories, so we ignore it.
+	 */
+	x = ~ACE4_POSIX_ALWAYS_ALLOWED;
 	if (!S_ISDIR(*mode_p))
 		x &= ~ACE4_DELETE_CHILD;
 
-	if ((ace->e_mask & x) != (ACE4_POSIX_MODE_ALL & x))
+	mode = richacl_masks_to_mode(acl);
+	if ((acl->a_group_mask & x) != (richacl_mode_to_mask(mode >> 3) & x) ||
+	    (acl->a_other_mask & x) != (richacl_mode_to_mask(mode) & x))
 		return -1;
 
-	mode = richacl_masks_to_mode(acl);
-	if ((acl->a_owner_mask & x) != (richacl_mode_to_mask(mode >> 6) & x) ||
-	    (acl->a_group_mask & x) != (richacl_mode_to_mask(mode >> 3) & x) ||
-	    (acl->a_other_mask & x) != (richacl_mode_to_mask(mode) & x))
+	/*
+	 * Ignore permissions which the owner is always allowed.
+	 */
+	x &= ~ACE4_POSIX_OWNER_ALLOWED;
+	if ((acl->a_owner_mask & x) != (richacl_mode_to_mask(mode >> 6) & x))
+		return -1;
+
+	/*
+	 * Permissions beyond @x in the EVERYONE@ ALLOW ace have no effect.
+	 * Ignore them as well.
+	 */
+	x &= ACE4_POSIX_MODE_ALL;
+	if ((ace->e_mask & x) != x)
 		return -1;
 
 	*mode_p = (*mode_p & ~S_IRWXUGO) | mode;

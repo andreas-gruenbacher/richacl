@@ -50,8 +50,10 @@
 	ACE4_DELETE_CHILD )
 #define ACE4_POSIX_MODE_EXEC ( \
 	ACE4_EXECUTE)
-#define ACE4_POSIX_MODE_ALL (ACE4_POSIX_MODE_READ | ACE4_POSIX_MODE_WRITE | \
-			     ACE4_POSIX_MODE_EXEC)
+#define ACE4_POSIX_MODE_ALL ( \
+	ACE4_POSIX_MODE_READ | \
+	ACE4_POSIX_MODE_WRITE | \
+	ACE4_POSIX_MODE_EXEC)
 
 /*
  * The ACE4_READ_ATTRIBUTES and ACE4_READ_ACL flags are always granted
@@ -61,6 +63,12 @@
 	ACE4_SYNCHRONIZE | \
 	ACE4_READ_ATTRIBUTES | \
 	ACE4_READ_ACL )
+
+/* The owner is implicitly granted these permissions under POSIX. */
+#define ACE4_POSIX_OWNER_ALLOWED ( \
+	ACE4_WRITE_ATTRIBUTES | \
+	ACE4_WRITE_OWNER | \
+	ACE4_WRITE_ACL)
 
 /* e_flags bitflags */
 #define ACE4_SPECIAL_WHO		0x4000  /* internal to the library */
