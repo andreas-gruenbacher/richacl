@@ -437,14 +437,13 @@ is_everyone:
 	 */
 	if (!(acl->a_flags & ACL4_MASKED))
 		file_mask = ACE4_VALID_MASK;
-	else if (user == st->st_uid) {
-		file_mask = acl->a_owner_mask |
-			    (ACE4_WRITE_ATTRIBUTES | ACE4_WRITE_OWNER | ACE4_WRITE_ACL);
-		denied &= ~(ACE4_WRITE_ATTRIBUTES | ACE4_WRITE_OWNER | ACE4_WRITE_ACL);
-	} else if (in_owner_or_group_class)
+	else if (user == st->st_uid)
+		file_mask = acl->a_owner_mask;
+	else if (in_owner_or_group_class)
 		file_mask = acl->a_group_mask;
 	else
 		file_mask = acl->a_other_mask;
+
 	/* ACE4_DELETE_CHILD is meaningless for non-directories. */
 	if (!S_ISDIR(st->st_mode))
 		file_mask &= ~ACE4_DELETE_CHILD;
@@ -452,7 +451,7 @@ is_everyone:
 	if (groups != const_groups)
 		free(groups);
 
-	return ACE4_POSIX_ALWAYS_ALLOWED | (file_mask & ~denied);
+	return file_mask & ~denied;
 }
 
 /**
