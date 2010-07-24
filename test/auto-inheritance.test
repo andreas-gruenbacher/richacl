@@ -16,15 +16,15 @@ $ richacl --modify flags:a d1
 $ richacl --get --numeric --raw d1
 > d1:
 >      flags:a
->      owner:rwaxd-----------::mask
->      group:r--x------------::mask
->      other:r--x------------::mask
+>      owner:rwaxdTt-Mmos----::mask
+>      group:r--x-T--M--s----::mask
+>      other:r--x-T--M--s----::mask
 >        101:rw--------------:fd:deny
 >        102:rw--------------:f:deny
 >        103:rw--------------:d:deny
 >        101:rw--------------:fdig:deny
->     owner@:rwaxd-----------::allow
->  everyone@:r--x------------::allow
+>     owner@:rwaxdTt-Mmos----::allow
+>  everyone@:r--x-T--M--s----::allow
 >
 
 
@@ -100,7 +100,7 @@ $ cat acl.txt
 >        102:rw-----------:f:deny
 >        103:rw-----------:d:deny
 >        101:rw-----------:fdig:deny
->     owner@:rwaxd--------::allow
+>     owner@:rwaxdt-mo----::allow
 >  everyone@:r--x---------::allow
 >
 
@@ -109,14 +109,14 @@ $ richacl --set-file acl.txt d1
 $ richacl  --get --numeric   --raw d1
 > d1:
 >      flags:a
->      owner:rwaxd-----------::mask
+>      owner:rwaxd-t--mo-----::mask
 >      group:rw-x------------::mask
 >      other:r--x------------::mask
 >        101:rw--------------:fd:allow
 >        102:rw--------------:f:deny
 >        103:rw--------------:d:deny
 >        101:rw--------------:fdig:deny
->     owner@:rwaxd-----------::allow
+>     owner@:rwaxd-t--mo-----::allow
 >  everyone@:r--x------------::allow
 >
 

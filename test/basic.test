@@ -54,6 +54,7 @@ $ ls -l sub/f | cut -d ' ' -f 1
 
 $ richacl --get sub/f
 > sub/f:
+>     owner@:rwa--t-mo----::allow
 >  everyone@:rwa----------::allow
 >
 

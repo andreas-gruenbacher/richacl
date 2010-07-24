@@ -38,7 +38,7 @@ $ richacl --get x
 $ chmod 644 x
 $ richacl --get x
 > x:
->  owner@:rw-----------::allow
+>  owner@:rw-----mo----::allow
 >
 
 $ richacl --set 'root:rw::allow' x
