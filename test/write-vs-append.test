@@ -13,24 +13,24 @@ $ richacl --set 'bin:a::deny owner@:rwaxdTtDMmosNneE::allow bin:w::allow' e
 $ richacl --set 'bin:w::deny owner@:rwaxdTtDMmosNneE::allow bin:a::allow' f
 
 $ su bin
-$ echo a > a
-> /bin/sh: cannot create a: Permission denied
+$ echo a 2>/dev/null > a || echo "Expected failure"
+> Expected failure
 $ echo b > b
-$ echo c > c
-> /bin/sh: cannot create c: Permission denied
+$ echo c 2>/dev/null > c || echo "Expected failure"
+> Expected failure
 $ echo d > d
 $ echo e > e
-$ echo f > f
-> /bin/sh: cannot create f: Permission denied
+$ echo f 2>/dev/null > f || echo "Expected failure"
+> Expected failure
 
-$ echo A >> a
-> /bin/sh: cannot create a: Permission denied
-$ echo B >> b
-> /bin/sh: cannot create b: Permission denied
+$ echo A 2>/dev/null >> a || echo "Expected failure"
+> Expected failure
+$ echo B 2>/dev/null >> b || echo "Expected failure"
+> Expected failure
 $ echo C >> c
 $ echo D >> d
-$ echo E >> e
-> /bin/sh: cannot create e: Permission denied
+$ echo E 2>/dev/null >> e || echo "Expected failure"
+> Expected failure
 $ echo F >> f
 
 $ su
