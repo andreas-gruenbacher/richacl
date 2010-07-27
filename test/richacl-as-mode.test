@@ -7,15 +7,15 @@ $ umask 022
 $ touch a
 
 get the acl mapped from mode
-$ richacl  --get --raw a | sed -e '/^#/d' > acl.txt
+$ richacl  --get --raw a > acl.txt
 
 $ cat acl.txt
 > a:
 >      flags:m
->      owner:rwa-dT--M--s----::mask
+>      owner:rwa-dTt-Mmos----::mask
 >      group:r----T--M--s----::mask
 >      other:r----T--M--s----::mask
->  everyone@:rwax------------::allow
+>  everyone@:rwax-Tt-Mmos----::allow
 >
 
 $ chmod 0 a
