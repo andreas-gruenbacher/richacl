@@ -1,0 +1,61 @@
+Some test results with acls on HFS+ (Mac OS X 10.4 Darwin)
+==========================================================
+
+ACLs need to be enabled per filesystem with something like:
+
+	$ sudo fsaclctl -e -p /
+
+The permission check algorithm first looks at the ACL and then at the file
+permission bits.
+
+An ACL entry can be added / modified with:
+
+	$ chmod +a "joe allow read,write" f
+
+ACLs can be displayed with:
+
+	$ ls -le f
+	-rw-r--r-- + 1 agruen  agruen  0 Jul 31 01:44 f
+	 0: user:joe allow read,write
+
+Doing a "normal" chmod changes the file permission bits, but has no effect
+on the ACL:
+
+	$ chmod 600 f
+	$ ls -le f
+	-rw------- + 1 agruen  agruen  0 Jul 31 01:44 f
+	 0: user:joe allow read,write
+
+Inheritable ACL entries can be added / modified with:
+
+	$ mkdir d
+	$ chmod +a "joe allow list,add_file,search,add_subdirectory,delete_child,file_inherit,directory_inherit" d
+	$ ls -le -d d
+	drwxr-xr-x + 2 agruen  agruen  68 Jul 31 01:53 d
+	 0: user:joe allow list,add_file,search,add_subdirectory,delete_child,file_inherit,directory_inherit
+
+ACL entries inherited from the parent directory have an inherted flag set.
+This seems to indicate that Automatic Inheritance is at least partially
+implemented.  Note that the create mode (0666) has no effect no the acl
+(search shows up as execute here):
+
+	$ touch d/f
+	$ ls -le d/f
+	-rw-r--r-- + 1 agruen  agruen  0 Jul 31 01:57 d/f
+	 0: user:joe inherited allow read,write,execute,append
+
+Permissions can be removed from ACL entries with:
+
+	$ chmod -a "joe allow search" d
+	$ ls -led d
+	drwxr-xr-x + 3 agruen  agruen  102 Jul 31 01:57 d
+	 0: user:joe allow list,add_file,add_subdirectory,delete_child,file_inherit,directory_inherit
+
+The chmod utility does not propagate this change, though:
+
+	$ ls -le d/f
+	-rw-r--r-- + 1 agruen  agruen  0 Jul 31 01:57 d/f
+	 0: user:joe inherited allow read,write,execute,append
+
+At lest the non-server version of Mac OS does not seem to have an ACL aware
+GUI, so I could not check if the GUI does this "correctly".
