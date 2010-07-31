@@ -621,12 +621,7 @@ richacl_equiv_mode(const struct richacl *acl, mode_t *mode_p)
 	if ((acl->a_owner_mask & x) != (richacl_mode_to_mask(mode >> 6) & x))
 		return -1;
 
-	/*
-	 * Permissions beyond @x in the EVERYONE@ ALLOW ace have no effect.
-	 * Ignore them as well.
-	 */
-	x &= ACE4_POSIX_MODE_ALL;
-	if ((ace->e_mask & x) != x)
+        if ((ace->e_mask & x) != (ACE4_POSIX_MODE_ALL & x))
 		return -1;
 
 	*mode_p = (*mode_p & ~S_IRWXUGO) | mode;
