@@ -8,7 +8,8 @@ $ id -Gn daemon
 > daemon bin
 
 $ mkdir n1
-$ touch n1/f
+$ touch n1/f n1/g
+$ chmod o+w n1/g
 
 $ mkdir d2 d3 d4 d5 d6 d7
 $ touch d2/f d3/f d4/f d5/f d6/f d7/f d7/g
@@ -39,6 +40,10 @@ $ su daemon
 Cannot delete files without permissions:
 	$ rm n1/f
 	> rm: cannot remove `n1/f': Permission denied
+
+Cannot delete files without permissions:
+	$ rm n1/g
+	> rm: cannot remove `n1/g': Permission denied
 
 Can delete files we own:
 	$ rm d2/f s2/f
