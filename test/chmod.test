@@ -18,7 +18,7 @@ $ richacl --set 'bin:rwm::allow' a
 	
 Can set the acl now:
 	$ su bin
-	$ richacl --set 'bin:rwm::allow' a
+	$ richacl --set 'bin:rwTm::allow' a
 	
 A chmod limits the permissions to the specified mode, which always disables
 write_acl:

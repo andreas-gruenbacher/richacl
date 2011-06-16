@@ -6,7 +6,7 @@ $ chown bin .
 $ su bin
 
 $ touch x
-$ richacl --set 'everyone@:rw::allow' x
+$ richacl --set 'everyone@:rwT::allow' x
 $ ls -l x | cut -d ' ' -f 1
 > -rw-rw-rw-
 
@@ -27,7 +27,7 @@ $ richacl --get x
 >
 
 $ mkdir sub 
-$ richacl --set 'everyone@:rwax:fd:allow' sub
+$ richacl --set 'everyone@:rwaTx:fd:allow' sub
 $ ls -dl sub | cut -d ' ' -f 1
 > drwxrwxrwx
 
