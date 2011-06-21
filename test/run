@@ -5,20 +5,19 @@
 #
 # - distinguish stdout and stderr output
 # - add environment variable like assignments
-# - run up to a specific line
-# - resume at a specific line
 #
 
 use strict;
 use FileHandle;
 use Getopt::Std;
 use POSIX qw(isatty setuid getcwd);
-use vars qw($opt_l $opt_v);
+use vars qw($opt_l $opt_r $opt_v);
 
 no warnings qw(taint);
 
 $opt_l = ~0;  # a really huge number
-getopts('l:v');
+$opt_r = 0;
+getopts('l:r:v');
 
 my ($OK, $FAILED) = ("ok", "failed");
 if (isatty(fileno(STDOUT))) {
@@ -37,6 +36,8 @@ my $width = ($ENV{COLUMNS} || 80) >> 1;
 
 for (;;) {
   my $line = <>; $lineno++;
+  next if ($lineno < $opt_r && ($opt_l > $opt_r || $lineno > $opt_l));
+  last if ($prog_line > $opt_l && $opt_r < $opt_l);
   if (defined $line) {
     # Substitute %VAR and %{VAR} with environment variables.
     $line =~ s[%(\w+)][$ENV{$1}]eg;
@@ -49,7 +50,6 @@ for (;;) {
       push @$out, $line;
     } else {
       process_test($prog, $prog_line, $in, $out);
-      last if $prog_line >= $opt_l;
 
       $prog = [];
       $prog_line = 0;
