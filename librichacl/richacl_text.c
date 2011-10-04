@@ -57,12 +57,12 @@ static struct {
 	char		e_char;
 	const char	*e_name;
 } ace_flag_bits[] = {
-	FLAGS_BIT('f', FILE_INHERIT_ACE, "file_inherit_ace"),
-	FLAGS_BIT('d', DIRECTORY_INHERIT_ACE, "directory_inherit_ace"),
-	FLAGS_BIT('n', NO_PROPAGATE_INHERIT_ACE, "no_propagate_inherit_ace"),
-	FLAGS_BIT('i', INHERIT_ONLY_ACE, "inherit_only_ace"),
+	FLAGS_BIT('f', FILE_INHERIT_ACE, "file_inherit"),
+	FLAGS_BIT('d', DIRECTORY_INHERIT_ACE, "dir_inherit"),
+	FLAGS_BIT('n', NO_PROPAGATE_INHERIT_ACE, "no_propagate"),
+	FLAGS_BIT('i', INHERIT_ONLY_ACE, "inherit_only"),
 	FLAGS_BIT('g', IDENTIFIER_GROUP, "identifier_group"),
-	FLAGS_BIT('a', INHERITED_ACE, "inherited_ace"),
+	FLAGS_BIT('a', INHERITED_ACE, "inherited"),
 };
 
 #undef FLAGS_BIT
@@ -86,21 +86,21 @@ struct mask_flag_struct mask_flags[] = {
 	DIRECTORY_MASK_BIT('r', LIST_DIRECTORY, "list_directory"),
 	FILE_MASK_BIT('w', WRITE_DATA, "write_data"),
 	DIRECTORY_MASK_BIT('w', ADD_FILE, "add_file"),
-	FILE_MASK_BIT('a', APPEND_DATA, "append_data"),
-	DIRECTORY_MASK_BIT('a', ADD_SUBDIRECTORY, "add_subdirectory"),
+	FILE_MASK_BIT('p', APPEND_DATA, "append_data"),
+	DIRECTORY_MASK_BIT('p', ADD_SUBDIRECTORY, "add_subdirectory"),
 	MASK_BIT('x', EXECUTE, "execute"),
 	/* DELETE_CHILD is only meaningful for directories but it might also
 	   be set in an ACE of a file, so print it in file context as well.  */
 	MASK_BIT('d', DELETE_CHILD, "delete_child"),
-	MASK_BIT('T', READ_ATTRIBUTES, "read_attributes"),
-	MASK_BIT('t', WRITE_ATTRIBUTES, "write_attributes"),
 	MASK_BIT('D', DELETE, "delete"),
-	MASK_BIT('M', READ_ACL, "read_acl"),
-	MASK_BIT('m', WRITE_ACL, "write_acl"),
-	MASK_BIT('o', WRITE_OWNER, "take_ownership"),
-	MASK_BIT('s', SYNCHRONIZE, "synchronize"),
-	MASK_BIT('N', READ_NAMED_ATTRS, "read_named_attrs"),
-	MASK_BIT('n', WRITE_NAMED_ATTRS, "write_named_attrs"),
+	MASK_BIT('a', READ_ATTRIBUTES, "read_attributes"),
+	MASK_BIT('A', WRITE_ATTRIBUTES, "write_attributes"),
+	MASK_BIT('R', READ_NAMED_ATTRS, "read_xattr"),
+	MASK_BIT('W', WRITE_NAMED_ATTRS, "write_xattr"),
+	MASK_BIT('c', READ_ACL, "read_acl"),
+	MASK_BIT('C', WRITE_ACL, "write_acl"),
+	MASK_BIT('o', WRITE_OWNER, "write_owner"),
+	MASK_BIT('S', SYNCHRONIZE, "synchronize"),
 	MASK_BIT('e', WRITE_RETENTION, "write_retention"),
 	MASK_BIT('E', WRITE_RETENTION_HOLD, "write_retention_hold"),
 };
