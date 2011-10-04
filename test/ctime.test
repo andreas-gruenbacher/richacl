@@ -26,7 +26,7 @@ any other time:
 
 With set_attributes access, the ctime can be set to an arbitrary time:
 	$ su
-	$ richacl --set 'bin:rwt::allow' a
+	$ richacl --set 'bin:rwA::allow' a
 
 	$ su bin
 	$ touch -r b a

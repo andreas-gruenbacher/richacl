@@ -5,12 +5,12 @@ $ whoami
 > root
 
 $ touch a b c d e f
-$ richacl --set 'owner@:rwaxdTtDMmosNneE::allow' a
-$ richacl --set 'owner@:rwaxdTtDMmosNneE::allow bin:w::allow' b
-$ richacl --set 'owner@:rwaxdTtDMmosNneE::allow bin:a::allow' c
-$ richacl --set 'owner@:rwaxdTtDMmosNneE::allow bin:wa::allow' d
-$ richacl --set 'bin:a::deny owner@:rwaxdTtDMmosNneE::allow bin:w::allow' e
-$ richacl --set 'bin:w::deny owner@:rwaxdTtDMmosNneE::allow bin:a::allow' f
+$ richacl --set 'owner@:rwpxdaADcCoSRWeE::allow' a
+$ richacl --set 'owner@:rwpxdaADcCoSRWeE::allow bin:w::allow' b
+$ richacl --set 'owner@:rwpxdaADcCoSRWeE::allow bin:p::allow' c
+$ richacl --set 'owner@:rwpxdaADcCoSRWeE::allow bin:wp::allow' d
+$ richacl --set 'bin:a::deny owner@:rwpxdaADcCoSRWeE::allow bin:w::allow' e
+$ richacl --set 'bin:w::deny owner@:rwpxdaADcCoSRWeE::allow bin:p::allow' f
 
 $ su bin
 $ echo a 2>/dev/null > a || echo "Expected failure"

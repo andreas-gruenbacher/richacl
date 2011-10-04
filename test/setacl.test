@@ -13,10 +13,10 @@ richacl set with no write_acl  fails
 
 Allow write acl to daemon
 	$ su
-	$ richacl --set 'daemon:rwm::allow' a
+	$ richacl --set 'daemon:rwC::allow' a
 
 	$ su daemon
-	$ richacl --set 'daemon:rwmo::allow' a	
+	$ richacl --set 'daemon:rwCo::allow' a	
 
 chmod cause the extra acl bits to be dropped
 	$ chmod 660 a

@@ -12,10 +12,10 @@ $ richacl  --get --raw a > acl.txt
 $ cat acl.txt
 > a:
 >      flags:m
->      owner:rwa-dTt-Mmos----::mask
->      group:r----T--M--s----::mask
->      other:r----T--M--s----::mask
->  everyone@:rwax-Tt-Mmos----::allow
+>      owner:rwp-d-aA--cCoS--::mask
+>      group:r-----a---c--S--::mask
+>      other:r-----a---c--S--::mask
+>  everyone@:rwpx--aA--cCoS--::allow
 >
 
 $ chmod 0 a

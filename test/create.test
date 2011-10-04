@@ -6,8 +6,8 @@ $ whoami
 
 $ mkdir d1 d2 d3 d4
 $ richacl --set 'daemon:wx::allow' d2
-$ richacl --set 'daemon:ax::allow' d3
-$ richacl --set 'daemon:wax::allow' d4
+$ richacl --set 'daemon:px::allow' d3
+$ richacl --set 'daemon:wpx::allow' d4
 
 $ su daemon
 

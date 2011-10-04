@@ -28,17 +28,17 @@ $ richacl --get x
 >  group@:r------------::allow
 >
 
-$ richacl --set 'owner@:rwmo::allow' x
+$ richacl --set 'owner@:rwCo::allow' x
 $ richacl --get x
 > x:
->  owner@:rw-----mo----::allow
+>  owner@:rw-------Co--::allow
 >
 
 
 $ chmod 644 x
 $ richacl --get x
 > x:
->  owner@:rw-----mo----::allow
+>  owner@:rw-------Co--::allow
 >
 
 $ richacl --set 'root:rw::allow' x

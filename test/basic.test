@@ -6,7 +6,7 @@ $ chown bin .
 $ su bin
 
 $ touch x
-$ richacl --set 'everyone@:rwT::allow' x
+$ richacl --set 'everyone@:rwa::allow' x
 $ ls -l x | cut -d ' ' -f 1
 > -rw-rw-rw-
 
@@ -27,13 +27,13 @@ $ richacl --get x
 >
 
 $ mkdir sub 
-$ richacl --set 'everyone@:rwaTx:fd:allow' sub
+$ richacl --set 'everyone@:rwpax:fd:allow' sub
 $ ls -dl sub | cut -d ' ' -f 1
 > drwxrwxrwx
 
 $ richacl --get sub
 > sub:
->  everyone@:rwax---------:fd:allow
+>  everyone@:rwpx---------:fd:allow
 >
 
 $ chmod 775 sub
@@ -42,9 +42,9 @@ $ ls -dl sub | cut -d ' ' -f 1
 
 $ richacl --get sub
 > sub:
->     owner@:rwax---------::allow
->     group@:rwax---------::allow
->  everyone@:rwax---------:fdi:allow
+>     owner@:rwpx---------::allow
+>     group@:rwpx---------::allow
+>  everyone@:rwpx---------:fdi:allow
 >  everyone@:r--x---------::allow
 >
 
@@ -54,8 +54,8 @@ $ ls -l sub/f | cut -d ' ' -f 1
 
 $ richacl --get sub/f
 > sub/f:
->     owner@:rwa--t-mo----::allow
->  everyone@:rwa----------::allow
+>     owner@:rwp---A--Co--::allow
+>  everyone@:rwp----------::allow
 >
 
 $ mkdir sub/sub2
@@ -64,7 +64,7 @@ $ ls -dl sub/sub2 | cut -d ' ' -f 1
 
 $ richacl --get sub/sub2
 > sub/sub2:
->  everyone@:rwax---------:fd:allow
+>  everyone@:rwpx---------:fd:allow
 >
 
 $ su
