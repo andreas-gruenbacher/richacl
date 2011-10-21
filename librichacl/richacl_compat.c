@@ -215,7 +215,7 @@ richacl_move_everyone_aces_down(struct richacl_alloc *x)
 			ace->e_type = ACE4_ACCESS_ALLOWED_ACE_TYPE;
 			ace->e_flags = ACE4_SPECIAL_WHO;
 			ace->e_mask = allowed;
-			ace->u.e_who = richace_everyone_who;
+			ace->e_id = ACE_EVERYONE_ID;
 		}
 	}
 	return 0;
@@ -381,7 +381,7 @@ richacl_propagate_everyone(struct richacl_alloc *x)
 
 	/* Propagate everyone@ permissions through to owner@. */
 	if (owner_allow & ~(acl->a_group_mask & acl->a_other_mask)) {
-		who.u.e_who = richace_owner_who;
+		who.e_id = ACE_OWNER_ID;
 		if (__richacl_propagate_everyone(x, &who, owner_allow))
 			return -1;
 		acl = x->acl;
@@ -391,7 +391,7 @@ richacl_propagate_everyone(struct richacl_alloc *x)
 		int n;
 
 		/* Propagate everyone@ permissions through to group@. */
-		who.u.e_who = richace_group_who;
+		who.e_id = ACE_GROUP_ID;
 		if (__richacl_propagate_everyone(x, &who, group_allow))
 			return -1;
 		acl = x->acl;
@@ -508,7 +508,7 @@ richacl_isolate_owner_class(struct richacl_alloc *x)
 			ace->e_type = ACE4_ACCESS_DENIED_ACE_TYPE;
 			ace->e_flags = ACE4_SPECIAL_WHO;
 			ace->e_mask = allowed & ~x->acl->a_owner_mask;
-			ace->u.e_who = richace_owner_who;
+			ace->e_id  = ACE_OWNER_ID;
 		}
 	}
 	return 0;
@@ -593,7 +593,7 @@ richacl_isolate_group_class(struct richacl_alloc *x)
 {
 	struct richace who = {
 		.e_flags = ACE4_SPECIAL_WHO,
-		.u.e_who = richace_group_who,
+		.e_id = ACE_GROUP_ID,
 	};
 	struct richace *ace;
 	unsigned int deny;

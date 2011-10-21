@@ -30,41 +30,32 @@ const char *richace_owner_who	 = "OWNER@";
 const char *richace_group_who	 = "GROUP@";
 const char *richace_everyone_who = "EVERYONE@";
 
-const char *richace_get_who(const struct richace *ace)
-{
-	if (!(ace->e_flags & ACE4_SPECIAL_WHO))
-		return NULL;
-	return ace->u.e_who;
-}
-
 int richace_is_same_identifier(const struct richace *a, const struct richace *b)
 {
 #define WHO_FLAGS (ACE4_SPECIAL_WHO | ACE4_IDENTIFIER_GROUP)
 	if ((a->e_flags & WHO_FLAGS) != (b->e_flags & WHO_FLAGS))
 		return 0;
-	if (a->e_flags & ACE4_SPECIAL_WHO)
-		return a->u.e_who == b->u.e_who;
-	else
-		return a->u.e_id == b->u.e_id;
+	return a->e_id == b->e_id;
+
 #undef WHO_FLAGS
 }
 
 int richace_is_owner(const struct richace *ace)
 {
 	return (ace->e_flags & ACE4_SPECIAL_WHO) &&
-		ace->u.e_who == richace_owner_who;
+		ace->e_id == ACE_OWNER_ID;
 }
 
 int richace_is_group(const struct richace *ace)
 {
 	return (ace->e_flags & ACE4_SPECIAL_WHO) &&
-		ace->u.e_who == richace_group_who;
+		ace->e_id == ACE_GROUP_ID;
 }
 
 int richace_is_everyone(const struct richace *ace)
 {
 	return (ace->e_flags & ACE4_SPECIAL_WHO) &&
-		ace->u.e_who == richace_everyone_who;
+		ace->e_id == ACE_EVERYONE_ID;
 }
 
 struct richacl *richacl_alloc(size_t count)
@@ -226,16 +217,17 @@ restart:
 
 int richace_set_who(struct richace *ace, const char *who)
 {
+	int id;
 	if (!strcmp(who, richace_owner_who))
-		who = richace_owner_who;
+		id = ACE_OWNER_ID;
 	else if (!strcmp(who, richace_group_who))
-		who = richace_group_who;
+		id = ACE_GROUP_ID;
 	else if (!strcmp(who, richace_everyone_who))
-		who = richace_everyone_who;
+		id = ACE_EVERYONE_ID;
 	else
 		return -1;
 
-	ace->u.e_who = who;
+	ace->e_id = id;
 	ace->e_flags |= ACE4_SPECIAL_WHO;
 	/*
 	 * Also clear the ACE4_IDENTIFIER_GROUP flag for ACEs with a special
@@ -247,13 +239,13 @@ int richace_set_who(struct richace *ace, const char *who)
 
 void richace_set_uid(struct richace *ace, uid_t uid)
 {
-	ace->u.e_id = uid;
+	ace->e_id = uid;
 	ace->e_flags &= ~(ACE4_SPECIAL_WHO | ACE4_IDENTIFIER_GROUP);
 }
 
 void richace_set_gid(struct richace *ace, gid_t gid)
 {
-	ace->u.e_id = gid;
+	ace->e_id = gid;
 	ace->e_flags |= ACE4_IDENTIFIER_GROUP;
 	ace->e_flags &= ~ACE4_SPECIAL_WHO;
 }
@@ -309,7 +301,7 @@ struct richacl *richacl_from_mode(mode_t mode)
 	/* ACE4_DELETE_CHILD is meaningless for non-directories. */
 	if (!S_ISDIR(mode))
 		ace->e_mask &= ~ACE4_DELETE_CHILD;
-	ace->u.e_who = richace_everyone_who;
+	ace->e_id = ACE_EVERYONE_ID;
 
 	return acl;
 }
@@ -317,6 +309,7 @@ struct richacl *richacl_from_mode(mode_t mode)
 int richace_is_unix_id(const struct richace *ace)
 {
 	return !(ace->e_flags & ACE4_SPECIAL_WHO);
+
 }
 
 static int in_groups(gid_t group, gid_t groups[], int n_groups)
@@ -403,10 +396,10 @@ int richacl_access(const char *file, const struct stat *st, uid_t user,
 				continue;
 		} else if (richace_is_unix_id(ace)) {
 			if (ace->e_flags & ACE4_IDENTIFIER_GROUP) {
-				if (!in_groups(ace->u.e_id, groups, n_groups))
+				if (!in_groups(ace->e_id, groups, n_groups))
 					continue;
 			} else {
-				if (user != ace->u.e_id)
+				if (user != ace->e_id)
 					continue;
 			}
 		} else
@@ -651,14 +644,8 @@ richacl_compare(const struct richacl *a1, const struct richacl *a2)
 		    e1->e_flags != e2->e_flags ||
 		    e1->e_mask != e2->e_mask)
 			return -1;
-		if (e1->e_flags & ACE4_SPECIAL_WHO) {
-			if (e1->u.e_who != e2->u.e_who)
-				return -1;
-		} else {
-			if (e1->u.e_id != e2->u.e_id)
-				return -1;
-		}
-
+		if (e1->e_id != e2->e_id)
+			return -1;
 		e1++;
 	}
 	return 0;

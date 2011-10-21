@@ -53,27 +53,15 @@ static struct richacl *richacl_from_xattr(const void *value, size_t size)
 	acl->a_other_mask = le32_to_cpu(xattr_acl->a_other_mask);
 
 	richacl_for_each_entry(ace, acl) {
-		const char *who = (void *)(xattr_ace + 1), *end;
-		ssize_t used = (void *)who - value;
 
-		if (used > size)
-			goto fail_einval;
-		end = memchr(who, 0, size - used);
-		if (!end)
+		if (((void *)xattr_ace + sizeof(*xattr_ace)) > value + size)
 			goto fail_einval;
 
-		ace->e_type = le16_to_cpu(xattr_ace->e_type);
+		ace->e_type  = le16_to_cpu(xattr_ace->e_type);
 		ace->e_flags = le16_to_cpu(xattr_ace->e_flags);
-		ace->e_mask = le32_to_cpu(xattr_ace->e_mask);
-		ace->u.e_id = le32_to_cpu(xattr_ace->e_id);
-
-		if (who == end) {
-			if (ace->u.e_id == -1)
-				goto fail_einval;  /* uid/gid needed */
-		} else if (richace_set_who(ace, who))
-			goto fail_einval;
-
-		xattr_ace = (void *)who + ALIGN(end - who + 1, 4);
+		ace->e_mask  = le32_to_cpu(xattr_ace->e_mask);
+		ace->e_id    = le32_to_cpu(xattr_ace->e_id);
+		xattr_ace++;
 	}
 
 	return acl;
@@ -87,13 +75,8 @@ fail_einval:
 static size_t richacl_xattr_size(const struct richacl *acl)
 {
 	size_t size = sizeof(struct richacl_xattr);
-	const struct richace *ace;
 
-	richacl_for_each_entry(ace, acl) {
-		size += sizeof(struct richace_xattr) +
-			(richace_get_who(ace) ?
-			 ALIGN(strlen(ace->u.e_who) + 1, 4) : 4);
-	}
+	size += sizeof(struct richace_xattr) * acl->a_count;
 	return size;
 }
 
@@ -114,21 +97,11 @@ static void richacl_to_xattr(const struct richacl *acl, void *buffer)
 	xattr_ace = (void *)(xattr_acl + 1);
 	richacl_for_each_entry(ace, acl) {
 		xattr_ace->e_type = cpu_to_le16(ace->e_type);
-		xattr_ace->e_flags =
-			cpu_to_le16(ace->e_flags & ACE4_VALID_FLAGS);
+		xattr_ace->e_flags = cpu_to_le16(ace->e_flags &
+						 ACE4_VALID_FLAGS);
 		xattr_ace->e_mask = cpu_to_le32(ace->e_mask);
-		if (richace_get_who(ace)) {
-			int sz = ALIGN(strlen(ace->u.e_who) + 1, 4);
-
-			xattr_ace->e_id = cpu_to_le32(-1);
-			memset(xattr_ace->e_who + sz - 4, 0, 4);
-			strcpy(xattr_ace->e_who, ace->u.e_who);
-			xattr_ace = (void *)xattr_ace->e_who + sz;
-		} else {
-			xattr_ace->e_id = cpu_to_le32(ace->u.e_id);
-			memset(xattr_ace->e_who, 0, 4);
-			xattr_ace = (void *)xattr_ace->e_who + 4;
-		}
+		xattr_ace->e_id = cpu_to_le32(ace->e_id);
+		xattr_ace++;
 	}
 }
 

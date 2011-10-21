@@ -71,7 +71,9 @@
 	ACE4_WRITE_ACL)
 
 /* e_flags bitflags */
-#define ACE4_SPECIAL_WHO		0x4000  /* internal to the library */
+#define ACE4_SPECIAL_WHO     0x4000
+
+
 
 static inline void
 richace_clear_inheritance_flags(struct richace *ace)

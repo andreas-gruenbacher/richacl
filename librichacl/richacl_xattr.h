@@ -28,7 +28,6 @@ struct richace_xattr {
 	uint16_t	e_flags;
 	uint32_t	e_mask;
 	uint32_t	e_id;
-	char		e_who[0];
 };
 
 struct richacl_xattr {

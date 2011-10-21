@@ -57,7 +57,8 @@
 	ACE4_NO_PROPAGATE_INHERIT_ACE |		\
 	ACE4_INHERIT_ONLY_ACE |			\
 	ACE4_IDENTIFIER_GROUP |			\
-	ACE4_INHERITED_ACE )
+	ACE4_INHERITED_ACE  |			\
+	ACE4_SPECIAL_WHO)
 
 /* e_mask bitflags */
 #define ACE4_READ_DATA			0x00000001
@@ -99,14 +100,15 @@
 	ACE4_WRITE_OWNER |				\
 	ACE4_SYNCHRONIZE)
 
+#define ACE_OWNER_ID		130
+#define ACE_GROUP_ID		131
+#define ACE_EVERYONE_ID		110
+
 struct richace {
 	unsigned short	e_type;
 	unsigned short	e_flags;
 	unsigned int	e_mask;
-	union {
-		id_t		e_id;
-		const char	*e_who;
-	} u;
+	id_t		e_id;
 };
 
 struct richacl {
@@ -173,8 +175,6 @@ static inline int richacl_is_auto_inherit(const struct richacl *acl)
 {
 	return acl->a_flags & ACL4_AUTO_INHERIT;
 }
-
-extern const char *richace_get_who(const struct richace *);
 
 extern int richace_set_who(struct richace *, const char *);
 extern void richace_set_uid(struct richace *, uid_t);

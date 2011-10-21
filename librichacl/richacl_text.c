@@ -312,10 +312,22 @@ static void write_identifier(struct string_buffer *buffer,
 	/* FIXME: switch to getpwuid_r() and getgrgid_r() here. */
 
 	if (ace->e_flags & ACE4_SPECIAL_WHO) {
+		const char *id = NULL;
 		char *dup, *c;
+		switch (ace->e_id) {
+		case ACE_OWNER_ID:
+		    id = richace_owner_who;
+		    break;
+		case ACE_GROUP_ID:
+		    id = richace_group_who;
+		    break;
+		case ACE_EVERYONE_ID:
+		    id = richace_everyone_who;
+		    break;
+		}
 
-		dup = alloca(strlen(ace->u.e_who) + 1);
-		strcpy(dup, ace->u.e_who);
+		dup = alloca(strlen(id) + 1);
+		strcpy(dup, id);
 		for (c = dup; *c; c++)
 			*c = tolower(*c);
 
@@ -324,20 +336,20 @@ static void write_identifier(struct string_buffer *buffer,
 		struct group *group = NULL;
 
 		if (!(fmt & RICHACL_TEXT_NUMERIC_IDS))
-			group = getgrgid(ace->u.e_id);
+			group = getgrgid(ace->e_id);
 		if (group)
 			buffer_sprintf(buffer, "%*s", align, group->gr_name);
 		else
-			buffer_sprintf(buffer, "%*d", align, ace->u.e_id);
+			buffer_sprintf(buffer, "%*d", align, ace->e_id);
 	} else {
 		struct passwd *passwd = NULL;
 
 		if (!(fmt & RICHACL_TEXT_NUMERIC_IDS))
-			passwd = getpwuid(ace->u.e_id);
+			passwd = getpwuid(ace->e_id);
 		if (passwd)
 			buffer_sprintf(buffer, "%*s", align, passwd->pw_name);
 		else
-			buffer_sprintf(buffer, "%*d", align, ace->u.e_id);
+			buffer_sprintf(buffer, "%*d", align, ace->e_id);
 	}
 }
 
@@ -362,20 +374,20 @@ char *richacl_to_text(const struct richacl *acl, int fmt)
 				struct group *group = NULL;
 
 				if (!(fmt & RICHACL_TEXT_NUMERIC_IDS))
-					group = getgrgid(ace->u.e_id);
+					group = getgrgid(ace->e_id);
 				if (group)
 					a = strlen(group->gr_name);
 				else
-					a = snprintf(NULL, 0, "%d", ace->u.e_id);
+					a = snprintf(NULL, 0, "%d", ace->e_id);
 			} else {
 				struct passwd *passwd = NULL;
 
 				if (!(fmt & RICHACL_TEXT_NUMERIC_IDS))
-					passwd = getpwuid(ace->u.e_id);
+					passwd = getpwuid(ace->e_id);
 				if (passwd)
 					a = strlen(passwd->pw_name);
 				else
-					a = snprintf(NULL, 0, "%d", ace->u.e_id);
+					a = snprintf(NULL, 0, "%d", ace->e_id);
 			}
 			if (a >= align)
 				align = a + 1;
@@ -536,7 +548,7 @@ static int identifier_from_text(const char *str, struct richace *ace,
 	}
 	l = strtoul(str, &c, 0);
 	if (*c == 0) {
-		ace->u.e_id = l;
+		ace->e_id = l;
 		return 0;
 	}
 	if (ace->e_flags & ACE4_IDENTIFIER_GROUP) {
@@ -546,7 +558,7 @@ static int identifier_from_text(const char *str, struct richace *ace,
 			error("Group `%s' does not exist\n", str);
 			goto fail;
 		}
-		ace->u.e_id = group->gr_gid;
+		ace->e_id = group->gr_gid;
 		return 0;
 	} else {
 		struct passwd *passwd = getpwnam(str);
@@ -555,7 +567,7 @@ static int identifier_from_text(const char *str, struct richace *ace,
 			error("User `%s' does not exist\n", str);
 			goto fail;
 		}
-		ace->u.e_id = passwd->pw_uid;
+		ace->e_id = passwd->pw_uid;
 		return 0;
 	}
 fail:
