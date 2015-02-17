@@ -1,0 +1,27 @@
+lib_LTLIBRARIES += librichacl.la
+
+# No other library exports version info, otherwise we'd have to add
+# "librichacl_" prefix to all these variables.
+LT_CURRENT = 2
+# The configure script will set this for us automatically.
+#LT_REVISION =
+LT_AGE = 1
+LTVERSION = $(LT_CURRENT):$(LT_REVISION):$(LT_AGE)
+
+CFILES = \
+	librichacl/richacl_base.c \
+	librichacl/richacl_compat.c \
+	librichacl/richacl_text.c \
+	librichacl/richacl_xattr.c \
+	librichacl/string_buffer.c
+
+HFILES = \
+	librichacl/byteorder.h \
+	librichacl/richacl-internal.h \
+	librichacl/richacl_xattr.h
+
+librichacl_la_DEPENDENCIES = exports
+librichacl_la_SOURCES = $(CFILES) $(HFILES)
+librichacl_la_LDFLAGS = \
+	-Wl,--version-script,$(top_srcdir)/exports \
+	-version-info $(LTVERSION)

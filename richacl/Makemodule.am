@@ -1,0 +1,8 @@
+bin_PROGRAMS += richacl/richacl
+
+richacl_richacl_SOURCES = \
+	richacl/richacl.c \
+	richacl/user_group.c \
+	richacl/user_group.h
+
+richacl_richacl_LDADD = $(LDADD) librichacl.la librichacl/string_buffer.o

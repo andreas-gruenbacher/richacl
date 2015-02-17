@@ -20,7 +20,7 @@
 #include <unistd.h>
 #include <alloca.h>
 #include <errno.h>
-#include <attr/xattr.h>
+#include <sys/xattr.h>
 #include "richacl.h"
 #include "richacl_xattr.h"
 #include "richacl-internal.h"

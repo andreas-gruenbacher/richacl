@@ -24,6 +24,7 @@
  * Convert a non-Automatic-Inheritance tree into an Automatic Inheritance one?
  */
 
+#include "config.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
