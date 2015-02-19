@@ -312,7 +312,7 @@ int richace_is_unix_id(const struct richace *ace)
 
 }
 
-static int in_groups(gid_t group, gid_t groups[], int n_groups)
+static int in_groups(gid_t group, const gid_t groups[], int n_groups)
 {
 	int n;
 
@@ -448,6 +448,115 @@ is_everyone:
 		free(groups);
 
 	return file_mask & ~denied;
+}
+
+/**
+ * richacl_permission  -  check if a user has the requested access
+ * @acl:	ACL of the file to check
+ * @owner:	Owner of the file
+ * @owning_group: Owning group of the file
+ * @user:	User ID of the accessing process
+ * @groups:	Group IDs the accessing process is a member in
+ * @n_groups:	Number of entries in @groups
+ * @mask:	Requested permissions (ACE4_* mask flags)
+ */
+bool richacl_permission(struct richacl *acl, uid_t owner, gid_t owning_group,
+			uid_t user, const gid_t *groups, int n_groups,
+			unsigned int mask)
+{
+	const struct richace *ace;
+	unsigned int requested = mask;
+	int in_owning_group = in_groups(owning_group, groups, n_groups);
+	int in_owner_or_group_class = in_owning_group;
+
+        /*
+	 * We don't need to know which class the process is in when the acl is
+	 * not masked.
+	 */
+	if (!(acl->a_flags & ACL4_MASKED))
+		in_owner_or_group_class = 1;
+
+	/*
+	 * A process is
+	 *   - in the owner file class if it owns the file,
+	 *   - in the group file class if it is in the file's owning group or
+	 *     it matches any of the user or group entries, and
+	 *   - in the other file class otherwise.
+	 */
+
+	/*
+	 * Check if the acl grants the requested access and determine which
+	 * file class the process is in.
+	 */
+	richacl_for_each_entry(ace, acl) {
+		unsigned int ace_mask = ace->e_mask;
+
+		if (richace_is_inherit_only(ace))
+			continue;
+		if (richace_is_owner(ace)) {
+			if (user != owner)
+				continue;
+			goto is_owner;
+		} else if (richace_is_group(ace)) {
+			if (!in_owning_group)
+				continue;
+		} else if (richace_is_unix_id(ace)) {
+			if (ace->e_flags & ACE4_IDENTIFIER_GROUP) {
+				if (!in_groups(ace->e_id, groups, n_groups))
+					continue;
+			} else {
+				if (user != ace->e_id)
+					continue;
+			}
+		} else
+			goto is_everyone;
+
+		/*
+		 * Apply the group file mask to entries other than OWNER@ and
+		 * EVERYONE@. This is not required for correct access checking
+		 * but ensures that we grant the same permissions as the acl
+		 * computed by richacl_apply_masks() would grant.
+		 */
+		if ((acl->a_flags & ACL4_MASKED) && richace_is_allow(ace))
+			ace_mask &= acl->a_group_mask;
+
+is_owner:
+		/* The process is in the owner or group file class. */
+		in_owner_or_group_class = 1;
+
+is_everyone:
+		/* Check which mask flags the ACE allows or denies. */
+		if (richace_is_deny(ace) && (ace_mask & mask))
+			return false;
+		mask &= ~ace_mask;
+
+		/*
+		 * Keep going until we know which file class
+		 * the process is in.
+		 */
+		if (!mask && in_owner_or_group_class)
+			break;
+	}
+
+	if (acl->a_flags & ACL4_MASKED) {
+		unsigned int file_mask;
+
+		/*
+		 * The file class a process is in determines which file mask
+		 * applies.  Check if that file mask also grants the requested
+		 * access.
+		 */
+		if (user == owner)
+			file_mask = acl->a_owner_mask;
+		else if (in_owner_or_group_class)
+			file_mask = acl->a_group_mask;
+		else
+			file_mask = acl->a_other_mask;
+		if (requested & ~file_mask)
+			return false;
+	}
+
+	return !mask;
 }
 
 /**
