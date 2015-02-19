@@ -358,6 +358,7 @@ char *richacl_to_text(const struct richacl *acl, int fmt)
 	struct string_buffer *buffer;
 	const struct richace *ace;
 	int fmt2, align = 0;
+	char *str = NULL;
 
 	if (fmt & RICHACL_TEXT_ALIGN) {
 		if (acl->a_flags && align < 6)
@@ -452,14 +453,13 @@ char *richacl_to_text(const struct richacl *acl, int fmt)
 	}
 
 	if (string_buffer_okay(buffer)) {
-		char *str = realloc(buffer->buffer, buffer->offset + 1);
+		str = realloc(buffer->buffer, buffer->offset + 1);
 		if (str)
-			return str;
-	}
-
+			buffer->buffer = NULL;
+	} else
+		errno = ENOMEM;
 	free_string_buffer(buffer);
-	errno = ENOMEM;
-	return NULL;
+	return str;
 }
 
 static int acl_flags_from_text(const char *str, struct richacl *acl,
@@ -866,6 +866,7 @@ fail:
 char *richacl_mask_to_text(unsigned int mask, int fmt)
 {
 	struct string_buffer *buffer;
+	char *str;
 
 	buffer = alloc_string_buffer(16);
 	if (!buffer)
@@ -873,14 +874,13 @@ char *richacl_mask_to_text(unsigned int mask, int fmt)
 	write_mask(buffer, mask, fmt);
 
 	if (string_buffer_okay(buffer)) {
-		char *str = realloc(buffer->buffer, buffer->offset + 1);
+		str = realloc(buffer->buffer, buffer->offset + 1);
 		if (str)
-			return str;
-	}
-
+			buffer->buffer = NULL;
+	} else
+		errno = ENOMEM;
 	free_string_buffer(buffer);
-	errno = ENOMEM;
-	return NULL;
+	return str;
 }
 
 
