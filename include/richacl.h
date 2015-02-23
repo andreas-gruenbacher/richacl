@@ -102,6 +102,37 @@
 	ACE4_WRITE_OWNER |				\
 	ACE4_SYNCHRONIZE)
 
+/*
+ * The POSIX permissions are supersets of the following mask flags.
+ */
+#define ACE4_POSIX_MODE_READ ( \
+	ACE4_READ_DATA | ACE4_LIST_DIRECTORY )
+#define ACE4_POSIX_MODE_WRITE ( \
+	ACE4_WRITE_DATA | ACE4_ADD_FILE | \
+	ACE4_APPEND_DATA | ACE4_ADD_SUBDIRECTORY | \
+	ACE4_DELETE_CHILD )
+#define ACE4_POSIX_MODE_EXEC ( \
+	ACE4_EXECUTE)
+#define ACE4_POSIX_MODE_ALL ( \
+	ACE4_POSIX_MODE_READ | \
+	ACE4_POSIX_MODE_WRITE | \
+	ACE4_POSIX_MODE_EXEC)
+
+/*
+ * The ACE4_READ_ATTRIBUTES and ACE4_READ_ACL flags are always granted
+ * in POSIX. The ACE4_SYNCHRONIZE flag has no meaning under POSIX.
+ */
+#define ACE4_POSIX_ALWAYS_ALLOWED ( \
+	ACE4_SYNCHRONIZE | \
+	ACE4_READ_ATTRIBUTES | \
+	ACE4_READ_ACL )
+
+/* The owner is implicitly granted these permissions under POSIX. */
+#define ACE4_POSIX_OWNER_ALLOWED ( \
+	ACE4_WRITE_ATTRIBUTES | \
+	ACE4_WRITE_OWNER | \
+	ACE4_WRITE_ACL)
+
 /* Special e_id values for (e_flags & ACE4_SPECIAL_WHO) */
 #define ACE_OWNER_ID		130
 #define ACE_GROUP_ID		131
