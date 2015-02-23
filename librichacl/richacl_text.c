@@ -38,7 +38,6 @@ static struct {
 	{ 'a', ACL4_AUTO_INHERIT, "auto_inherit" },
 	{ 'p', ACL4_PROTECTED, "protected" },
 	{ 'd', ACL4_DEFAULTED, "defaulted" },
-	{ 'P', ACL4_POSIX_MAPPED, "posix_mapped"},
 };
 
 static struct {

@@ -29,7 +29,6 @@
 #define ACL4_PROTECTED			0x02
 #define ACL4_DEFAULTED			0x04
 /* Richacl Defined flag value */
-#define ACL4_POSIX_MAPPED		0x40
 #define ACL4_MASKED			0x80
 
 
@@ -37,7 +36,6 @@
 	ACL4_AUTO_INHERIT |	\
 	ACL4_PROTECTED |	\
 	ACL4_DEFAULTED |	\
-	ACL4_POSIX_MAPPED |	\
 	ACL4_MASKED)
 
 /* e_type values */
