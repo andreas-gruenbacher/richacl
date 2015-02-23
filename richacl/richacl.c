@@ -66,6 +66,23 @@ static inline int richace_is_inherited(const struct richace *ace)
 	return ace->e_flags & ACE4_INHERITED_ACE;
 }
 
+static void add_implicitly_granted_permissions(struct richacl *acl)
+{
+	struct richace *ace;
+
+	richacl_for_each_entry(ace, acl) {
+		if (richace_is_allow(ace)) {
+			ace->e_mask |= ACE4_POSIX_ALWAYS_ALLOWED;
+			if (richace_is_owner(ace))
+				ace->e_mask |= ACE4_POSIX_OWNER_ALLOWED;
+		} else if (richace_is_deny(ace)) {
+			ace->e_mask &= ~ACE4_POSIX_ALWAYS_ALLOWED;
+			if (richace_is_owner(ace))
+				ace->e_mask &= ~ACE4_POSIX_OWNER_ALLOWED;
+		}
+	}
+}
+
 static void compute_masks(struct richacl *acl, int acl_has)
 {
 	unsigned int owner_mask = acl->a_owner_mask;
@@ -476,6 +493,7 @@ static void synopsis(int help)
 "Options:\n"
 "  --long, -l  Display access masks and flags in their long form.\n"
 "  --full      Also show permissions which are always implicitly allowed.\n"
+"              Always allow those permissions when setting/modifying acls.\n"
 "  --raw       Show acls as stored on the file system including the file masks.\n"
 "              Implies --full.\n"
 "  --unaligned\n"
@@ -512,6 +530,7 @@ int main(int argc, char *argv[])
 {
 	int opt_get = 0, opt_remove = 0, opt_access = 0, opt_dry_run = 0;
 	int opt_modify = 0, opt_set = 0;
+	int opt_full = 0;
 	char *opt_user = NULL;
 	char *acl_text = NULL, *acl_file = NULL;
 	int format = RICHACL_TEXT_SIMPLIFY | RICHACL_TEXT_ALIGN;
@@ -583,6 +602,7 @@ int main(int argc, char *argv[])
 
 			case 3:  /* --full */
 				format &= ~RICHACL_TEXT_SIMPLIFY;
+				opt_full = 1;
 				break;
 
 			case 4:  /* --unaligned */
@@ -607,6 +627,8 @@ int main(int argc, char *argv[])
 		acl = richacl_from_text(acl_text, &acl_has, printf_stderr);
 		if (!acl)
 			return 1;
+		if (!opt_full)
+			add_implicitly_granted_permissions(acl);
 	}
 
 	if (acl_file) {
