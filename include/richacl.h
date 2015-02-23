@@ -51,6 +51,7 @@
 #define ACE4_INHERIT_ONLY_ACE		0x0008
 #define ACE4_IDENTIFIER_GROUP		0x0040
 #define ACE4_INHERITED_ACE		0x0080
+#define ACE4_SPECIAL_WHO		0x4000
 
 #define ACE4_VALID_FLAGS (			\
 	ACE4_FILE_INHERIT_ACE |			\
@@ -101,6 +102,7 @@
 	ACE4_WRITE_OWNER |				\
 	ACE4_SYNCHRONIZE)
 
+/* Special e_id values for (e_flags & ACE4_SPECIAL_WHO) */
 #define ACE_OWNER_ID		130
 #define ACE_GROUP_ID		131
 #define ACE_EVERYONE_ID		110
