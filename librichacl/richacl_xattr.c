@@ -26,7 +26,7 @@
 #include "richacl-internal.h"
 #include "byteorder.h"
 
-static struct richacl *richacl_from_xattr(const void *value, size_t size)
+struct richacl *richacl_from_xattr(const void *value, size_t size)
 {
 	const struct richacl_xattr *xattr_acl = value;
 	const struct richace_xattr *xattr_ace = (void *)(xattr_acl + 1);
@@ -72,7 +72,7 @@ fail_einval:
 	return NULL;
 }
 
-static size_t richacl_xattr_size(const struct richacl *acl)
+size_t richacl_xattr_size(const struct richacl *acl)
 {
 	size_t size = sizeof(struct richacl_xattr);
 
@@ -80,7 +80,7 @@ static size_t richacl_xattr_size(const struct richacl *acl)
 	return size;
 }
 
-static void richacl_to_xattr(const struct richacl *acl, void *buffer)
+void richacl_to_xattr(const struct richacl *acl, void *buffer)
 {
 	struct richacl_xattr *xattr_acl = buffer;
 	struct richace_xattr *xattr_ace;

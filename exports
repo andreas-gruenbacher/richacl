@@ -37,3 +37,10 @@ RICHACL_1.0 {
     	# Library internal stuff
 	*;
 };
+
+RICHACL_1.1 {
+    global:
+	richacl_from_xattr;
+	richacl_xattr_size;
+	richacl_to_xattr;
+};
