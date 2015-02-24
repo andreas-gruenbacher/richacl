@@ -23,22 +23,6 @@
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 #define ALIGN(x,a) (((x)+(a)-1)&~((a)-1))
 
-#ifndef MAY_READ
-# define MAY_READ S_IROTH
-#endif
-
-#ifndef MAY_WRITE
-# define MAY_WRITE S_IWOTH
-#endif
-
-#ifndef MAY_EXEC
-# define MAY_EXEC S_IXOTH
-#endif
-
-#ifndef S_IRWXUGO
-# define S_IRWXUGO (S_IRWXU|S_IRWXG|S_IRWXO)
-#endif
-
 static inline void
 richace_clear_inheritance_flags(struct richace *ace)
 {

@@ -571,11 +571,11 @@ richacl_mask_to_mode(unsigned int mask)
 	int mode = 0;
 
 	if (mask & ACE4_POSIX_MODE_READ)
-		mode |= MAY_READ;
+		mode |= S_IROTH;
 	if (mask & ACE4_POSIX_MODE_WRITE)
-		mode |= MAY_WRITE;
+		mode |= S_IWOTH;
 	if (mask & ACE4_POSIX_MODE_EXEC)
-		mode |= MAY_EXEC;
+		mode |= S_IXOTH;
 
 	return mode;
 }
@@ -726,7 +726,7 @@ richacl_equiv_mode(const struct richacl *acl, mode_t *mode_p)
         if ((ace->e_mask & x) != (ACE4_POSIX_MODE_ALL & x))
 		return -1;
 
-	*mode_p = (*mode_p & ~S_IRWXUGO) | mode;
+	*mode_p = (*mode_p & ~0777) | mode;
 	return 0;
 }
 
