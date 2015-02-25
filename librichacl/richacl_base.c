@@ -30,29 +30,26 @@ const char *richace_owner_who	 = "OWNER@";
 const char *richace_group_who	 = "GROUP@";
 const char *richace_everyone_who = "EVERYONE@";
 
-int richace_is_same_identifier(const struct richace *a, const struct richace *b)
+bool richace_is_same_identifier(const struct richace *a, const struct richace *b)
 {
-#define WHO_FLAGS (ACE4_SPECIAL_WHO | ACE4_IDENTIFIER_GROUP)
-	if ((a->e_flags & WHO_FLAGS) != (b->e_flags & WHO_FLAGS))
-		return 0;
-	return a->e_id == b->e_id;
-
-#undef WHO_FLAGS
+	return !((a->e_flags ^ b->e_flags) &
+		 (ACE4_SPECIAL_WHO | ACE4_IDENTIFIER_GROUP)) &&
+	       a->e_id == b->e_id;
 }
 
-int richace_is_owner(const struct richace *ace)
+bool richace_is_owner(const struct richace *ace)
 {
 	return (ace->e_flags & ACE4_SPECIAL_WHO) &&
 		ace->e_id == ACE_OWNER_ID;
 }
 
-int richace_is_group(const struct richace *ace)
+bool richace_is_group(const struct richace *ace)
 {
 	return (ace->e_flags & ACE4_SPECIAL_WHO) &&
 		ace->e_id == ACE_GROUP_ID;
 }
 
-int richace_is_everyone(const struct richace *ace)
+bool richace_is_everyone(const struct richace *ace)
 {
 	return (ace->e_flags & ACE4_SPECIAL_WHO) &&
 		ace->e_id == ACE_EVERYONE_ID;
@@ -306,7 +303,7 @@ struct richacl *richacl_from_mode(mode_t mode)
 	return acl;
 }
 
-int richace_is_unix_id(const struct richace *ace)
+bool richace_is_unix_id(const struct richace *ace)
 {
 	return !(ace->e_flags & ACE4_SPECIAL_WHO);
 

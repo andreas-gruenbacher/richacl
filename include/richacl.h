@@ -177,33 +177,33 @@ struct richacl {
 #define RICHACL_TEXT_OTHER_MASK		4
 #define RICHACL_TEXT_FLAGS		8
 
-extern int richace_is_owner(const struct richace *);
-extern int richace_is_group(const struct richace *);
-extern int richace_is_everyone(const struct richace *);
-extern int richace_is_unix_id(const struct richace *);
+extern bool richace_is_owner(const struct richace *);
+extern bool richace_is_group(const struct richace *);
+extern bool richace_is_everyone(const struct richace *);
+extern bool richace_is_unix_id(const struct richace *);
 
-static inline int richace_is_allow(const struct richace *ace)
+static inline bool richace_is_allow(const struct richace *ace)
 {
 	return ace->e_type == ACE4_ACCESS_ALLOWED_ACE_TYPE;
 }
 
-static inline int richace_is_deny(const struct richace *ace)
+static inline bool richace_is_deny(const struct richace *ace)
 {
 	return ace->e_type == ACE4_ACCESS_DENIED_ACE_TYPE;
 }
 
-static inline int richace_is_inheritable(const struct richace *ace)
+static inline bool richace_is_inheritable(const struct richace *ace)
 {
 	return ace->e_flags & (ACE4_FILE_INHERIT_ACE |
 			       ACE4_DIRECTORY_INHERIT_ACE);
 }
 
-static inline int richace_is_inherit_only(const struct richace *ace)
+static inline bool richace_is_inherit_only(const struct richace *ace)
 {
 	return ace->e_flags & ACE4_INHERIT_ONLY_ACE;
 }
 
-static inline int richacl_is_auto_inherit(const struct richacl *acl)
+static inline bool richacl_is_auto_inherit(const struct richacl *acl)
 {
 	return acl->a_flags & ACL4_AUTO_INHERIT;
 }
@@ -211,8 +211,8 @@ static inline int richacl_is_auto_inherit(const struct richacl *acl)
 extern int richace_set_who(struct richace *, const char *);
 extern void richace_set_uid(struct richace *, uid_t);
 extern void richace_set_gid(struct richace *, gid_t);
-extern int richace_is_same_identifier(const struct richace *,
-				      const struct richace *);
+extern bool richace_is_same_identifier(const struct richace *,
+				       const struct richace *);
 extern void richace_copy(struct richace *, const struct richace *);
 
 extern struct richacl *richacl_get_file(const char *);
