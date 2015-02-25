@@ -7,7 +7,7 @@ $ touch x
 $ richacl --set 'owner@:rw::allow group@:rw::allow everyone@:r::allow' x
 $ richacl --get x
 > x:
->     owner@:rw-----------::allow
+>     owner@:rw----A--Co--::allow
 >     group@:rw-----------::allow
 >  everyone@:r------------::allow
 >
@@ -16,7 +16,7 @@ $ richacl --set 'everyone@:w::allow owner@:r::allow group@:r::allow' x
 $ chmod 664 x
 $ richacl --get x
 > x:
->  owner@:rw-----------::allow
+>  owner@:rw----A--Co--::allow
 >  group@:rw-----------::allow
 >
 
@@ -24,21 +24,21 @@ $ richacl --set 'everyone@:w::deny owner@:rw::allow group@:rw::allow' x
 $ chmod 664 x
 $ richacl --get x
 > x:
->  owner@:r------------::allow
+>  owner@:r-----A--Co--::allow
 >  group@:r------------::allow
 >
 
 $ richacl --set 'owner@:rwCo::allow' x
 $ richacl --get x
 > x:
->  owner@:rw-------Co--::allow
+>  owner@:rw----A--Co--::allow
 >
 
 
 $ chmod 644 x
 $ richacl --get x
 > x:
->  owner@:rw-------Co--::allow
+>  owner@:rw----A--Co--::allow
 >
 
 $ richacl --set 'root:rw::allow' x

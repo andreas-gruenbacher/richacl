@@ -22,7 +22,8 @@ $ chmod 0 a
 $ richacl --set-file acl.txt a
 
 Make sure that no richacl was set by checking for the system.richacl xattr
-$ getfattr -m- a
+$ getfattr -n system.richacl a 2> /dev/null || echo no richacl
+> no richacl
 
 $ ls -l a | cut -d ' ' -f 1
 > -rw-r--r--

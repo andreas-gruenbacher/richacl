@@ -12,9 +12,9 @@ $ touch a
 Chown and chgrp with no take ownership permission fails:
 	$ su daemon
 	$ chown daemon a
-	> chown: changing ownership of `a': Operation not permitted
+	> chown: changing ownership of 'a': Operation not permitted
 	$ chgrp daemon a
-	> chgrp: changing group of `a': Operation not permitted
+	> chgrp: changing group of 'a': Operation not permitted
 	$ richacl --set 'daemon:rwo::allow' a
 	> a: Operation not permitted
 
@@ -26,9 +26,9 @@ file mode cannot show this though:
 Chown and chgrp to an arbitrary other user or group fails:
 	$ su daemon
 	$ chown root a
-	> chown: changing ownership of `a': Operation not permitted
+	> chown: changing ownership of 'a': Operation not permitted
 	$ chgrp root a
-	> chgrp: changing group of `a': Operation not permitted
+	> chgrp: changing group of 'a': Operation not permitted
 
 Changing the mode makes that an upper bound of the permissions granted, even
 when the file mode stays the same:
@@ -41,11 +41,11 @@ Chown and chgrp to the same user or a group the process is in now fails
 because the masks now do not grant change_ownership access:
 	$ su daemon
 	$ chown daemon a
-	> chown: changing ownership of `a': Operation not permitted
+	> chown: changing ownership of 'a': Operation not permitted
 	$ chgrp daemon a
-	> chgrp: changing group of `a': Operation not permitted
+	> chgrp: changing group of 'a': Operation not permitted
 	$ chgrp bin a
-	> chgrp: changing group of `a': Operation not permitted
+	> chgrp: changing group of 'a': Operation not permitted
 
 Add back change_ownership:
 	$ su

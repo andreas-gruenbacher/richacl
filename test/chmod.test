@@ -9,7 +9,7 @@ $ touch a
 Neet to have write_acl permission to chmod or set the acl:
 	$ su bin
 	$ chmod 666 a
-	> chmod: changing permissions of `a': Operation not permitted
+	> chmod: changing permissions of 'a': Operation not permitted
 	$ richacl --set 'bin:rwc::allow' a
 	> a: Operation not permitted
 	

@@ -11,7 +11,7 @@ $ sleep 1
 Without write access, the ctime cannot be changed.
 	$ su bin
 	$ touch a
-	> touch: cannot touch `a': Permission denied
+	> touch: cannot touch 'a': Permission denied
 
 With write access, the ctime can be set to the current time, but not to
 any other time:
@@ -22,7 +22,7 @@ any other time:
 	$ touch a
 	$ [ b -ot a ] || echo 'b should be older than a'
 	$ touch -r b a
-	> touch: setting times of `a': Operation not permitted
+	> touch: setting times of 'a': Operation not permitted
 
 With set_attributes access, the ctime can be set to an arbitrary time:
 	$ su
