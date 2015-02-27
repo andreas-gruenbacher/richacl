@@ -71,15 +71,16 @@ static void add_implicitly_granted_permissions(struct richacl *acl)
 	struct richace *ace;
 
 	richacl_for_each_entry(ace, acl) {
-		if (richace_is_allow(ace)) {
-			ace->e_mask |= ACE4_POSIX_ALWAYS_ALLOWED;
-			if (richace_is_owner(ace))
-				ace->e_mask |= ACE4_POSIX_OWNER_ALLOWED;
-		} else if (richace_is_deny(ace)) {
-			ace->e_mask &= ~ACE4_POSIX_ALWAYS_ALLOWED;
-			if (richace_is_owner(ace))
-				ace->e_mask &= ~ACE4_POSIX_OWNER_ALLOWED;
-		}
+		unsigned int mask;
+
+		mask = ACE4_POSIX_ALWAYS_ALLOWED;
+		if (richace_is_owner(ace))
+			mask |= ACE4_POSIX_OWNER_ALLOWED;
+
+		if (richace_is_allow(ace))
+			ace->e_mask |= mask;
+		else if (richace_is_deny(ace))
+			ace->e_mask &= ~mask;
 	}
 }
 
