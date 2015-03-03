@@ -302,6 +302,18 @@ static int auto_inherit(const char *dirname, struct richacl *dir_acl)
 			old_acl = NULL;
 		} else {
 			int equal;
+			if (old_acl->a_flags & ACL4_DEFAULTED) {
+				/* RFC 5661: An application performing
+				 * automatic inheritance takes the
+				 * ACL4_DEFAULTED flag as a sign that the ACL
+				 * should be completely replaced by one
+				 * generated using the automatic inheritance
+				 * rules. */
+
+				free(old_acl);
+				old_acl = richacl_alloc(0);
+				old_acl->a_flags |= ACL4_AUTO_INHERIT;
+			}
 			new_acl = richacl_auto_inherit(old_acl,
 					isdir ? dir_inheritable :
 						file_inheritable);
