@@ -28,11 +28,11 @@
 #define ACL4_AUTO_INHERIT		0x01
 #define ACL4_PROTECTED			0x02
 #define ACL4_DEFAULTED			0x04
-/* Richacl Defined flag value */
+/* richacl specific acl flag */
 #define ACL4_MASKED			0x80
 
 
-#define ACL4_VALID_FLAGS (	\
+#define RICHACL_VALID_FLAGS (	\
 	ACL4_AUTO_INHERIT |	\
 	ACL4_PROTECTED |	\
 	ACL4_DEFAULTED |	\
@@ -49,9 +49,10 @@
 #define ACE4_INHERIT_ONLY_ACE		0x0008
 #define ACE4_IDENTIFIER_GROUP		0x0040
 #define ACE4_INHERITED_ACE		0x0080
+/* richacl specific acl entry flag */
 #define ACE4_SPECIAL_WHO		0x4000
 
-#define ACE4_VALID_FLAGS (			\
+#define RICHACE_VALID_FLAGS (			\
 	ACE4_FILE_INHERIT_ACE |			\
 	ACE4_DIRECTORY_INHERIT_ACE |		\
 	ACE4_NO_PROPAGATE_INHERIT_ACE |		\
@@ -82,7 +83,7 @@
 #define ACE4_SYNCHRONIZE		0x00100000
 
 /* Valid ACE4_* flags for directories and non-directories */
-#define ACE4_VALID_MASK (				\
+#define RICHACE_VALID_MASK (				\
 	ACE4_READ_DATA | ACE4_LIST_DIRECTORY |		\
 	ACE4_WRITE_DATA | ACE4_ADD_FILE |		\
 	ACE4_APPEND_DATA | ACE4_ADD_SUBDIRECTORY |	\
@@ -103,18 +104,18 @@
 /*
  * The POSIX permissions are supersets of the following mask flags.
  */
-#define ACE4_POSIX_MODE_READ ( \
+#define RICHACE_POSIX_MODE_READ ( \
 	ACE4_READ_DATA | ACE4_LIST_DIRECTORY )
-#define ACE4_POSIX_MODE_WRITE ( \
+#define RICHACE_POSIX_MODE_WRITE ( \
 	ACE4_WRITE_DATA | ACE4_ADD_FILE | \
 	ACE4_APPEND_DATA | ACE4_ADD_SUBDIRECTORY | \
 	ACE4_DELETE_CHILD )
-#define ACE4_POSIX_MODE_EXEC ( \
+#define RICHACE_POSIX_MODE_EXEC ( \
 	ACE4_EXECUTE)
-#define ACE4_POSIX_MODE_ALL ( \
-	ACE4_POSIX_MODE_READ | \
-	ACE4_POSIX_MODE_WRITE | \
-	ACE4_POSIX_MODE_EXEC)
+#define RICHACE_POSIX_MODE_ALL ( \
+	RICHACE_POSIX_MODE_READ | \
+	RICHACE_POSIX_MODE_WRITE | \
+	RICHACE_POSIX_MODE_EXEC)
 
 /*
  * The ACE4_READ_ATTRIBUTES and ACE4_READ_ACL flags are always granted
@@ -126,7 +127,7 @@
 	ACE4_READ_ACL )
 
 /* The owner is implicitly granted these permissions under POSIX. */
-#define ACE4_POSIX_OWNER_ALLOWED ( \
+#define RICHACE_POSIX_OWNER_ALLOWED ( \
 	ACE4_WRITE_ATTRIBUTES | \
 	ACE4_WRITE_OWNER | \
 	ACE4_WRITE_ACL)

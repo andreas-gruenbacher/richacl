@@ -36,7 +36,7 @@ struct richacl *richacl_from_xattr(const void *value, size_t size)
 
 	if (size < sizeof(struct richacl_xattr) ||
 	    xattr_acl->a_version != ACL4_XATTR_VERSION ||
-	    (xattr_acl->a_flags & ~ACL4_VALID_FLAGS))
+	    (xattr_acl->a_flags & ~RICHACL_VALID_FLAGS))
 		goto fail_einval;
 
 	count = le16_to_cpu(xattr_acl->a_count);
@@ -98,7 +98,7 @@ void richacl_to_xattr(const struct richacl *acl, void *buffer)
 	richacl_for_each_entry(ace, acl) {
 		xattr_ace->e_type = cpu_to_le16(ace->e_type);
 		xattr_ace->e_flags = cpu_to_le16(ace->e_flags &
-						 ACE4_VALID_FLAGS);
+						 RICHACE_VALID_FLAGS);
 		xattr_ace->e_mask = cpu_to_le32(ace->e_mask);
 		xattr_ace->e_id = cpu_to_le32(ace->e_id);
 		xattr_ace++;

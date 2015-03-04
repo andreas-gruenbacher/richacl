@@ -75,7 +75,7 @@ static void add_implicitly_granted_permissions(struct richacl *acl)
 
 		mask = ACE4_POSIX_ALWAYS_ALLOWED;
 		if (richace_is_owner(ace))
-			mask |= ACE4_POSIX_OWNER_ALLOWED;
+			mask |= RICHACE_POSIX_OWNER_ALLOWED;
 
 		if (richace_is_allow(ace))
 			ace->e_mask |= mask;

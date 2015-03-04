@@ -262,11 +262,11 @@ static unsigned int richacl_mode_to_mask(mode_t mode)
 	unsigned int mask = ACE4_POSIX_ALWAYS_ALLOWED;
 
 	if (mode & S_IROTH)
-		mask |= ACE4_POSIX_MODE_READ;
+		mask |= RICHACE_POSIX_MODE_READ;
 	if (mode & S_IWOTH)
-		mask |= ACE4_POSIX_MODE_WRITE;
+		mask |= RICHACE_POSIX_MODE_WRITE;
 	if (mode & S_IXOTH)
-		mask |= ACE4_POSIX_MODE_EXEC;
+		mask |= RICHACE_POSIX_MODE_EXEC;
 
 	return mask;
 }
@@ -285,7 +285,7 @@ struct richacl *richacl_from_mode(mode_t mode)
 		return NULL;
 	acl->a_flags = ACL4_MASKED;
 	acl->a_owner_mask = richacl_mode_to_mask(mode >> 6) |
-		ACE4_POSIX_OWNER_ALLOWED;
+		RICHACE_POSIX_OWNER_ALLOWED;
 	acl->a_group_mask = richacl_mode_to_mask(mode >> 3);
 	acl->a_other_mask = richacl_mode_to_mask(mode);
 
@@ -293,8 +293,8 @@ struct richacl *richacl_from_mode(mode_t mode)
 	ace->e_type = ACE4_ACCESS_ALLOWED_ACE_TYPE;
 	ace->e_flags = ACE4_SPECIAL_WHO;
 	ace->e_mask = ACE4_POSIX_ALWAYS_ALLOWED |
-		      ACE4_POSIX_MODE_ALL |
-		      ACE4_POSIX_OWNER_ALLOWED;
+		      RICHACE_POSIX_MODE_ALL |
+		      RICHACE_POSIX_OWNER_ALLOWED;
 	/* ACE4_DELETE_CHILD is meaningless for non-directories. */
 	if (!S_ISDIR(mode))
 		ace->e_mask &= ~ACE4_DELETE_CHILD;
@@ -325,7 +325,7 @@ int richacl_access(const char *file, const struct stat *st, uid_t user,
 	const struct richacl *acl;
 	struct stat local_st;
 	const struct richace *ace;
-	unsigned int file_mask, mask = ACE4_VALID_MASK, denied = 0;
+	unsigned int file_mask, mask = RICHACE_VALID_MASK, denied = 0;
 	int in_owning_group;
 	int in_owner_or_group_class;
 	gid_t *groups = NULL;
@@ -429,7 +429,7 @@ is_everyone:
 	 * Figure out which file mask applies.
 	 */
 	if (!(acl->a_flags & ACL4_MASKED))
-		file_mask = ACE4_VALID_MASK;
+		file_mask = RICHACE_VALID_MASK;
 	else if (user == st->st_uid)
 		file_mask = acl->a_owner_mask;
 	else if (in_owner_or_group_class)
@@ -567,11 +567,11 @@ richacl_mask_to_mode(unsigned int mask)
 {
 	int mode = 0;
 
-	if (mask & ACE4_POSIX_MODE_READ)
+	if (mask & RICHACE_POSIX_MODE_READ)
 		mode |= S_IROTH;
-	if (mask & ACE4_POSIX_MODE_WRITE)
+	if (mask & RICHACE_POSIX_MODE_WRITE)
 		mode |= S_IWOTH;
-	if (mask & ACE4_POSIX_MODE_EXEC)
+	if (mask & RICHACE_POSIX_MODE_EXEC)
 		mode |= S_IXOTH;
 
 	return mode;
@@ -589,8 +589,8 @@ richacl_mask_to_mode(unsigned int mask)
  * a mask contains ACE4_APPEND_DATA even if it does not also contain
  * ACE4_WRITE_DATA.
  *
- * Permissions which are not in ACE4_POSIX_MODE_READ, ACE4_POSIX_MODE_WRITE, or
- * ACE4_POSIX_MODE_EXEC cannot be represented in the file permission bits.
+ * Permissions which are not in RICHACE_POSIX_MODE_READ, RICHACE_POSIX_MODE_WRITE, or
+ * RICHACE_POSIX_MODE_EXEC cannot be represented in the file permission bits.
  * Those permissions can still be effective, but only if the masks were set
  * explicitly (for example, by setting the richacl xattr), and not for new
  * files or after a chmod().
@@ -716,11 +716,11 @@ richacl_equiv_mode(const struct richacl *acl, mode_t *mode_p)
 	/*
 	 * Ignore permissions which the owner is always allowed.
 	 */
-	x &= ~ACE4_POSIX_OWNER_ALLOWED;
+	x &= ~RICHACE_POSIX_OWNER_ALLOWED;
 	if ((acl->a_owner_mask & x) != (richacl_mode_to_mask(mode >> 6) & x))
 		return -1;
 
-        if ((ace->e_mask & x) != (ACE4_POSIX_MODE_ALL & x))
+        if ((ace->e_mask & x) != (RICHACE_POSIX_MODE_ALL & x))
 		return -1;
 
 	*mode_p = (*mode_p & ~0777) | mode;
