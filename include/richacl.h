@@ -133,9 +133,9 @@
 	ACE4_WRITE_ACL)
 
 /* Special e_id values for (e_flags & ACE4_SPECIAL_WHO) */
-#define ACE_OWNER_ID		130
-#define ACE_GROUP_ID		131
-#define ACE_EVERYONE_ID		110
+#define RICHACE_OWNER_SPECIAL_ID	0
+#define RICHACE_GROUP_SPECIAL_ID	1
+#define RICHACE_EVERYONE_SPECIAL_ID	2
 
 struct richace {
 	unsigned short	e_type;

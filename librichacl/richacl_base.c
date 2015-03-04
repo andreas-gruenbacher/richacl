@@ -40,19 +40,19 @@ bool richace_is_same_identifier(const struct richace *a, const struct richace *b
 bool richace_is_owner(const struct richace *ace)
 {
 	return (ace->e_flags & ACE4_SPECIAL_WHO) &&
-		ace->e_id == ACE_OWNER_ID;
+		ace->e_id == RICHACE_OWNER_SPECIAL_ID;
 }
 
 bool richace_is_group(const struct richace *ace)
 {
 	return (ace->e_flags & ACE4_SPECIAL_WHO) &&
-		ace->e_id == ACE_GROUP_ID;
+		ace->e_id == RICHACE_GROUP_SPECIAL_ID;
 }
 
 bool richace_is_everyone(const struct richace *ace)
 {
 	return (ace->e_flags & ACE4_SPECIAL_WHO) &&
-		ace->e_id == ACE_EVERYONE_ID;
+		ace->e_id == RICHACE_EVERYONE_SPECIAL_ID;
 }
 
 struct richacl *richacl_alloc(size_t count)
@@ -216,11 +216,11 @@ int richace_set_who(struct richace *ace, const char *who)
 {
 	int id;
 	if (!strcmp(who, richace_owner_who))
-		id = ACE_OWNER_ID;
+		id = RICHACE_OWNER_SPECIAL_ID;
 	else if (!strcmp(who, richace_group_who))
-		id = ACE_GROUP_ID;
+		id = RICHACE_GROUP_SPECIAL_ID;
 	else if (!strcmp(who, richace_everyone_who))
-		id = ACE_EVERYONE_ID;
+		id = RICHACE_EVERYONE_SPECIAL_ID;
 	else
 		return -1;
 
@@ -298,7 +298,7 @@ struct richacl *richacl_from_mode(mode_t mode)
 	/* ACE4_DELETE_CHILD is meaningless for non-directories. */
 	if (!S_ISDIR(mode))
 		ace->e_mask &= ~ACE4_DELETE_CHILD;
-	ace->e_id = ACE_EVERYONE_ID;
+	ace->e_id = RICHACE_EVERYONE_SPECIAL_ID;
 
 	return acl;
 }

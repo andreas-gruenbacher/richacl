@@ -314,13 +314,13 @@ static void write_identifier(struct string_buffer *buffer,
 		const char *id = NULL;
 		char *dup, *c;
 		switch (ace->e_id) {
-		case ACE_OWNER_ID:
+		case RICHACE_OWNER_SPECIAL_ID:
 		    id = richace_owner_who;
 		    break;
-		case ACE_GROUP_ID:
+		case RICHACE_GROUP_SPECIAL_ID:
 		    id = richace_group_who;
 		    break;
-		case ACE_EVERYONE_ID:
+		case RICHACE_EVERYONE_SPECIAL_ID:
 		    id = richace_everyone_who;
 		    break;
 		}
