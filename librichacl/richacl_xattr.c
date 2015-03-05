@@ -60,6 +60,9 @@ struct richacl *richacl_from_xattr(const void *value, size_t size)
 		ace->e_flags = le16_to_cpu(xattr_ace->e_flags);
 		ace->e_mask  = le32_to_cpu(xattr_ace->e_mask);
 		ace->e_id    = le32_to_cpu(xattr_ace->e_id);
+		if (ace->e_flags & ACE4_SPECIAL_WHO &&
+		    ace->e_id > RICHACE_EVERYONE_SPECIAL_ID)
+			goto fail_einval;
 		xattr_ace++;
 	}
 
