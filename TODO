@@ -1,3 +1,11 @@
-man
-po
-debian
+* Write man pages
+
+* Internationalize
+
+* How does Windows handle Deny ACEs: for example, a Deny Write ACE would imply
+  Deny Read ACL and Deny Synchronize; does Windows *really* deny those
+  permissions? A combination of Deny Write + Allow Read would lead to strange
+  results ...
+
+* Look into Windows OWNER RIGHTS
+  http://windowsitpro.com/article/security/acl-enhancements-in-windows-vista-and-windows-server-2008-102871
