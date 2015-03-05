@@ -32,14 +32,17 @@ struct richacl *richacl_from_xattr(const void *value, size_t size)
 	const struct richace_xattr *xattr_ace = (void *)(xattr_acl + 1);
 	struct richacl *acl = NULL;
 	struct richace *ace;
-	int count;
+	unsigned int count;
 
-	if (size < sizeof(struct richacl_xattr) ||
+	if (size < sizeof(*xattr_acl) ||
 	    xattr_acl->a_version != ACL4_XATTR_VERSION ||
-	    (xattr_acl->a_flags & ~RICHACL_VALID_FLAGS))
+	    (xattr_acl->a_flags & ~RICHACL_VALID_FLAGS) ||
+	    xattr_acl->a_unused != 0)
 		goto fail_einval;
-
-	count = le16_to_cpu(xattr_acl->a_count);
+	size -= sizeof(*xattr_acl);
+	if (size % sizeof(*xattr_ace))
+		goto fail_einval;
+	count = size / sizeof(*xattr_ace);
 	if (count > ACL4_XATTR_MAX_COUNT)
 		goto fail_einval;
 
@@ -53,10 +56,6 @@ struct richacl *richacl_from_xattr(const void *value, size_t size)
 	acl->a_other_mask = le32_to_cpu(xattr_acl->a_other_mask);
 
 	richacl_for_each_entry(ace, acl) {
-
-		if (((void *)xattr_ace + sizeof(*xattr_ace)) > value + size)
-			goto fail_einval;
-
 		ace->e_type  = le16_to_cpu(xattr_ace->e_type);
 		ace->e_flags = le16_to_cpu(xattr_ace->e_flags);
 		ace->e_mask  = le32_to_cpu(xattr_ace->e_mask);
@@ -88,7 +87,7 @@ void richacl_to_xattr(const struct richacl *acl, void *buffer)
 
 	xattr_acl->a_version = ACL4_XATTR_VERSION;
 	xattr_acl->a_flags = acl->a_flags;
-	xattr_acl->a_count = cpu_to_le16(acl->a_count);
+	xattr_acl->a_unused = 0;
 
 	xattr_acl->a_owner_mask = cpu_to_le32(acl->a_owner_mask);
 	xattr_acl->a_group_mask = cpu_to_le32(acl->a_group_mask);
