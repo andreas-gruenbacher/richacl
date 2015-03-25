@@ -12,6 +12,7 @@ Makefile.in
 stamp-h1
 
 /.version
+/aclocal.m4
 /autom4te.cache/
 /build-aux/
 /config.log
