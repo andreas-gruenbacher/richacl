@@ -1,7 +1,5 @@
 lib_LTLIBRARIES += librichacl.la
 
-# No other library exports version info, otherwise we'd have to add
-# "librichacl_" prefix to all these variables.
 LT_CURRENT = 2
 # The configure script will set this for us automatically.
 #LT_REVISION =

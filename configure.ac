@@ -1,4 +1,6 @@
-AC_INIT([richacl], [1.1.0], [agruenba@redhat.com])
+AC_INIT([richacl],
+	m4_esyscmd([build-aux/git-version-gen .tarball-version]),
+	[agruenba@redhat.com])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_HEADER([include/config.h])
@@ -28,7 +30,7 @@ AC_CHECK_HEADER([sys/xattr.h],,
 #        [CPPFLAGS="$CPPFLAGS -DNDEBUG"])
 
 dnl Automatically increment the revision for every release.
-LT_REVISION=$(echo "${PACKAGE_VERSION}" | tr -d .)
+LT_REVISION=$(echo "${PACKAGE_VERSION}" | sed -e 's:\..*::' -e 's:-dirty$::')
 AC_SUBST(LT_REVISION)
 
 AC_CONFIG_FILES([

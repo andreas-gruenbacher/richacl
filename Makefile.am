@@ -1,7 +1,15 @@
 ACLOCAL_AMFLAGS = -I m4
 
 EXTRA_DIST = \
+	build-aux/git-version-gen \
+	$(top_srcdir)/.version \
 	exports
+
+BUILT_SOURCES = $(top_srcdir)/.version
+$(top_srcdir)/.version:
+	echo $(VERSION) > $@-t && mv $@-t $@
+dist-hook:
+	echo $(VERSION) > $(distdir)/.tarball-version
 
 AM_CPPFLAGS = \
 	-I$(top_builddir)/include \
