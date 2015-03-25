@@ -40,7 +40,7 @@ struct richacl_xattr {
 };
 
 #define SYSTEM_RICHACL		"system.richacl"
-#define ACL4_XATTR_VERSION	0
-#define ACL4_XATTR_MAX_COUNT	1024
+#define RICHACL_XATTR_VERSION	0
+#define RICHACL_XATTR_MAX_COUNT	1024
 
 #endif  /* __RICHACL_XATTR_H */

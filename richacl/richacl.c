@@ -63,7 +63,7 @@ void printf_stderr(const char *fmt, ...)
 
 static inline int richace_is_inherited(const struct richace *ace)
 {
-	return ace->e_flags & ACE4_INHERITED_ACE;
+	return ace->e_flags & RICHACE_INHERITED_ACE;
 }
 
 static void add_implicitly_granted_permissions(struct richacl *acl)
@@ -73,7 +73,7 @@ static void add_implicitly_granted_permissions(struct richacl *acl)
 	richacl_for_each_entry(ace, acl) {
 		unsigned int mask;
 
-		mask = ACE4_POSIX_ALWAYS_ALLOWED;
+		mask = RICHACE_POSIX_ALWAYS_ALLOWED;
 		if (richace_is_owner(ace))
 			mask |= RICHACE_POSIX_OWNER_ALLOWED;
 
@@ -97,24 +97,24 @@ static void compute_masks(struct richacl *acl, int acl_has)
 		return;
 
 	if (!(acl_has & RICHACL_TEXT_FLAGS))
-		acl->a_flags &= ~ACL4_MASKED;
+		acl->a_flags &= ~RICHACL_MASKED;
 	richacl_compute_max_masks(acl);
 	if (acl_has & RICHACL_TEXT_OWNER_MASK) {
 		if (!(acl_has & RICHACL_TEXT_FLAGS) &&
 		    (acl->a_owner_mask & ~owner_mask))
-			acl->a_flags |= ACL4_MASKED;
+			acl->a_flags |= RICHACL_MASKED;
 		acl->a_owner_mask = owner_mask;
 	}
 	if (acl_has & RICHACL_TEXT_GROUP_MASK) {
 		if (!(acl_has & RICHACL_TEXT_FLAGS) &&
 		    (acl->a_group_mask & ~group_mask))
-			acl->a_flags |= ACL4_MASKED;
+			acl->a_flags |= RICHACL_MASKED;
 		acl->a_group_mask = group_mask;
 	}
 	if (acl_has & RICHACL_TEXT_OTHER_MASK) {
 		if (!(acl_has & RICHACL_TEXT_FLAGS) &&
 		    (acl->a_other_mask & ~other_mask))
-			acl->a_flags |= ACL4_MASKED;
+			acl->a_flags |= RICHACL_MASKED;
 		acl->a_other_mask = other_mask;
 	}
 }
@@ -145,7 +145,7 @@ int modify_richacl(struct richacl **acl2, struct richacl *acl, int acl_has)
 			return -1;
 		acl3->a_flags = (*acl2)->a_flags;
 		ace3 = acl3->a_entries;
-		if (!(ace->e_flags & ACE4_INHERITED_ACE)) {
+		if (!(ace->e_flags & RICHACE_INHERITED_ACE)) {
 			if (richace_is_deny(ace)) {
 				/*
 				 * Insert the new deny entry after the existing
@@ -295,24 +295,24 @@ static int auto_inherit(const char *dirname, struct richacl *dir_acl)
 		}
 		if (!richacl_is_auto_inherit(old_acl))
 			goto next;
-		if (old_acl->a_flags & ACL4_PROTECTED) {
+		if (old_acl->a_flags & RICHACL_PROTECTED) {
 			if (!opt_repropagate)
 				goto next;
 			new_acl = old_acl;
 			old_acl = NULL;
 		} else {
 			int equal;
-			if (old_acl->a_flags & ACL4_DEFAULTED) {
+			if (old_acl->a_flags & RICHACL_DEFAULTED) {
 				/* RFC 5661: An application performing
 				 * automatic inheritance takes the
-				 * ACL4_DEFAULTED flag as a sign that the ACL
+				 * RICHACL_DEFAULTED flag as a sign that the ACL
 				 * should be completely replaced by one
 				 * generated using the automatic inheritance
 				 * rules. */
 
 				free(old_acl);
 				old_acl = richacl_alloc(0);
-				old_acl->a_flags |= ACL4_AUTO_INHERIT;
+				old_acl->a_flags |= RICHACL_AUTO_INHERIT;
 			}
 			new_acl = richacl_auto_inherit(old_acl,
 					isdir ? dir_inheritable :

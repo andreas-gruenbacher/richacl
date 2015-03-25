@@ -33,25 +33,25 @@ const char *richace_everyone_who = "EVERYONE@";
 bool richace_is_same_identifier(const struct richace *a, const struct richace *b)
 {
 	return !((a->e_flags ^ b->e_flags) &
-		 (ACE4_SPECIAL_WHO | ACE4_IDENTIFIER_GROUP)) &&
+		 (RICHACE_SPECIAL_WHO | RICHACE_IDENTIFIER_GROUP)) &&
 	       a->e_id == b->e_id;
 }
 
 bool richace_is_owner(const struct richace *ace)
 {
-	return (ace->e_flags & ACE4_SPECIAL_WHO) &&
+	return (ace->e_flags & RICHACE_SPECIAL_WHO) &&
 		ace->e_id == RICHACE_OWNER_SPECIAL_ID;
 }
 
 bool richace_is_group(const struct richace *ace)
 {
-	return (ace->e_flags & ACE4_SPECIAL_WHO) &&
+	return (ace->e_flags & RICHACE_SPECIAL_WHO) &&
 		ace->e_id == RICHACE_GROUP_SPECIAL_ID;
 }
 
 bool richace_is_everyone(const struct richace *ace)
 {
-	return (ace->e_flags & ACE4_SPECIAL_WHO) &&
+	return (ace->e_flags & RICHACE_SPECIAL_WHO) &&
 		ace->e_id == RICHACE_EVERYONE_SPECIAL_ID;
 }
 
@@ -209,7 +209,7 @@ restart:
 		}
 	}
 
-	acl->a_flags &= ~ACL4_MASKED;
+	acl->a_flags &= ~RICHACL_MASKED;
 }
 
 int richace_set_who(struct richace *ace, const char *who)
@@ -225,26 +225,26 @@ int richace_set_who(struct richace *ace, const char *who)
 		return -1;
 
 	ace->e_id = id;
-	ace->e_flags |= ACE4_SPECIAL_WHO;
+	ace->e_flags |= RICHACE_SPECIAL_WHO;
 	/*
-	 * Also clear the ACE4_IDENTIFIER_GROUP flag for ACEs with a special
+	 * Also clear the RICHACE_IDENTIFIER_GROUP flag for ACEs with a special
 	 * who value: richace_is_same_identifier() relies on that.
 	 */
-	ace->e_flags &= ~ACE4_IDENTIFIER_GROUP;
+	ace->e_flags &= ~RICHACE_IDENTIFIER_GROUP;
 	return 0;
 }
 
 void richace_set_uid(struct richace *ace, uid_t uid)
 {
 	ace->e_id = uid;
-	ace->e_flags &= ~(ACE4_SPECIAL_WHO | ACE4_IDENTIFIER_GROUP);
+	ace->e_flags &= ~(RICHACE_SPECIAL_WHO | RICHACE_IDENTIFIER_GROUP);
 }
 
 void richace_set_gid(struct richace *ace, gid_t gid)
 {
 	ace->e_id = gid;
-	ace->e_flags |= ACE4_IDENTIFIER_GROUP;
-	ace->e_flags &= ~ACE4_SPECIAL_WHO;
+	ace->e_flags |= RICHACE_IDENTIFIER_GROUP;
+	ace->e_flags &= ~RICHACE_SPECIAL_WHO;
 }
 
 void richace_copy(struct richace *dst, const struct richace *src)
@@ -259,7 +259,7 @@ void richace_copy(struct richace *dst, const struct richace *src)
  */
 static unsigned int richacl_mode_to_mask(mode_t mode)
 {
-	unsigned int mask = ACE4_POSIX_ALWAYS_ALLOWED;
+	unsigned int mask = RICHACE_POSIX_ALWAYS_ALLOWED;
 
 	if (mode & S_IROTH)
 		mask |= RICHACE_POSIX_MODE_READ;
@@ -283,21 +283,21 @@ struct richacl *richacl_from_mode(mode_t mode)
 	acl = richacl_alloc(1);
 	if (!acl)
 		return NULL;
-	acl->a_flags = ACL4_MASKED;
+	acl->a_flags = RICHACL_MASKED;
 	acl->a_owner_mask = richacl_mode_to_mask(mode >> 6) |
 		RICHACE_POSIX_OWNER_ALLOWED;
 	acl->a_group_mask = richacl_mode_to_mask(mode >> 3);
 	acl->a_other_mask = richacl_mode_to_mask(mode);
 
 	ace = acl->a_entries;
-	ace->e_type = ACE4_ACCESS_ALLOWED_ACE_TYPE;
-	ace->e_flags = ACE4_SPECIAL_WHO;
-	ace->e_mask = ACE4_POSIX_ALWAYS_ALLOWED |
+	ace->e_type = RICHACE_ACCESS_ALLOWED_ACE_TYPE;
+	ace->e_flags = RICHACE_SPECIAL_WHO;
+	ace->e_mask = RICHACE_POSIX_ALWAYS_ALLOWED |
 		      RICHACE_POSIX_MODE_ALL |
 		      RICHACE_POSIX_OWNER_ALLOWED;
-	/* ACE4_DELETE_CHILD is meaningless for non-directories. */
+	/* RICHACE_DELETE_CHILD is meaningless for non-directories. */
 	if (!S_ISDIR(mode))
-		ace->e_mask &= ~ACE4_DELETE_CHILD;
+		ace->e_mask &= ~RICHACE_DELETE_CHILD;
 	ace->e_id = RICHACE_EVERYONE_SPECIAL_ID;
 
 	return acl;
@@ -305,7 +305,7 @@ struct richacl *richacl_from_mode(mode_t mode)
 
 bool richace_is_unix_id(const struct richace *ace)
 {
-	return !(ace->e_flags & ACE4_SPECIAL_WHO);
+	return !(ace->e_flags & RICHACE_SPECIAL_WHO);
 
 }
 
@@ -368,7 +368,7 @@ int richacl_access(const char *file, const struct stat *st, uid_t user,
 	 * We don't need to know which class the process is in when the acl is
 	 * not masked.
 	 */
-	if (!(acl->a_flags & ACL4_MASKED))
+	if (!(acl->a_flags & RICHACL_MASKED))
 		in_owner_or_group_class = 1;
 
 	/*
@@ -392,7 +392,7 @@ int richacl_access(const char *file, const struct stat *st, uid_t user,
 			if (!in_owning_group)
 				continue;
 		} else if (richace_is_unix_id(ace)) {
-			if (ace->e_flags & ACE4_IDENTIFIER_GROUP) {
+			if (ace->e_flags & RICHACE_IDENTIFIER_GROUP) {
 				if (!in_groups(ace->e_id, groups, n_groups))
 					continue;
 			} else {
@@ -408,7 +408,7 @@ int richacl_access(const char *file, const struct stat *st, uid_t user,
 		 * but ensures that we grant the same permissions as the acl
 		 * computed by richacl_apply_masks() would grant.
 		 */
-		if ((acl->a_flags & ACL4_MASKED) && richace_is_allow(ace))
+		if ((acl->a_flags & RICHACL_MASKED) && richace_is_allow(ace))
 			ace_mask &= acl->a_group_mask;
 
 is_owner:
@@ -428,7 +428,7 @@ is_everyone:
 	/*
 	 * Figure out which file mask applies.
 	 */
-	if (!(acl->a_flags & ACL4_MASKED))
+	if (!(acl->a_flags & RICHACL_MASKED))
 		file_mask = RICHACE_VALID_MASK;
 	else if (user == st->st_uid)
 		file_mask = acl->a_owner_mask;
@@ -437,9 +437,9 @@ is_everyone:
 	else
 		file_mask = acl->a_other_mask;
 
-	/* ACE4_DELETE_CHILD is meaningless for non-directories. */
+	/* RICHACE_DELETE_CHILD is meaningless for non-directories. */
 	if (!S_ISDIR(st->st_mode))
-		file_mask &= ~ACE4_DELETE_CHILD;
+		file_mask &= ~RICHACE_DELETE_CHILD;
 
 	if (groups != const_groups)
 		free(groups);
@@ -455,7 +455,7 @@ is_everyone:
  * @user:	User ID of the accessing process
  * @groups:	Group IDs the accessing process is a member in
  * @n_groups:	Number of entries in @groups
- * @mask:	Requested permissions (ACE4_* mask flags)
+ * @mask:	Requested permissions (RICHACE_* mask flags)
  */
 bool richacl_permission(struct richacl *acl, uid_t owner, gid_t owning_group,
 			uid_t user, const gid_t *groups, int n_groups,
@@ -470,7 +470,7 @@ bool richacl_permission(struct richacl *acl, uid_t owner, gid_t owning_group,
 	 * We don't need to know which class the process is in when the acl is
 	 * not masked.
 	 */
-	if (!(acl->a_flags & ACL4_MASKED))
+	if (!(acl->a_flags & RICHACL_MASKED))
 		in_owner_or_group_class = 1;
 
 	/*
@@ -498,7 +498,7 @@ bool richacl_permission(struct richacl *acl, uid_t owner, gid_t owning_group,
 			if (!in_owning_group)
 				continue;
 		} else if (richace_is_unix_id(ace)) {
-			if (ace->e_flags & ACE4_IDENTIFIER_GROUP) {
+			if (ace->e_flags & RICHACE_IDENTIFIER_GROUP) {
 				if (!in_groups(ace->e_id, groups, n_groups))
 					continue;
 			} else {
@@ -514,7 +514,7 @@ bool richacl_permission(struct richacl *acl, uid_t owner, gid_t owning_group,
 		 * but ensures that we grant the same permissions as the acl
 		 * computed by richacl_apply_masks() would grant.
 		 */
-		if ((acl->a_flags & ACL4_MASKED) && richace_is_allow(ace))
+		if ((acl->a_flags & RICHACL_MASKED) && richace_is_allow(ace))
 			ace_mask &= acl->a_group_mask;
 
 is_owner:
@@ -535,7 +535,7 @@ is_everyone:
 			break;
 	}
 
-	if (acl->a_flags & ACL4_MASKED) {
+	if (acl->a_flags & RICHACL_MASKED) {
 		unsigned int file_mask;
 
 		/*
@@ -558,7 +558,7 @@ is_everyone:
 
 /**
  * richacl_mask_to_mode  -  compute the file permission bits which correspond to @mask
- * @mask:	%ACE4_* permission mask
+ * @mask:	%RICHACE_* permission mask
  *
  * See richacl_masks_to_mode().
  */
@@ -586,8 +586,8 @@ richacl_mask_to_mode(unsigned int mask)
  *
  * Conversely, when setting a richacl, we set the file permission bits to
  * indicate maximum permissions: for example, we set the Write permission when
- * a mask contains ACE4_APPEND_DATA even if it does not also contain
- * ACE4_WRITE_DATA.
+ * a mask contains RICHACE_APPEND_DATA even if it does not also contain
+ * RICHACE_WRITE_DATA.
  *
  * Permissions which are not in RICHACE_POSIX_MODE_READ, RICHACE_POSIX_MODE_WRITE, or
  * RICHACE_POSIX_MODE_EXEC cannot be represented in the file permission bits.
@@ -636,16 +636,16 @@ richacl_inherit(const struct richacl *dir_acl, int isdir)
 			if (!richace_is_inheritable(dir_ace))
 				continue;
 			memcpy(ace, dir_ace, sizeof(struct richace));
-			if (dir_ace->e_flags & ACE4_NO_PROPAGATE_INHERIT_ACE)
+			if (dir_ace->e_flags & RICHACE_NO_PROPAGATE_INHERIT_ACE)
 				richace_clear_inheritance_flags(ace);
-			if ((dir_ace->e_flags & ACE4_FILE_INHERIT_ACE) &&
-			    !(dir_ace->e_flags & ACE4_DIRECTORY_INHERIT_ACE))
-				ace->e_flags |= ACE4_INHERIT_ONLY_ACE;
+			if ((dir_ace->e_flags & RICHACE_FILE_INHERIT_ACE) &&
+			    !(dir_ace->e_flags & RICHACE_DIRECTORY_INHERIT_ACE))
+				ace->e_flags |= RICHACE_INHERIT_ONLY_ACE;
 			ace++;
 		}
 	} else {
 		richacl_for_each_entry(dir_ace, dir_acl) {
-			if (!(dir_ace->e_flags & ACE4_FILE_INHERIT_ACE))
+			if (!(dir_ace->e_flags & RICHACE_FILE_INHERIT_ACE))
 				continue;
 			count++;
 		}
@@ -656,23 +656,23 @@ richacl_inherit(const struct richacl *dir_acl, int isdir)
 			return NULL;
 		ace = acl->a_entries;
 		richacl_for_each_entry(dir_ace, dir_acl) {
-			if (!(dir_ace->e_flags & ACE4_FILE_INHERIT_ACE))
+			if (!(dir_ace->e_flags & RICHACE_FILE_INHERIT_ACE))
 				continue;
 			memcpy(ace, dir_ace, sizeof(struct richace));
 			richace_clear_inheritance_flags(ace);
 			/*
-			 * ACE4_DELETE_CHILD is meaningless for
+			 * RICHACE_DELETE_CHILD is meaningless for
 			 * non-directories, so clear it.
 			 */
-			ace->e_mask &= ~ACE4_DELETE_CHILD;
+			ace->e_mask &= ~RICHACE_DELETE_CHILD;
 			ace++;
 		}
 	}
 
 	if (richacl_is_auto_inherit(dir_acl)) {
-		acl->a_flags = ACL4_AUTO_INHERIT;
+		acl->a_flags = RICHACL_AUTO_INHERIT;
 		richacl_for_each_entry(ace, acl)
-			ace->e_flags |= ACE4_INHERITED_ACE;
+			ace->e_flags |= RICHACE_INHERITED_ACE;
 	}
 
 	return acl;
@@ -694,19 +694,19 @@ richacl_equiv_mode(const struct richacl *acl, mode_t *mode_p)
 	mode_t mode;
 
 	if (acl->a_count != 1 ||
-	    acl->a_flags != ACL4_MASKED ||
+	    acl->a_flags != RICHACL_MASKED ||
 	    !richace_is_everyone(ace) ||
 	    !richace_is_allow(ace) ||
-	    ace->e_flags & ~ACE4_SPECIAL_WHO)
+	    ace->e_flags & ~RICHACE_SPECIAL_WHO)
 		return -1;
 
 	/*
-	 * Figure out the permissions we care about: ACE4_DELETE_CHILD is
+	 * Figure out the permissions we care about: RICHACE_DELETE_CHILD is
 	 * meaningless for non-directories, so we ignore it.
 	 */
-	x = ~ACE4_POSIX_ALWAYS_ALLOWED;
+	x = ~RICHACE_POSIX_ALWAYS_ALLOWED;
 	if (!S_ISDIR(*mode_p))
-		x &= ~ACE4_DELETE_CHILD;
+		x &= ~RICHACE_DELETE_CHILD;
 
 	mode = richacl_masks_to_mode(acl);
 	if ((acl->a_group_mask & x) != (richacl_mode_to_mask(mode >> 3) & x) ||

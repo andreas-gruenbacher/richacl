@@ -139,19 +139,19 @@ richace_change_mask(struct richacl_alloc *x, struct richace **ace,
 {
 	if (mask && (*ace)->e_mask == mask)
 		return 0;
-	if (mask & ~ACE4_POSIX_ALWAYS_ALLOWED) {
+	if (mask & ~RICHACE_POSIX_ALWAYS_ALLOWED) {
 		if (richace_is_inheritable(*ace)) {
 			if (richacl_insert_entry(x, ace))
 				return -1;
 			memcpy(*ace, *ace + 1, sizeof(struct richace));
-			(*ace)->e_flags |= ACE4_INHERIT_ONLY_ACE;
+			(*ace)->e_flags |= RICHACE_INHERIT_ONLY_ACE;
 			(*ace)++;
 			richace_clear_inheritance_flags(*ace);
 		}
 		(*ace)->e_mask = mask;
 	} else {
 		if (richace_is_inheritable(*ace))
-			(*ace)->e_flags |= ACE4_INHERIT_ONLY_ACE;
+			(*ace)->e_flags |= RICHACE_INHERIT_ONLY_ACE;
 		else
 			richacl_delete_entry(x, ace);
 	}
@@ -200,7 +200,7 @@ richacl_move_everyone_aces_down(struct richacl_alloc *x)
 			}
 		}
 	}
-	if (allowed & ~ACE4_POSIX_ALWAYS_ALLOWED) {
+	if (allowed & ~RICHACE_POSIX_ALWAYS_ALLOWED) {
 		struct richace *last_ace = ace - 1;
 
 		if (x->acl->a_entries &&
@@ -208,12 +208,12 @@ richacl_move_everyone_aces_down(struct richacl_alloc *x)
 		    richace_is_allow(last_ace) &&
 		    richace_is_inherit_only(last_ace) &&
 		    last_ace->e_mask == allowed)
-			last_ace->e_flags &= ~ACE4_INHERIT_ONLY_ACE;
+			last_ace->e_flags &= ~RICHACE_INHERIT_ONLY_ACE;
 		else {
 			if (richacl_insert_entry(x, &ace))
 				return -1;
-			ace->e_type = ACE4_ACCESS_ALLOWED_ACE_TYPE;
-			ace->e_flags = ACE4_SPECIAL_WHO;
+			ace->e_type = RICHACE_ACCESS_ALLOWED_ACE_TYPE;
+			ace->e_flags = RICHACE_SPECIAL_WHO;
 			ace->e_mask = allowed;
 			ace->e_id = RICHACE_EVERYONE_SPECIAL_ID;
 		}
@@ -286,7 +286,7 @@ __richacl_propagate_everyone(struct richacl_alloc *x, struct richace *who,
 			if (richacl_insert_entry(x, &ace))
 				return -1;
 			memcpy(ace, &who_copy, sizeof(struct richace));
-			ace->e_type = ACE4_ACCESS_ALLOWED_ACE_TYPE;
+			ace->e_type = RICHACE_ACCESS_ALLOWED_ACE_TYPE;
 			richace_clear_inheritance_flags(ace);
 			ace->e_mask = allow;
 		}
@@ -352,7 +352,7 @@ __richacl_propagate_everyone(struct richacl_alloc *x, struct richace *who,
 static int
 richacl_propagate_everyone(struct richacl_alloc *x)
 {
-	struct richace who = { .e_flags = ACE4_SPECIAL_WHO };
+	struct richace who = { .e_flags = RICHACE_SPECIAL_WHO };
 	struct richacl *acl = x->acl;
 	struct richace *ace;
 	unsigned int owner_allow, group_allow;
@@ -505,8 +505,8 @@ richacl_isolate_owner_class(struct richacl_alloc *x)
 			ace = x->acl->a_entries;
 			if (richacl_insert_entry(x, &ace))
 				return -1;
-			ace->e_type = ACE4_ACCESS_DENIED_ACE_TYPE;
-			ace->e_flags = ACE4_SPECIAL_WHO;
+			ace->e_type = RICHACE_ACCESS_DENIED_ACE_TYPE;
+			ace->e_flags = RICHACE_SPECIAL_WHO;
 			ace->e_mask = allowed & ~x->acl->a_owner_mask;
 			ace->e_id  = RICHACE_OWNER_SPECIAL_ID;
 		}
@@ -573,7 +573,7 @@ __richacl_isolate_who(struct richacl_alloc *x, struct richace *who,
 		if (richacl_insert_entry(x, &ace))
 			return -1;
 		memcpy(ace, &who_copy, sizeof(struct richace));
-		ace->e_type = ACE4_ACCESS_DENIED_ACE_TYPE;
+		ace->e_type = RICHACE_ACCESS_DENIED_ACE_TYPE;
 		richace_clear_inheritance_flags(ace);
 		ace->e_mask = deny;
 	}
@@ -592,7 +592,7 @@ static int
 richacl_isolate_group_class(struct richacl_alloc *x)
 {
 	struct richace who = {
-		.e_flags = ACE4_SPECIAL_WHO,
+		.e_flags = RICHACE_SPECIAL_WHO,
 		.e_id = RICHACE_GROUP_SPECIAL_ID,
 	};
 	struct richace *ace;
@@ -635,14 +635,14 @@ richacl_isolate_group_class(struct richacl_alloc *x)
  * mask matching the process.
  *
  * Note: this algorithm may push the number of entries in the acl above
- * ACL4_XATTR_MAX_COUNT, so a read-modify-write cycle would fail.
+ * RICHACL_XATTR_MAX_COUNT, so a read-modify-write cycle would fail.
  */
 int
 richacl_apply_masks(struct richacl **acl)
 {
 	int retval = 0;
 
-	if ((*acl)->a_flags & ACL4_MASKED) {
+	if ((*acl)->a_flags & RICHACL_MASKED) {
 		struct richacl_alloc x = {
 			.acl = *acl,
 			.count = (*acl)->a_count,
@@ -654,7 +654,7 @@ richacl_apply_masks(struct richacl **acl)
 		    richacl_isolate_group_class(&x))
 				retval = -1;
 
-		x.acl->a_flags &= ~ACL4_MASKED;
+		x.acl->a_flags &= ~RICHACL_MASKED;
 		*acl = x.acl;
 	}
 	return retval;
@@ -671,7 +671,7 @@ richacl_auto_inherit(const struct richacl *acl, const struct richacl *inherited_
 	struct richace *ace;
 
 	richacl_for_each_entry(ace, x.acl) {
-		if (ace->e_flags & ACE4_INHERITED_ACE)
+		if (ace->e_flags & RICHACE_INHERITED_ACE)
 			richacl_delete_entry(&x, &ace);
 	}
 	richacl_for_each_entry(inherited_ace, inherited_acl) {
@@ -679,7 +679,7 @@ richacl_auto_inherit(const struct richacl *acl, const struct richacl *inherited_
 		if (!ace)
 			return NULL;
 		richace_copy(ace, inherited_ace);
-		ace->e_flags |= ACE4_INHERITED_ACE;
+		ace->e_flags |= RICHACE_INHERITED_ACE;
 	}
 	richacl_compute_max_masks(x.acl);
 	return x.acl;

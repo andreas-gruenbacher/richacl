@@ -34,22 +34,22 @@ static struct {
 	unsigned char	a_flag;
 	const char	*a_name;
 } acl_flag_bits[] = {
-	{ 'm', ACL4_MASKED, "masked" },
-	{ 'a', ACL4_AUTO_INHERIT, "auto_inherit" },
-	{ 'p', ACL4_PROTECTED, "protected" },
-	{ 'd', ACL4_DEFAULTED, "defaulted" },
+	{ 'm', RICHACL_MASKED, "masked" },
+	{ 'a', RICHACL_AUTO_INHERIT, "auto_inherit" },
+	{ 'p', RICHACL_PROTECTED, "protected" },
+	{ 'd', RICHACL_DEFAULTED, "defaulted" },
 };
 
 static struct {
 	uint16_t	e_type;
 	const char	*e_name;
 } type_values[] = {
-	{ ACE4_ACCESS_ALLOWED_ACE_TYPE, "allow" },
-	{ ACE4_ACCESS_DENIED_ACE_TYPE,  "deny" },
+	{ RICHACE_ACCESS_ALLOWED_ACE_TYPE, "allow" },
+	{ RICHACE_ACCESS_DENIED_ACE_TYPE,  "deny" },
 };
 
 #define FLAGS_BIT(c, name, str) \
-	{ ACE4_ ## name, c, #name }
+	{ RICHACE_ ## name, c, #name }
 
 static struct {
 	uint16_t	e_flag;
@@ -67,12 +67,12 @@ static struct {
 #undef FLAGS_BIT
 
 #define MASK_BIT(c, name, str) \
-	{ ACE4_ ## name, c, str, RICHACL_TEXT_FILE_CONTEXT | \
+	{ RICHACE_ ## name, c, str, RICHACL_TEXT_FILE_CONTEXT | \
 				 RICHACL_TEXT_DIRECTORY_CONTEXT }
 #define FILE_MASK_BIT(c, name, str) \
-	{ ACE4_ ## name, c, str, RICHACL_TEXT_FILE_CONTEXT }
+	{ RICHACE_ ## name, c, str, RICHACL_TEXT_FILE_CONTEXT }
 #define DIRECTORY_MASK_BIT(c, name, str) \
-	{ ACE4_ ## name, c, str, RICHACL_TEXT_DIRECTORY_CONTEXT }
+	{ RICHACE_ ## name, c, str, RICHACL_TEXT_DIRECTORY_CONTEXT }
 
 struct mask_flag_struct {
 	uint32_t	e_mask;
@@ -216,7 +216,7 @@ static void write_ace_flags(struct string_buffer *buffer, uint16_t flags, int fm
 {
 	int cont = 0, i;
 
-	flags &= ~ACE4_SPECIAL_WHO;
+	flags &= ~RICHACE_SPECIAL_WHO;
 
 	for (i = 0; i < ARRAY_SIZE(ace_flag_bits); i++) {
 		if (!(flags & ace_flag_bits[i].e_flag))
@@ -276,7 +276,7 @@ static void write_mask(struct string_buffer *buffer, uint32_t mask, int fmt)
 
 		if (fmt & RICHACL_TEXT_SIMPLIFY) {
 			/* Hide permissions which are always allowed. */
-			if (mask_flags[i].e_mask & ACE4_POSIX_ALWAYS_ALLOWED)
+			if (mask_flags[i].e_mask & RICHACE_POSIX_ALWAYS_ALLOWED)
 				continue;
 		}
 
@@ -310,7 +310,7 @@ static void write_identifier(struct string_buffer *buffer,
 {
 	/* FIXME: switch to getpwuid_r() and getgrgid_r() here. */
 
-	if (ace->e_flags & ACE4_SPECIAL_WHO) {
+	if (ace->e_flags & RICHACE_SPECIAL_WHO) {
 		const char *id = NULL;
 		char *dup, *c;
 		switch (ace->e_id) {
@@ -331,7 +331,7 @@ static void write_identifier(struct string_buffer *buffer,
 			*c = tolower(*c);
 
 		buffer_sprintf(buffer, "%*s", align, dup);
-	} else if (ace->e_flags & ACE4_IDENTIFIER_GROUP) {
+	} else if (ace->e_flags & RICHACE_IDENTIFIER_GROUP) {
 		struct group *group = NULL;
 
 		if (!(fmt & RICHACL_TEXT_NUMERIC_IDS))
@@ -370,7 +370,7 @@ char *richacl_to_text(const struct richacl *acl, int fmt)
 				a = 6;
 			else if (richace_is_everyone(ace))
 				a = 9;
-			else if (ace->e_flags & ACE4_IDENTIFIER_GROUP) {
+			else if (ace->e_flags & RICHACE_IDENTIFIER_GROUP) {
 				struct group *group = NULL;
 
 				if (!(fmt & RICHACL_TEXT_NUMERIC_IDS))
@@ -410,9 +410,9 @@ char *richacl_to_text(const struct richacl *acl, int fmt)
 			if (richace_is_allow(ace))
 				allowed |= ace->e_mask;
 
-			if (ace->e_flags & ACE4_FILE_INHERIT_ACE)
+			if (ace->e_flags & RICHACE_FILE_INHERIT_ACE)
 				fmt2 |= RICHACL_TEXT_FILE_CONTEXT;
-			if (ace->e_flags & ACE4_DIRECTORY_INHERIT_ACE)
+			if (ace->e_flags & RICHACE_DIRECTORY_INHERIT_ACE)
 				fmt2 |= RICHACL_TEXT_DIRECTORY_CONTEXT;
 		}
 
@@ -435,12 +435,12 @@ char *richacl_to_text(const struct richacl *acl, int fmt)
 		buffer_sprintf(buffer, ":");
 
 		fmt2 = fmt;
-		if (ace->e_flags & ACE4_INHERIT_ONLY_ACE)
+		if (ace->e_flags & RICHACE_INHERIT_ONLY_ACE)
 			fmt2 &= ~(RICHACL_TEXT_FILE_CONTEXT |
 				  RICHACL_TEXT_DIRECTORY_CONTEXT);
-		if (ace->e_flags & ACE4_FILE_INHERIT_ACE)
+		if (ace->e_flags & RICHACE_FILE_INHERIT_ACE)
 			fmt2 |= RICHACL_TEXT_FILE_CONTEXT;
-		if (ace->e_flags & ACE4_DIRECTORY_INHERIT_ACE)
+		if (ace->e_flags & RICHACE_DIRECTORY_INHERIT_ACE)
 			fmt2 |= RICHACL_TEXT_DIRECTORY_CONTEXT;
 
 		write_mask(buffer, ace->e_mask, fmt2);
@@ -550,7 +550,7 @@ static int identifier_from_text(const char *str, struct richace *ace,
 		ace->e_id = l;
 		return 0;
 	}
-	if (ace->e_flags & ACE4_IDENTIFIER_GROUP) {
+	if (ace->e_flags & RICHACE_IDENTIFIER_GROUP) {
 		struct group *group = getgrnam(str);
 
 		if (!group) {

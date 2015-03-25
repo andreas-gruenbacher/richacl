@@ -26,11 +26,11 @@
 static inline void
 richace_clear_inheritance_flags(struct richace *ace)
 {
-	ace->e_flags &= ~(ACE4_FILE_INHERIT_ACE |
-			  ACE4_DIRECTORY_INHERIT_ACE |
-			  ACE4_NO_PROPAGATE_INHERIT_ACE |
-			  ACE4_INHERIT_ONLY_ACE |
-			  ACE4_INHERITED_ACE);
+	ace->e_flags &= ~(RICHACE_FILE_INHERIT_ACE |
+			  RICHACE_DIRECTORY_INHERIT_ACE |
+			  RICHACE_NO_PROPAGATE_INHERIT_ACE |
+			  RICHACE_INHERIT_ONLY_ACE |
+			  RICHACE_INHERITED_ACE);
 }
 
 extern const char *richace_owner_who;
