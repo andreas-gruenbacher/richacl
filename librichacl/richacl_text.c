@@ -163,6 +163,8 @@ struct mask_flag_struct mask_flags[] = {
  *	ACE4_WRITE_OWNER |
  * 	ACE4_SYNCHRONIZE
  *
+ * Reference: http://support.microsoft.com/en-us/kb/308419
+ *
  * The ACE4_WRITE_RETENTION and ACE4_WRITE_RETENTION_HOLD permissions are not
  * defined in Windows, and are not included in these sets.
  *
