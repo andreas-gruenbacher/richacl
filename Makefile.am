@@ -3,7 +3,11 @@ ACLOCAL_AMFLAGS = -I m4
 EXTRA_DIST = \
 	build-aux/git-version-gen \
 	$(top_srcdir)/.version \
-	exports
+	exports \
+	README \
+	doc/COPYING \
+	doc/INSTALL \
+	doc/PORTING
 
 BUILT_SOURCES = $(top_srcdir)/.version
 $(top_srcdir)/.version:
