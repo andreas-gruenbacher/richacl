@@ -8,19 +8,19 @@ $ touch a
 
 richacl set with no write_acl  fails
 	$ su daemon
-	$ richacl --set 'daemon:rwo::allow' a
+	$ setrichacl --set 'daemon:rwo::allow' a
 	> a: Operation not permitted
 
 Allow write acl to daemon
 	$ su
-	$ richacl --set 'daemon:rwC::allow' a
+	$ setrichacl --set 'daemon:rwC::allow' a
 
 	$ su daemon
-	$ richacl --set 'daemon:rwCo::allow' a	
+	$ setrichacl --set 'daemon:rwCo::allow' a
 
 chmod cause the extra acl bits to be dropped
 	$ chmod 660 a
-	$ richacl --set 'daemon:rwo::allow' a
+	$ setrichacl --set 'daemon:rwo::allow' a
 	> a: Operation not permitted
 
 $ su

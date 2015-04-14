@@ -7,7 +7,7 @@ $ umask 022
 $ touch a
 
 get the acl mapped from mode
-$ richacl  --get --raw a > acl.txt
+$ getrichacl --raw a > acl.txt
 
 $ cat acl.txt
 > a:
@@ -19,7 +19,7 @@ $ cat acl.txt
 >
 
 $ chmod 0 a
-$ richacl --set-file acl.txt a
+$ setrichacl --set-file acl.txt a
 
 Make sure that no richacl was set by checking for the system.richacl xattr
 $ getfattr -n system.richacl a 2> /dev/null || echo no richacl

@@ -5,15 +5,15 @@ $ whoami
 > root
 
 $ mkdir d1
-$ richacl  --modify 101:rw:fd:deny d1
-$ richacl  --modify 102:rw:f:deny d1
-$ richacl  --modify 103:rw:d:deny d1
-$ richacl  --modify 101:rw:fdig:deny d1
+$ setrichacl  --modify 101:rw:fd:deny d1
+$ setrichacl  --modify 102:rw:f:deny d1
+$ setrichacl  --modify 103:rw:d:deny d1
+$ setrichacl  --modify 101:rw:fdig:deny d1
 
 set autoinheritance
-$ richacl --modify flags:a d1
+$ setrichacl --modify flags:a d1
 
-$ richacl --get --numeric --raw d1
+$ getrichacl --numeric --raw d1
 > d1:
 >      flags:a
 >      owner:rwpxd-aA--cCoS--::mask
@@ -32,7 +32,7 @@ $ mkdir d1/d2
 $ touch d1/d3
 
 mode bits derived out of inherited ACEs
-$ richacl  --get --numeric --raw d1/d2
+$ getrichacl --numeric --raw d1/d2
 > d1/d2:
 >  flags:map
 >  owner:----------------::mask
@@ -44,7 +44,7 @@ $ richacl  --get --numeric --raw d1/d2
 >    101:rw--------------:fdiga:deny
 >
 
-$ richacl  --get --numeric --raw d1/d3
+$ getrichacl --numeric --raw d1/d3
 > d1/d3:
 >  flags:map
 >  owner:----------------::mask
@@ -63,7 +63,7 @@ $ mkdir d1/d6
 $ touch d1/d7
 
 
-$ richacl  --get --numeric --raw d1/d2/d4
+$ getrichacl --numeric --raw d1/d2/d4
 > d1/d2/d4:
 >  flags:map
 >  owner:----------------::mask
@@ -75,7 +75,7 @@ $ richacl  --get --numeric --raw d1/d2/d4
 >    101:rw--------------:fdiga:deny
 >
 
-$ richacl  --get --numeric --raw d1/d2/d4/d5
+$ getrichacl --numeric --raw d1/d2/d4/d5
 > d1/d2/d4/d5:
 >  flags:map
 >  owner:----------------::mask
@@ -87,12 +87,12 @@ $ richacl  --get --numeric --raw d1/d2/d4/d5
 >
 
 clear protected flag from all the ACLs
-$ richacl  --modify flags:a d1/d2
-$ richacl  --modify flags:a d1/d3
-$ richacl  --modify flags:a d1/d2/d4
-$ richacl  --modify flags:a d1/d2/d4/d5
+$ setrichacl  --modify flags:a d1/d2
+$ setrichacl  --modify flags:a d1/d3
+$ setrichacl  --modify flags:a d1/d2/d4
+$ setrichacl  --modify flags:a d1/d2/d4/d5
 
-$ richacl --get --numeric d1 | sed -e 's/:fd:deny/:fd:allow/' > acl.txt
+$ getrichacl --numeric d1 | sed -e 's/:fd:deny/:fd:allow/' > acl.txt
 $ cat acl.txt
 > d1:
 >      flags:a
@@ -104,9 +104,9 @@ $ cat acl.txt
 >  everyone@:r--x---------::allow
 >
 
-$ richacl --set-file acl.txt d1
+$ setrichacl --set-file acl.txt d1
 
-$ richacl  --get --numeric   --raw d1
+$ getrichacl --numeric   --raw d1
 > d1:
 >      flags:a
 >      owner:rwpxd--A---Co---::mask
@@ -121,7 +121,7 @@ $ richacl  --get --numeric   --raw d1
 >
 
 
-$ richacl  --get --numeric --raw  --raw d1/d2
+$ getrichacl --numeric --raw  --raw d1/d2
 > d1/d2:
 >  flags:a
 >  owner:rw--------------::mask
@@ -133,7 +133,7 @@ $ richacl  --get --numeric --raw  --raw d1/d2
 >    101:rw--------------:fdiga:deny
 >
 
-$ richacl  --get --numeric  --raw d1/d3
+$ getrichacl --numeric  --raw d1/d3
 > d1/d3:
 >  flags:a
 >  owner:rw--------------::mask
@@ -144,7 +144,7 @@ $ richacl  --get --numeric  --raw d1/d3
 >    101:rw--------------:ga:deny
 >
 
-$ richacl  --get --numeric  --raw d1/d2/d4
+$ getrichacl --numeric  --raw d1/d2/d4
 > d1/d2/d4:
 >  flags:a
 >  owner:rw--------------::mask
@@ -156,7 +156,7 @@ $ richacl  --get --numeric  --raw d1/d2/d4
 >    101:rw--------------:fdiga:deny
 >
 
-$ richacl  --get --numeric  --raw d1/d2/d4/d5
+$ getrichacl --numeric  --raw d1/d2/d4/d5
 > d1/d2/d4/d5:
 >  flags:a
 >  owner:rw--------------::mask
@@ -168,7 +168,7 @@ $ richacl  --get --numeric  --raw d1/d2/d4/d5
 >
 
 For protected files no inheritance
-$ richacl  --get --numeric --raw d1/d6
+$ getrichacl --numeric --raw d1/d6
 > d1/d6:
 >  flags:map
 >  owner:----------------::mask
@@ -180,7 +180,7 @@ $ richacl  --get --numeric --raw d1/d6
 >    101:rw--------------:fdiga:deny
 >
 
-$ richacl  --get --numeric --raw d1/d7
+$ getrichacl --numeric --raw d1/d7
 > d1/d7:
 >  flags:map
 >  owner:----------------::mask

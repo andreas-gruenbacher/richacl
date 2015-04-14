@@ -4,58 +4,58 @@ $ cd d
 
 $ mkdir e
 
-$ richacl --set 'owner@:rwx:f:allow' e
+$ setrichacl --set 'owner@:rwx:f:allow' e
 $ touch e/f
 $ ls -l e/f | cut -d ' ' -f 1
-> -rw-------
+> -rw-------+
 $ rm e/f
 
-$ richacl --set 'group@:rwx:f:allow' e
+$ setrichacl --set 'group@:rwx:f:allow' e
 $ touch e/f
 $ ls -l e/f | cut -d ' ' -f 1
-> -rw-rw----
+> -rw-rw----+
 $ rm e/f
 
-$ richacl --set 'everyone@:rwx:f:allow' e
+$ setrichacl --set 'everyone@:rwx:f:allow' e
 $ touch e/f
 $ ls -l e/f | cut -d ' ' -f 1
-> -rw-rw-rw-
+> -rw-rw-rw-+
 $ rm e/f
 
-$ richacl --set 'owner@:rwx:f:allow root:rx:f:deny root:rx:f:allow' e
+$ setrichacl --set 'owner@:rwx:f:allow root:rx:f:deny root:rx:f:allow' e
 $ touch e/f
 $ ls -l e/f | cut -d ' ' -f 1
-> -rw-------
+> -rw-------+
 $ rm e/f
 
-$ richacl --set 'owner@:rwx::allow everyone@:w:fi:deny everyone@:rwx:fi:allow' e
+$ setrichacl --set 'owner@:rwx::allow everyone@:w:fi:deny everyone@:rwx:fi:allow' e
 $ touch e/f
 $ ls -l e/f | cut -d ' ' -f 1
-> -r--r--r--
+> -r--r--r--+
 $ rm e/f
 
-$ richacl --set 'owner@:rwx::allow root:rx:fi:deny root:rx:fi:allow' e
+$ setrichacl --set 'owner@:rwx::allow root:rx:fi:deny root:rx:fi:allow' e
 $ touch e/f
 $ ls -l e/f | cut -d ' ' -f 1
-> ----------
+> ----------+
 $ rm e/f
 
-$ richacl --set 'owner@:rx:fi:allow group@:rwx:fi:deny everyone@:rwx:f:allow' e
+$ setrichacl --set 'owner@:rx:fi:allow group@:rwx:fi:deny everyone@:rwx:f:allow' e
 $ touch e/f
 $ ls -l e/f | cut -d ' ' -f 1
-> -rw----rw-
+> -rw----rw-+
 $ rm e/f
 
-$ richacl --set 'owner@:rx:fi:allow root:rwx:fi:deny everyone@:rwx:f:allow' e
+$ setrichacl --set 'owner@:rx:fi:allow root:rwx:fi:deny everyone@:rwx:f:allow' e
 $ touch e/f
 $ ls -l e/f | cut -d ' ' -f 1
-> -rw-rw-rw-
+> -rw-rw-rw-+
 $ rm e/f
 
-$ richacl --set 'everyone@:w:fi:deny root:rx:fi:allow everyone@:rwx:f:allow' e
+$ setrichacl --set 'everyone@:w:fi:deny root:rx:fi:allow everyone@:rwx:f:allow' e
 $ touch e/f
 $ ls -l e/f | cut -d ' ' -f 1
-> -r--r--r--
+> -r--r--r--+
 $ rm e/f
 
 $ cd ..

@@ -16,10 +16,10 @@ $ touch d2/f d3/f d4/f d5/f d6/f d7/f d7/g
 $ chown daemon d2
 $ chgrp bin d3
 $ chmod g+w d3
-$ richacl --set 'daemon:wx::allow' d4
-$ richacl --set 'daemon:d::allow' d5
-$ richacl --set 'daemon:xd::allow' d6
-$ richacl --set 'daemon:D::allow' d7/f d7/g
+$ setrichacl --set 'daemon:wx::allow' d4
+$ setrichacl --set 'daemon:d::allow' d5
+$ setrichacl --set 'daemon:xd::allow' d6
+$ setrichacl --set 'daemon:D::allow' d7/f d7/g
 $ chmod 664 d7/g
 
 $ mkdir s2 s3 s4 s5 s6 s7
@@ -28,11 +28,11 @@ $ touch s2/f s3/f s4/f s5/f s6/f s7/f s7/g
 $ chown daemon s2
 $ chgrp bin s3
 $ chmod g+w s3
-$ richacl --set 'daemon:wx::allow' s4
-$ richacl --set 'daemon:d::allow' s5
-$ richacl --set 'daemon:xd::allow' s6
-$ richacl --set 'daemon:D::allow' s7/f
-$ richacl --set 'daemon:D::allow' s7/g s7/g
+$ setrichacl --set 'daemon:wx::allow' s4
+$ setrichacl --set 'daemon:d::allow' s5
+$ setrichacl --set 'daemon:xd::allow' s6
+$ setrichacl --set 'daemon:D::allow' s7/f
+$ setrichacl --set 'daemon:D::allow' s7/g s7/g
 $ chmod 664 s7/g
 
 $ su daemon
