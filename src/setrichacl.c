@@ -360,7 +360,7 @@ static int set_richacl(const char *path, struct richacl *acl)
 			return -1;
 		if (!richacl_equiv_mode(acl, &st.st_mode))
 			return chmod(path, st.st_mode);
-		if (saved_errno != ENOSYS && supports_posix_acls(path))
+		if (saved_errno != ENOSYS && has_posix_acl(path, st.st_mode))
 			errno = 0;
 		return -1;
 	}

@@ -24,7 +24,7 @@
 	"ACL flag values are:\n" \
 	"\tmasked (m), auto_inherit (a), protected (p), defaulted (d)\n"
 
-bool supports_posix_acls(const char *);
+bool has_posix_acl(const char *, mode_t mode);
 struct richacl *get_richacl(const char *, mode_t);
 
 #endif  /* SRC_COMMON_H */
