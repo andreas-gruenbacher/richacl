@@ -209,6 +209,11 @@ static inline bool richacl_is_auto_inherit(const struct richacl *acl)
 	return acl->a_flags & RICHACL_AUTO_INHERIT;
 }
 
+static inline int richace_is_inherited(const struct richace *ace)
+{
+	return ace->e_flags & RICHACE_INHERITED_ACE;
+}
+
 extern int richace_set_who(struct richace *, const char *);
 extern void richace_set_uid(struct richace *, uid_t);
 extern void richace_set_gid(struct richace *, gid_t);

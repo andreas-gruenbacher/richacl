@@ -23,4 +23,5 @@ stamp-h1
 /libtool
 /m4/
 /richacl-*
-/richacl/richacl
+/src/getrichacl
+/src/setrichacl

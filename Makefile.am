@@ -30,4 +30,4 @@ noinst_HEADERS =
 
 include include/Makemodule.am
 include librichacl/Makemodule.am
-include richacl/Makemodule.am
+include src/Makemodule.am
