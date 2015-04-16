@@ -9,3 +9,8 @@
 
 * Look into Windows OWNER RIGHTS
   http://windowsitpro.com/article/security/acl-enhancements-in-windows-vista-and-windows-server-2008-102871
+
+* richacl_equiv_mode: Recognize other richacls with masks applied that are
+  equivalent to the file mode.  This will be useful over nfs.
+
+* Review write-through semantics ...

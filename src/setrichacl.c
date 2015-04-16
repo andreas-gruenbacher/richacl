@@ -455,7 +455,7 @@ int main(int argc, char *argv[])
 
 	progname = argv[0];
 
-	while ((c = getopt_long(argc, argv, "m:M:s:S:rvh",
+	while ((c = getopt_long(argc, argv, "m:M:s:S:bvh",
 				long_options, NULL)) != -1) {
 		switch(c) {
 			case 'm':  /* --modify */
