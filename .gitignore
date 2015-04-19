@@ -25,3 +25,4 @@ stamp-h1
 /richacl-*
 /src/getrichacl
 /src/setrichacl
+tests/richacl-equiv-mode

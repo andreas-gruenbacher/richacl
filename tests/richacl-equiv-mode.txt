@@ -1,0 +1,17 @@
+777	everyone@:rwpxacS::allow
+700	owner@:rwpxaAcCoS::allow
+770	owner@:rwpx::allow,group@:rwpx::allow
+070	owner@:rwpx::deny,group@:rwpx::allow
+007	owner@:rwpx::deny,group@:rwpx::deny,everyone@:rwpx::allow
+
+222	everyone@:wp::allow
+no	everyone@:w::allow
+no	everyone@:p::allow
+
+770	group@:rwpx::allow,owner@:rwpx::allow
+no	group@:rwpx::allow
+no	group@:wpx::deny,owner@:rwpx::allow
+
+777	-d everyone@:rwpxd::allow
+no	-d everyone@:rwpx::allow
+no	-d everyone@:rxd::allow

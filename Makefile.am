@@ -27,7 +27,9 @@ sysinclude_HEADERS =
 bin_PROGRAMS =
 lib_LTLIBRARIES =
 noinst_HEADERS =
+check_PROGRAMS =
 
 include include/Makemodule.am
 include librichacl/Makemodule.am
 include src/Makemodule.am
+include tests/Makemodule.am
