@@ -8,7 +8,7 @@ $ su bin
 $ touch x
 $ setrichacl --set 'everyone@:rwp::allow' x
 $ ls -l x | cut -d ' ' -f 1
-> -rw-rw-rw-+
+> -rw-rw-rw-
 
 $ getrichacl x
 > x:
@@ -17,7 +17,7 @@ $ getrichacl x
 
 $ chmod 664 x
 $ ls -l x | cut -d ' ' -f 1
-> -rw-rw-r--+
+> -rw-rw-r--
 
 $ getrichacl x
 > x:

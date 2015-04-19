@@ -31,7 +31,7 @@ $ rm e/f
 $ setrichacl --set 'owner@:rwx::allow everyone@:w:fi:deny everyone@:rwx:fi:allow' e
 $ touch e/f
 $ ls -l e/f | cut -d ' ' -f 1
-> -r--r--r--+
+> -r--r--r--
 $ rm e/f
 
 $ setrichacl --set 'owner@:rwx::allow root:rx:fi:deny root:rx:fi:allow' e
