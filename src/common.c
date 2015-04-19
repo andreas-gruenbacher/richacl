@@ -11,18 +11,22 @@
 bool
 has_posix_acl(const char *path, mode_t mode)
 {
-	ssize_t ret;
+	int saved_errno = errno;
+	ssize_t err;
+	bool ret = false;
 
-	ret = getxattr(path, "system.posix_acl_access", NULL, 0);
-	if (ret < 0) {
+	err = getxattr(path, "system.posix_acl_access", NULL, 0);
+	if (err < 0) {
 		if (errno != ENODATA || !S_ISDIR(mode))
-			return false;
-		ret = getxattr(path, "system.posix_acl_default", NULL, 0);
-		if (ret < 0)
-			return false;
+			goto out;
+		err = getxattr(path, "system.posix_acl_default", NULL, 0);
+		if (err < 0)
+			goto out;
 	}
 	fprintf(stderr, "%s: File has a posix acl\n", path);
-	return true;
+out:
+	errno = saved_errno;
+	return ret;
 }
 
 struct richacl *get_richacl(const char *file, mode_t mode)
