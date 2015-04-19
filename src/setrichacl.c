@@ -300,7 +300,7 @@ static int auto_inherit(const char *dirname, struct richacl *dir_acl)
 			if (old_acl->a_flags & RICHACL_DEFAULTED) {
 				/* RFC 5661: An application performing
 				 * automatic inheritance takes the
-				 * RICHACL_DEFAULTED flag as a sign that the ACL
+				 * RICHACL_DEFAULTED flag as a sign that the acl
 				 * should be completely replaced by one
 				 * generated using the automatic inheritance
 				 * rules. */
@@ -421,18 +421,18 @@ static void synopsis(int help)
 "\n"
 "Options:\n"
 "  --modify acl_entries, -m acl_entries\n"
-"              Modify the ACL of file(s) by replacing existing entries with\n"
+"              Modify the acl of file(s) by replacing existing entries with\n"
 "              the entries in acl_entries, and adding all new entries. When\n"
 "              the permissions of an entry are empty, remove the entry.\n"
 "  --set acl_entries, -s acl_entries\n"
-"              Set the ACL of file(s) to acl. Multiple ACL entries are separated\n"
+"              Set the acl of file(s) to acl. Multiple acl entries are separated\n"
 "              by whitespace or commas.\n"
 "  --modify-file acl_entries_file, -M acl_entries_file\n"
 "  --set-file acl_entries_file, -S acl_entries_file\n"
-"              Identical to --modify / --set, but read the ACL from a file\n"
+"              Identical to --modify / --set, but read the acl from a file\n"
 "              instead. If the file is `-', read from standard input.\n"
 "  --remove, -b\n"
-"              Remove the ACL of file(s).\n"
+"              Remove all extended permissions and revert to the file mode.\n"
 "  --version, -v\n"
 "              Display the version of %s and exit.\n"
 "  --help, -h  This help text.\n"
