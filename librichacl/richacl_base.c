@@ -299,10 +299,15 @@ struct richacl *richacl_from_mode(mode_t mode)
 	ace->e_mask = RICHACE_POSIX_ALWAYS_ALLOWED |
 		      RICHACE_POSIX_MODE_ALL |
 		      RICHACE_POSIX_OWNER_ALLOWED;
-	/* RICHACE_DELETE_CHILD is meaningless for non-directories. */
-	if (!S_ISDIR(mode))
-		ace->e_mask &= ~RICHACE_DELETE_CHILD;
 	ace->e_id = RICHACE_EVERYONE_SPECIAL_ID;
+
+	/* RICHACE_DELETE_CHILD is meaningless for non-directories. */
+	if (!S_ISDIR(mode)) {
+		acl->a_owner_mask &= ~RICHACE_DELETE_CHILD;
+		acl->a_group_mask &= ~RICHACE_DELETE_CHILD;
+		acl->a_other_mask &= ~RICHACE_DELETE_CHILD;
+		ace->e_mask &= ~RICHACE_DELETE_CHILD;
+	}
 
 	return acl;
 }

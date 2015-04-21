@@ -12,7 +12,7 @@ $ getrichacl --raw a > acl.txt
 $ cat acl.txt
 > a:
 >      flags:m
->      owner:rwp-d-aA--cCoS--::mask
+>      owner:rwp---aA--cCoS--::mask
 >      group:r-----a---c--S--::mask
 >      other:r-----a---c--S--::mask
 >  everyone@:rwpx--aA--cCoS--::allow
