@@ -12,6 +12,7 @@ $ ls -l x | cut -d ' ' -f 1
 
 $ getrichacl x
 > x:
+>     owner@:rwp---A--Co--::allow
 >  everyone@:rwp----------::allow
 >
 
@@ -21,7 +22,7 @@ $ ls -l x | cut -d ' ' -f 1
 
 $ getrichacl x
 > x:
->     owner@:rwp----------::allow
+>     owner@:rwp---A--Co--::allow
 >     group@:rwp----------::allow
 >  everyone@:r------------::allow
 >
@@ -42,7 +43,7 @@ $ ls -dl sub | cut -d ' ' -f 1
 
 $ getrichacl sub
 > sub:
->     owner@:rwpxd--------::allow
+>     owner@:rwpxd-A--Co--::allow
 >     group@:rwpxd--------::allow
 >  everyone@:rwpxd--------:fdi:allow
 >  everyone@:r--x---------::allow
