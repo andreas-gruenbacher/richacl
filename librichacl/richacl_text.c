@@ -49,7 +49,7 @@ static struct {
 };
 
 #define FLAGS_BIT(c, name, str) \
-	{ RICHACE_ ## name, c, #name }
+	{ RICHACE_ ## name, c, str }
 
 static struct {
 	uint16_t	e_flag;
