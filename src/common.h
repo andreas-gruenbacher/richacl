@@ -12,9 +12,10 @@
 	"ACL entry <mask> values are:\n" \
 	"\tread_data (r), list_directory (r), write_data (w), add_file (w),\n" \
 	"\texecute (x), append_data (p), add_subdirectory (p), delete_child (d),\n" \
-	"\tdelete (D), read_attributes (a), write_attributes (A), read_xattr (R),\n" \
-	"\twrite_xattr (W), read_acl (c), write_acl (C), write_owner(o),\n" \
-	"\tsynchronize (S), write_retention (e), write_retention_hold (E)\n" \
+	"\tdelete (D), read_attributes (a), write_attributes (A),\n" \
+	"\tread_named_attrs (R), write_named_attrs (W), read_acl (c),\n" \
+	"\twrite_acl (C), write_owner(o), synchronize (S),\n" \
+	"\twrite_retention (e), write_retention_hold (E)\n" \
 	"\n" \
 	"ACL entry <flags> values are:\n" \
 	"\tfile_inherit (f), dir_inherit (d),\n" \

@@ -94,8 +94,8 @@ struct mask_flag_struct mask_flags[] = {
 	MASK_BIT('D', DELETE, "delete"),
 	MASK_BIT('a', READ_ATTRIBUTES, "read_attributes"),
 	MASK_BIT('A', WRITE_ATTRIBUTES, "write_attributes"),
-	MASK_BIT('R', READ_NAMED_ATTRS, "read_xattr"),
-	MASK_BIT('W', WRITE_NAMED_ATTRS, "write_xattr"),
+	MASK_BIT('R', READ_NAMED_ATTRS, "read_named_attrs"),
+	MASK_BIT('W', WRITE_NAMED_ATTRS, "write_named_attrs"),
 	MASK_BIT('c', READ_ACL, "read_acl"),
 	MASK_BIT('C', WRITE_ACL, "write_acl"),
 	MASK_BIT('o', WRITE_OWNER, "write_owner"),
@@ -169,7 +169,7 @@ struct mask_flag_struct mask_flags[] = {
  * defined in Windows, and are not included in these sets.
  *
  * Solaris has similar but not identical sets:
- *   read_set, write_set, nodify_set, full_set.
+ *   read_set, write_set, modify_set, full_set.
  */
 
 static void write_acl_flags(struct string_buffer *buffer, unsigned char flags, int align, int fmt)
