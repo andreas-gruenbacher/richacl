@@ -867,7 +867,7 @@ fail:
 char *richacl_mask_to_text(unsigned int mask, int fmt)
 {
 	struct string_buffer *buffer;
-	char *str;
+	char *str = NULL;
 
 	buffer = alloc_string_buffer(16);
 	if (!buffer)
@@ -883,5 +883,3 @@ char *richacl_mask_to_text(unsigned int mask, int fmt)
 	free_string_buffer(buffer);
 	return str;
 }
-
-
