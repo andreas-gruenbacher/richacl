@@ -1,6 +1,6 @@
 bin_PROGRAMS += src/getrichacl src/setrichacl
 
-src_SOURCES = src/common.c src/user_group.c src/user_group.h
+src_SOURCES = src/common.h src/common.c src/user_group.c src/user_group.h
 src_getrichacl_SOURCES = src/getrichacl.c $(src_SOURCES)
 src_setrichacl_SOURCES = src/setrichacl.c $(src_SOURCES)
 
