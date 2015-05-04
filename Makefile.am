@@ -6,6 +6,8 @@ EXTRA_DIST = \
 	exports \
 	README \
 	doc/COPYING \
+	doc/COPYING-GPLv2 \
+	doc/COPYING-LGPLv2.1 \
 	doc/INSTALL \
 	doc/PORTING
 
