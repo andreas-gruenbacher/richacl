@@ -1,9 +1,7 @@
 /*
-  File: user_group.h
-  (Linux Access Control List Management)
-
-  Copyright (C) 1999 by Andreas Gruenbacher
-  <a.gruenbacher@computer.org>
+  Copyright (C) 1999, 2000 Novell, Inc.
+  Copyright (C) 2015  Red Hat, Inc.
+  Written by Andreas Gruenbacher <agruenba@redhat.com>
 
   This program is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -16,8 +14,8 @@
   Lesser General Public License for more details.
 
   You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+  License along with this library; if not, see
+  <http://www.gnu.org/licenses/>.
 */
 
 #include <sys/types.h>
