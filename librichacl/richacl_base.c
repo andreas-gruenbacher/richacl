@@ -701,9 +701,7 @@ richacl_inherit(const struct richacl *dir_acl, int isdir)
 }
 
 /**
- * __richacl_equiv_mode  -  compute the mode equivalent of @acl
- *
- * This function does not consider the masks in @acl.
+ * richacl_equiv_mode  -  compute the mode equivalent of @acl
  *
  * An acl is considered equivalent to a file mode if it only consists of
  * owner@, group@, and everyone@ entries and the owner@ permissions do not
@@ -714,8 +712,8 @@ richacl_inherit(const struct richacl *dir_acl, int isdir)
  * Returns with 0 if @acl is equivalent to a file mode; in that case, the
  * file permission bits in @mode_p are set to the mode equivalent of @acl.
  */
-static int
-__richacl_equiv_mode(const struct richacl *acl, mode_t *mode_p)
+int
+richacl_equiv_mode(const struct richacl *acl, mode_t *mode_p)
 {
 	mode_t mode = *mode_p;
 
@@ -738,6 +736,9 @@ __richacl_equiv_mode(const struct richacl *acl, mode_t *mode_p)
 		.defined = RICHACE_POSIX_ALWAYS_ALLOWED | x,
 	};
 	const struct richace *ace;
+
+	if (acl->a_flags & ~RICHACL_MASKED)
+		return -1;
 
 	richacl_for_each_entry(ace, acl) {
 		if (ace->e_flags & ~RICHACE_SPECIAL_WHO)
@@ -778,60 +779,23 @@ __richacl_equiv_mode(const struct richacl *acl, mode_t *mode_p)
 	if (group.allowed & ~owner.defined)
 		return -1;
 
+	if (acl->a_flags & RICHACL_MASKED) {
+		owner.allowed &= acl->a_owner_mask;
+		group.allowed &= acl->a_group_mask;
+		everyone.allowed &= acl->a_other_mask;
+	}
+
 	mode = (mode & ~S_IRWXUGO) |
 	       (richacl_mask_to_mode(owner.allowed) << 6) |
 	       (richacl_mask_to_mode(group.allowed) << 3) |
 	        richacl_mask_to_mode(everyone.allowed);
 
 	/* Mask flags we can ignore */
-	x = ~(S_ISDIR(mode) ? 0 : RICHACE_DELETE_CHILD);
-        if (((richacl_mode_to_mask(mode >> 6) ^ owner.allowed) & x) ||
-            ((richacl_mode_to_mask(mode >> 3) ^ group.allowed) & x) ||
-            ((richacl_mode_to_mask(mode)      ^ everyone.allowed) & x))
+	x = S_ISDIR(mode) ? 0 : RICHACE_DELETE_CHILD;
+        if (((richacl_mode_to_mask(mode >> 6) ^ owner.allowed)    & ~x) ||
+            ((richacl_mode_to_mask(mode >> 3) ^ group.allowed)    & ~x) ||
+            ((richacl_mode_to_mask(mode)      ^ everyone.allowed) & ~x))
 		return -1;
-
-	*mode_p = mode;
-	return 0;
-}
-
-/**
- * richacl_equiv_mode  -  determine if @acl is equivalent to a file mode
- * @mode_p:	the file mode
- *
- * The file type in @mode_p must be set when calling richacl_equiv_mode().
- *
- * Returns with 0 if @acl is equivalent to a file mode; in that case, the
- * file permission bits in @mode_p are set to the mode equivalent of @acl.
- */
-int
-richacl_equiv_mode(const struct richacl *acl, mode_t *mode_p)
-{
-	mode_t mode = *mode_p;
-
-	if (acl->a_flags & ~RICHACL_MASKED)
-		return -1;
-
-	if (__richacl_equiv_mode(acl, &mode))
-		return -1;
-
-	if (acl->a_flags & RICHACL_MASKED) {
-		mode_t mask = richacl_masks_to_mode(acl);
-		unsigned int x;
-
-		/* Mask flags we can ignore */
-		x = ~(RICHACE_POSIX_ALWAYS_ALLOWED |
-		      (S_ISDIR(mode) ? 0 : RICHACE_DELETE_CHILD));
-
-		if (((acl->a_group_mask ^ richacl_mode_to_mask(mask >> 3)) & x) ||
-		    ((acl->a_other_mask ^ richacl_mode_to_mask(mask)) & x))
-			return -1;
-
-		x &= ~RICHACE_POSIX_OWNER_ALLOWED;
-		if ((acl->a_owner_mask ^ richacl_mode_to_mask(mask >> 6)) & x)
-			return -1;
-
-		mode &= ~S_IRWXUGO | mask;
-	}
 
 	*mode_p = mode;
 	return 0;

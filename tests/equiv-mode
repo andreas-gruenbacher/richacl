@@ -25,3 +25,7 @@ equiv_mode 'group@:wpx::deny,owner@:rwpx::allow' no
 equiv_mode '-d everyone@:rwpxd::allow' 777
 equiv_mode '-d everyone@:rwpx::allow' no
 equiv_mode '-d everyone@:rxd::allow' no
+
+equiv_mode '-d everyone@:rwpxdDaARWcCoSeE::allow' no
+equiv_mode '-d -m 751 everyone@:rwpxdDaARWcCoSeE::allow' 751
+equiv_mode '-d -m 777 everyone@:rx::allow' 555
