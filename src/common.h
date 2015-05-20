@@ -11,7 +11,7 @@
 	"\n" \
 	"ACL entry <mask> values are:\n" \
 	"\tread_data (r), list_directory (r), write_data (w), add_file (w),\n" \
-	"\texecute (x), append_data (p), add_subdirectory (p), delete_child (d),\n" \
+	"\tappend_data (p), add_subdirectory (p), execute (x), delete_child (d),\n" \
 	"\tdelete (D), read_attributes (a), write_attributes (A),\n" \
 	"\tread_named_attrs (R), write_named_attrs (W), read_acl (c),\n" \
 	"\twrite_acl (C), write_owner(o), synchronize (S),\n" \
