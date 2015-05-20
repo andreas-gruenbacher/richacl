@@ -20,12 +20,18 @@ int main(int argc, char *argv[])
 {
 	struct richacl *acl;
 	mode_t mode = S_IFREG;
+	bool do_chmod = false;
 	int opt;
 
 	while ((opt = getopt(argc, argv, "dm:")) != -1) {
 		switch(opt) {
 		case 'd':
 			mode = S_IFDIR | (mode & 07777);
+			break;
+
+		case 'm':
+			mode = (mode & ~07777) | strtoul(optarg, NULL, 8);
+			do_chmod = true;
 			break;
 
 		default:
@@ -41,7 +47,8 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	/* richacl_compute_max_masks(acl); */
+	if (do_chmod)
+		richacl_chmod(acl, mode);
 
 	if (richacl_equiv_mode(acl, &mode) == 0)
 		printf("%03o\n", mode & 07777);

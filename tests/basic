@@ -1,0 +1,75 @@
+#! /bin/sh
+
+. $srcdir/tests/test-lib.sh
+
+#require_su
+require_richacls
+use_tmpdir
+
+umask 022
+#ncheck 'chown 99:99 .'
+#su 99 99
+
+ncheck "touch x"
+ncheck "setrichacl --set 'everyone@:rwp::allow' x"
+check "ls -l x | cut -d ' ' -f 1" <<EOF
+-rw-rw-rw-
+EOF
+
+check "getrichacl x" <<EOF
+x:
+    owner@:rwp---A--Co--::allow
+ everyone@:rwp----------::allow
+EOF
+
+ncheck 'chmod 664 x'
+check "ls -l x | cut -d ' ' -f 1" <<EOF
+-rw-rw-r--
+EOF
+
+check "getrichacl x" <<EOF
+x:
+    owner@:rwp---A--Co--::allow
+    group@:rwp----------::allow
+ everyone@:r------------::allow
+EOF
+
+ncheck "mkdir sub"
+ncheck "setrichacl --set 'everyone@:rwpxd:fd:allow' sub"
+check "ls -dl sub | cut -d ' ' -f 1" <<EOF
+drwxrwxrwx+
+EOF
+
+ncheck "chmod 775 sub"
+check "ls -dl sub | cut -d ' ' -f 1" <<EOF
+drwxrwxr-x+
+EOF
+
+check "getrichacl sub" <<EOF
+sub:
+    owner@:rwpxd-A--Co--::allow
+    group@:rwpxd--------::allow
+ everyone@:rwpxd--------:fdi:allow
+ everyone@:r--x---------::allow
+EOF
+
+ncheck "touch sub/f"
+check "ls -l sub/f | cut -d ' ' -f 1" <<EOF
+-rw-rw-rw-
+EOF
+
+check "getrichacl sub/f" <<EOF
+sub/f:
+    owner@:rwp---A--Co--::allow
+ everyone@:rwp----------::allow
+EOF
+
+ncheck "mkdir sub/sub2"
+check "ls -dl sub/sub2 | cut -d ' ' -f 1" <<EOF
+drwxrwxrwx+
+EOF
+
+check "getrichacl sub/sub2" <<EOF
+sub/sub2:
+ everyone@:rwpxd--------:fd:allow
+EOF

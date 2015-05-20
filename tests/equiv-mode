@@ -1,0 +1,27 @@
+#! /bin/sh
+
+. $srcdir/tests/test-lib.sh
+
+function equiv_mode() {
+    parent_check "richacl-equiv-mode $1" <<EOF
+$2
+EOF
+}
+
+equiv_mode 'everyone@:rwpxacS::allow' 777
+equiv_mode 'owner@:rwpxaAcCoS::allow' 700
+equiv_mode 'owner@:rwpx::allow,group@:rwpx::allow' 770
+equiv_mode 'owner@:rwpx::deny,group@:rwpx::allow' 070
+equiv_mode 'owner@:rwpx::deny,group@:rwpx::deny,everyone@:rwpx::allow' 007
+
+equiv_mode 'everyone@:wp::allow' 222
+equiv_mode 'everyone@:w::allow' no
+equiv_mode 'everyone@:p::allow' no
+
+equiv_mode 'group@:rwpx::allow,owner@:rwpx::allow' 770
+equiv_mode 'group@:rwpx::allow' no
+equiv_mode 'group@:wpx::deny,owner@:rwpx::allow' no
+
+equiv_mode '-d everyone@:rwpxd::allow' 777
+equiv_mode '-d everyone@:rwpx::allow' no
+equiv_mode '-d everyone@:rxd::allow' no

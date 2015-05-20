@@ -25,4 +25,11 @@ stamp-h1
 /richacl-*
 /src/getrichacl
 /src/setrichacl
-tests/richacl-equiv-mode
+
+/test-suite.log
+/tests/*.log
+/tests/*.trs
+/tests/require-richacls
+/tests/richacl-equiv-mode
+/tests/richacl-apply-masks
+/tests/su
