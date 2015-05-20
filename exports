@@ -43,4 +43,5 @@ RICHACL_1.1 {
 	richacl_from_xattr;
 	richacl_xattr_size;
 	richacl_to_xattr;
+	richacl_chmod;
 };
