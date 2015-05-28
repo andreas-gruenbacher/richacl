@@ -289,36 +289,83 @@ void richacl_chmod(struct richacl *acl, mode_t mode)
 
 /**
  * richacl_from_mode  -  create an acl which corresponds to @mode
- * @mode:       file mode including the file type
+ * @mode:	file mode including the file type
  */
 struct richacl *richacl_from_mode(mode_t mode)
 {
+	unsigned int x = RICHACE_POSIX_ALWAYS_ALLOWED;
+	unsigned int owner_mask = richacl_mode_to_mask(mode >> 6) & ~x;
+	unsigned int group_mask = richacl_mode_to_mask(mode >> 3) & ~x;
+	unsigned int other_mask = richacl_mode_to_mask(mode) & ~x;
+	unsigned int denied;
+	unsigned int entries = 0;
 	struct richacl *acl;
 	struct richace *ace;
 
-	acl = richacl_alloc(1);
-	if (!acl)
-		return NULL;
-	acl->a_flags = RICHACL_MASKED;
-	acl->a_owner_mask = richacl_mode_to_mask(mode >> 6) |
-		RICHACE_POSIX_OWNER_ALLOWED;
-	acl->a_group_mask = richacl_mode_to_mask(mode >> 3);
-	acl->a_other_mask = richacl_mode_to_mask(mode);
-
-	ace = acl->a_entries;
-	ace->e_type = RICHACE_ACCESS_ALLOWED_ACE_TYPE;
-	ace->e_flags = RICHACE_SPECIAL_WHO;
-	ace->e_mask = RICHACE_POSIX_ALWAYS_ALLOWED |
-		      RICHACE_POSIX_MODE_ALL |
-		      RICHACE_POSIX_OWNER_ALLOWED;
-	ace->e_id = RICHACE_EVERYONE_SPECIAL_ID;
-
 	/* RICHACE_DELETE_CHILD is meaningless for non-directories. */
 	if (!S_ISDIR(mode)) {
-		acl->a_owner_mask &= ~RICHACE_DELETE_CHILD;
-		acl->a_group_mask &= ~RICHACE_DELETE_CHILD;
-		acl->a_other_mask &= ~RICHACE_DELETE_CHILD;
-		ace->e_mask &= ~RICHACE_DELETE_CHILD;
+		owner_mask &= ~RICHACE_DELETE_CHILD;
+		group_mask &= ~RICHACE_DELETE_CHILD;
+		other_mask &= ~RICHACE_DELETE_CHILD;
+	}
+
+	denied = ~owner_mask & (group_mask | other_mask);
+	if (denied)
+		entries++;  /* owner@ deny entry needed */
+	if (owner_mask & ~(group_mask & other_mask))
+		entries++;  /* owner@ allow entry needed */
+	denied = ~group_mask & other_mask;
+	if (denied)
+		entries++;  /* group@ deny entry needed */
+	if (group_mask & ~other_mask)
+		entries++;  /* group@ allow entry needed */
+	if (other_mask)
+		entries++;  /* everyone@ allow entry needed */
+
+	acl = richacl_alloc(entries);
+	if (!acl)
+		return NULL;
+	acl->a_owner_mask = owner_mask;
+	acl->a_group_mask = group_mask;
+	acl->a_other_mask = other_mask;
+	ace = acl->a_entries;
+
+	denied = ~owner_mask & (group_mask | other_mask);
+	if (denied) {
+		ace->e_type = RICHACE_ACCESS_DENIED_ACE_TYPE;
+		ace->e_flags = RICHACE_SPECIAL_WHO;
+		ace->e_mask = denied;
+		ace->e_id = RICHACE_OWNER_SPECIAL_ID;
+		ace++;
+	}
+	if (owner_mask & ~(group_mask & other_mask)) {
+		ace->e_type = RICHACE_ACCESS_ALLOWED_ACE_TYPE;
+		ace->e_flags = RICHACE_SPECIAL_WHO;
+		ace->e_mask = owner_mask;
+		ace->e_id = RICHACE_OWNER_SPECIAL_ID;
+		ace++;
+	}
+	denied = ~group_mask & other_mask;
+	if (denied) {
+		ace->e_type = RICHACE_ACCESS_DENIED_ACE_TYPE;
+		ace->e_flags = RICHACE_SPECIAL_WHO;
+		ace->e_mask = denied;
+		ace->e_id = RICHACE_GROUP_SPECIAL_ID;
+		ace++;
+	}
+	if (group_mask & ~other_mask) {
+		ace->e_type = RICHACE_ACCESS_ALLOWED_ACE_TYPE;
+		ace->e_flags = RICHACE_SPECIAL_WHO;
+		ace->e_mask = group_mask;
+		ace->e_id = RICHACE_GROUP_SPECIAL_ID;
+		ace++;
+	}
+	if (other_mask) {
+		ace->e_type = RICHACE_ACCESS_ALLOWED_ACE_TYPE;
+		ace->e_flags = RICHACE_SPECIAL_WHO;
+		ace->e_mask = other_mask;
+		ace->e_id = RICHACE_EVERYONE_SPECIAL_ID;
+		ace++;
 	}
 
 	return acl;

@@ -7,27 +7,26 @@ everyone@:rwpxd::allow
 EOF
 
 check 'richacl-apply-masks -m 644 everyone@:rwpxd::allow' <<EOF
-owner@:rwpdACo::allow
+owner@:rwpd::allow
 everyone@:r::allow
 EOF
 
 check 'richacl-apply-masks -m 640 everyone@:rwpxd::allow' <<EOF
-owner@:rwpdACo::allow
+owner@:rwpd::allow
 group@:r::allow
 EOF
 
 check 'richacl-apply-masks -m 644 group@:wpd::deny,everyone@:rwpxd::allow' <<EOF
 group@:wpd::deny
-owner@:rwpdACo::allow
+owner@:rwpd::allow
 everyone@:r::allow
 EOF
 
 check 'richacl-apply-masks -m 640 group@:wpd::deny,everyone@:rwpxd::allow' <<EOF
 group@:wpd::deny
-owner@:rwpdACo::allow
+owner@:rwpd::allow
 group@:r::allow
 EOF
 
 check 'richacl-apply-masks -m 0 everyone@:rwpxd::allow' <<EOF
-owner@:ACo::allow
 EOF
