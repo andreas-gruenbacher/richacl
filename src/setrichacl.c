@@ -60,24 +60,6 @@ void printf_stderr(const char *fmt, ...)
 	     (_ace) != (_acl)->a_entries + (_acl)->a_count; \
 	     (_ace)++)
 
-static void add_implicitly_granted_permissions(struct richacl *acl)
-{
-	struct richace *ace;
-
-	richacl_for_each_entry(ace, acl) {
-		unsigned int mask;
-
-		mask = RICHACE_POSIX_ALWAYS_ALLOWED;
-		if (richace_is_owner(ace))
-			mask |= RICHACE_POSIX_OWNER_ALLOWED;
-
-		if (richace_is_allow(ace))
-			ace->e_mask |= mask;
-		else if (richace_is_deny(ace))
-			ace->e_mask &= ~mask;
-	}
-}
-
 static void compute_masks(struct richacl *acl, int what_acl_contains)
 {
 	unsigned int owner_mask = acl->a_owner_mask;
@@ -502,7 +484,6 @@ int main(int argc, char *argv[])
 		acl = richacl_from_text(acl_text, &what_acl_contains, printf_stderr);
 		if (!acl)
 			return 1;
-		add_implicitly_granted_permissions(acl);
 	}
 
 	if (acl_file) {

@@ -18,7 +18,6 @@ EOF
 
 check "getrichacl x" <<EOF
 x:
-    owner@:rwp---A--Co--::allow
  everyone@:rwp----------::allow
 EOF
 
@@ -29,7 +28,7 @@ EOF
 
 check "getrichacl x" <<EOF
 x:
-    owner@:rwp---A--Co--::allow
+    owner@:rwp----------::allow
     group@:rwp----------::allow
  everyone@:r------------::allow
 EOF
@@ -47,7 +46,7 @@ EOF
 
 check "getrichacl sub" <<EOF
 sub:
-    owner@:rwpxd-A--Co--::allow
+    owner@:rwpxd--------::allow
     group@:rwpxd--------::allow
  everyone@:rwpxd--------:fdi:allow
  everyone@:r--x---------::allow
@@ -60,7 +59,6 @@ EOF
 
 check "getrichacl sub/f" <<EOF
 sub/f:
-    owner@:rwp---A--Co--::allow
  everyone@:rwp----------::allow
 EOF
 

@@ -282,8 +282,7 @@ static unsigned int richacl_mode_to_mask(mode_t mode)
 void richacl_chmod(struct richacl *acl, mode_t mode)
 {
 	acl->a_flags |= RICHACL_MASKED;
-	acl->a_owner_mask = richacl_mode_to_mask(mode >> 6) |
-			    RICHACE_POSIX_OWNER_ALLOWED;
+	acl->a_owner_mask = richacl_mode_to_mask(mode >> 6);
 	acl->a_group_mask = richacl_mode_to_mask(mode >> 3);
 	acl->a_other_mask = richacl_mode_to_mask(mode);
 }

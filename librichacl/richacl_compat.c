@@ -377,8 +377,7 @@ richacl_propagate_everyone(struct richacl_alloc *x)
 		/* None of the allowed permissions will get masked. */
 		return 0;
 	}
-	owner_allow = (ace->e_mask & acl->a_owner_mask) |
-		      RICHACE_POSIX_OWNER_ALLOWED;
+	owner_allow = ace->e_mask & acl->a_owner_mask;
 	group_allow = ace->e_mask & acl->a_group_mask;
 
 	/* Propagate everyone@ permissions through to owner@. */
