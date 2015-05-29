@@ -7,16 +7,16 @@ LT_AGE = 1
 LTVERSION = $(LT_CURRENT):$(LT_REVISION):$(LT_AGE)
 
 CFILES = \
-	librichacl/richacl_base.c \
-	librichacl/richacl_compat.c \
-	librichacl/richacl_text.c \
-	librichacl/richacl_xattr.c \
-	librichacl/string_buffer.c
+	lib/richacl_base.c \
+	lib/richacl_compat.c \
+	lib/richacl_text.c \
+	lib/richacl_xattr.c \
+	lib/string_buffer.c
 
 HFILES = \
-	librichacl/byteorder.h \
-	librichacl/richacl-internal.h \
-	librichacl/richacl_xattr.h
+	lib/byteorder.h \
+	lib/richacl-internal.h \
+	lib/richacl_xattr.h
 
 librichacl_la_DEPENDENCIES = exports
 librichacl_la_SOURCES = $(CFILES) $(HFILES)
