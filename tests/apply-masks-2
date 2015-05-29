@@ -1,0 +1,153 @@
+#! /bin/sh
+
+. $srcdir/tests/test-lib.sh
+
+require_richacls
+use_tmpdir
+
+ncheck "touch x"
+ncheck "setrichacl --set 'owner@:rw::allow group@:rw::allow everyone@:r::allow' x"
+check "getrichacl x" <<EOF
+x:
+    owner@:rw-----------::allow
+    group@:rw-----------::allow
+ everyone@:r------------::allow
+EOF
+
+ncheck "setrichacl --set 'everyone@:w::allow owner@:r::allow group@:r::allow' x"
+ncheck "chmod 664 x"
+check "getrichacl x" <<EOF
+x:
+ owner@:rw-----------::allow
+ group@:rw-----------::allow
+EOF
+
+ncheck "setrichacl --set 'everyone@:w::deny owner@:rw::allow group@:rw::allow' x"
+ncheck "chmod 664 x"
+check "getrichacl x" <<EOF
+x:
+    owner@:rwp----------::allow
+    group@:rwp----------::allow
+ everyone@:r------------::allow
+EOF
+
+ncheck "setrichacl --set 'owner@:rwCo::allow' x"
+check "getrichacl x" <<EOF
+x:
+ owner@:rw-------Co--::allow
+EOF
+
+ncheck "setrichacl --set 'owner@:rwpCo::allow' x"
+check "getrichacl x" <<EOF
+x:
+ owner@:rwp----------::allow
+EOF
+
+ncheck "chmod 644 x"
+check "getrichacl x" <<EOF
+x:
+    owner@:rwp----------::allow
+ everyone@:r------------::allow
+EOF
+
+ncheck "setrichacl --set 'root:rw::allow' x"
+ncheck "chmod 664 x"
+check "getrichacl x" <<EOF
+x:
+ root:rw-----------::allow
+EOF
+
+ncheck "chmod 644 x"
+check "getrichacl x" <<EOF
+x:
+ root:r------------::allow
+EOF
+
+ncheck "chmod 664 x"
+check "getrichacl x" <<EOF
+x:
+ root:rw-----------::allow
+EOF
+
+ncheck "setrichacl --set 'root:rw::allow everyone@:r::allow' x"
+ncheck "chmod 664 x"
+check "getrichacl x" <<EOF
+x:
+      root:rw-----------::allow
+ everyone@:r------------::allow
+EOF
+
+ncheck "setrichacl --set 'root:r::allow everyone@:rw::allow' x"
+ncheck "chmod 664 x"
+check "getrichacl x" <<EOF
+x:
+      root:rw-----------::allow
+    owner@:rw-----------::allow
+    group@:rw-----------::allow
+ everyone@:r------------::allow
+EOF
+
+ncheck "setrichacl --set 'root:w::deny everyone@:rw::allow' x"
+ncheck "chmod 664 x"
+check "getrichacl x" <<EOF
+x:
+      root:-w-----------::deny
+    owner@:rw-----------::allow
+    group@:rw-----------::allow
+      root:r------------::allow
+ everyone@:r------------::allow
+EOF
+
+ncheck "setrichacl --set 'root:rw::allow root:w::deny everyone@:rw::allow' x"
+ncheck "chmod 664 x"
+check "getrichacl x" <<EOF
+x:
+      root:rw-----------::allow
+      root:-w-----------::deny
+    owner@:rw-----------::allow
+    group@:rw-----------::allow
+ everyone@:r------------::allow
+EOF
+
+ncheck "setrichacl --set 'everyone@:rw::allow' x"
+ncheck "chmod 066 x"
+check "getrichacl x" <<EOF
+x:
+    owner@:rw-----------::deny
+ everyone@:rw-----------::allow
+EOF
+
+ncheck "chmod 006 x"
+check "getrichacl x" <<EOF
+x:
+    owner@:rw-----------::deny
+    group@:rw-----------::deny
+ everyone@:rw-----------::allow
+EOF
+
+ncheck "chmod 606 x"
+check "getrichacl x" <<EOF
+x:
+    owner@:rw-----------::allow
+    group@:rw-----------::deny
+ everyone@:rw-----------::allow
+EOF
+
+ncheck "setrichacl --set 'root:rw::allow everyone@:rw::allow' x"
+ncheck "chmod 606 x"
+check "getrichacl x" <<EOF
+x:
+    owner@:rw-----------::allow
+    group@:rw-----------::deny
+ everyone@:rw-----------::allow
+EOF
+
+ncheck "chmod 646 x"
+check "getrichacl x" <<EOF
+x:
+      root:r------------::allow
+    owner@:rw-----------::allow
+    group@:-w-----------::deny
+      root:-w-----------::deny
+ everyone@:rw-----------::allow
+EOF

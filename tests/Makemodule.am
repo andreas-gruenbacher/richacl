@@ -1,18 +1,23 @@
 TESTS = \
 	tests/equiv-mode \
+	tests/from-mode \
 	tests/apply-masks \
+	tests/apply-masks-2 \
 	tests/basic
 
 EXTRA_DIST += \
 	$(TESTS) \
 	tests/test-lib.sh
 
-check_PROGRAMS += tests/richacl-equiv-mode tests/richacl-apply-masks tests/require-richacls tests/su
+check_PROGRAMS += \
+	tests/richacl-equiv-mode \
+	tests/richacl-from-mode \
+	tests/richacl-apply-masks \
+	tests/require-richacls \
+	tests/su
 
-tests_richacl_equiv_mode_SOURCES = tests/richacl-equiv-mode.c
 tests_richacl_equiv_mode_LDADD = librichacl.la
-
-tests_richacl_apply_masks_SOURCES = tests/richacl-apply-masks.c
+tests_richacl_from_mode_LDADD = librichacl.la
 tests_richacl_apply_masks_LDADD = librichacl.la
 
 TESTS_ENVIRONMENT = \

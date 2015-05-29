@@ -29,3 +29,6 @@ equiv_mode '-d everyone@:rxd::allow' no
 equiv_mode '-d everyone@:rwpxdDaARWcCoSeE::allow' no
 equiv_mode '-d -m 751 everyone@:rwpxdDaARWcCoSeE::allow' 751
 equiv_mode '-d -m 777 everyone@:rx::allow' 555
+
+equiv_mode 'owner@:rwCo::allow' no
+equiv_mode 'owner@:rwpCo::allow' 600
