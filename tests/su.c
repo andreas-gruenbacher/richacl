@@ -45,8 +45,6 @@ int main(int argc, char *argv[])
 	}
 
 	ret = execvp(args[0], args);
-	if (ret) {
-		perror(args[0]);
-		return 2;
-	}
+	perror(args[0]);
+	return 2;
 }
