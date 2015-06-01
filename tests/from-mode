@@ -2,11 +2,11 @@
 
 . $srcdir/tests/test-lib.sh
 
-check 'richacl-from-mode 0000' <<EOF
+check 'richacl-from-mode -m 0000' <<EOF
 ----------
 EOF
 
-check 'richacl-from-mode 0001 0002 0003 0004 0005 0006 0007' <<EOF
+check 'richacl-from-mode -m 0001 0002 0003 0004 0005 0006 0007' <<EOF
 ---------x
 owner@:x::deny
 group@:x::deny
@@ -43,7 +43,7 @@ group@:rwpx::deny
 everyone@:rwpx::allow
 EOF
 
-check 'richacl-from-mode 0010 0020 0030 0040 0050 0060 0070' <<EOF
+check 'richacl-from-mode -m 0010 0020 0030 0040 0050 0060 0070' <<EOF
 ------x---
 owner@:x::deny
 group@:x::allow
@@ -73,7 +73,7 @@ owner@:rwpx::deny
 group@:rwpx::allow
 EOF
 
-check 'richacl-from-mode 0100 0200 0300 0400 0500 0600 0700' <<EOF
+check 'richacl-from-mode -m 0100 0200 0300 0400 0500 0600 0700' <<EOF
 ---x------
 owner@:x::allow
 
@@ -96,7 +96,7 @@ owner@:rwp::allow
 owner@:rwpx::allow
 EOF
 
-check 'richacl-from-mode 0077 0707 0770 0777' <<EOF
+check 'richacl-from-mode -m 0077 0707 0770 0777' <<EOF
 ----rwxrwx
 owner@:rwpx::deny
 everyone@:rwpx::allow
@@ -114,7 +114,7 @@ group@:rwpx::allow
 everyone@:rwpx::allow
 EOF
 
-check 'richacl-from-mode -d 0001 0002 0004' <<EOF
+check 'richacl-from-mode -d -m 0001 0002 0004' <<EOF
 d--------x
 owner@:x::deny
 group@:x::deny

@@ -20,12 +20,17 @@ int main(int argc, char *argv[])
 {
 	struct richacl *acl;
 	mode_t file_type = S_IFREG;
+	bool compare_with_masking = false;
 	int opt;
 
-	while ((opt = getopt(argc, argv, "d")) != -1) {
+	while ((opt = getopt(argc, argv, "dm")) != -1) {
 		switch(opt) {
 		case 'd':
 			file_type = S_IFDIR;
+			break;
+
+		case 'm':
+			compare_with_masking = true;
 			break;
 
 		default:
@@ -62,12 +67,40 @@ int main(int argc, char *argv[])
 		       mode & S_IWOTH ? 'w' : '-',
 		       mode & S_IXOTH ? 'x' : '-',
 		       text);
-		free(text);
 		richacl_free(acl);
+
+		if (compare_with_masking) {
+			struct richace *ace;
+			char *text2;
+
+			acl = richacl_alloc(1);
+			if (!acl) {
+				perror(argv[optind]);
+				return 1;
+			}
+			ace = acl->a_entries;
+			ace->e_mask = S_ISDIR(mode) ?
+				RICHACE_POSIX_MODE_ALL :
+				(RICHACE_POSIX_MODE_ALL & ~RICHACE_DELETE_CHILD);
+			richace_set_who(ace, "EVERYONE@");
+			richacl_chmod(acl, mode);
+			if (richacl_apply_masks(&acl, getuid())) {
+				perror(argv[optind]);
+				return 1;
+			}
+			text2 = richacl_to_text(acl, RICHACL_TEXT_NUMERIC_IDS);
+			richacl_free(acl);
+			if (strcmp(text, text2)) {
+				printf("Warning: result when using masking "
+				       "differs:\n%s\n", text2);
+			}
+			free(text2);
+		}
+		free(text);
 	}
 	return 0;
 
 usage:
-	fprintf(stderr, "Usage: %s [-d] mode ...\n", argv[0]);
+	fprintf(stderr, "Usage: %s [-dm] mode ...\n", argv[0]);
 	return 1;
 }
