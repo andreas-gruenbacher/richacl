@@ -420,13 +420,14 @@ richacl_propagate_everyone(struct richacl_alloc *x)
 /**
  * __richacl_apply_masks  -  apply the masks to the acl entries
  * @x:		acl and number of allocated entries
+ * @owner:	the file owner the acl belongs to
  *
- * Apply the owner file mask to owner@ entries, the intersection of the
- * group and other file masks to everyone@ entries, and the group file
- * mask to all other entries.
+ * Apply the owner file mask to owner@ entries and entries matching the owner
+ * uid, the other file mask to everyone@ entries, and the group file mask to
+ * all other entries.
  */
 static int
-__richacl_apply_masks(struct richacl_alloc *x)
+__richacl_apply_masks(struct richacl_alloc *x, uid_t owner)
 {
 	struct richace *ace;
 
@@ -435,7 +436,8 @@ __richacl_apply_masks(struct richacl_alloc *x)
 
 		if (richace_is_inherit_only(ace) || !richace_is_allow(ace))
 			continue;
-		if (richace_is_owner(ace))
+		if (richace_is_owner(ace) ||
+		    (richace_is_unix_user(ace) && ace->e_id == owner))
 			mask = x->acl->a_owner_mask;
 		else if (richace_is_everyone(ace))
 			mask = x->acl->a_other_mask;
@@ -639,7 +641,7 @@ richacl_isolate_group_class(struct richacl_alloc *x)
  * RICHACL_XATTR_MAX_COUNT, so a read-modify-write cycle would fail.
  */
 int
-richacl_apply_masks(struct richacl **acl)
+richacl_apply_masks(struct richacl **acl, uid_t owner)
 {
 	int retval = 0;
 
@@ -650,7 +652,7 @@ richacl_apply_masks(struct richacl **acl)
 		};
 		if (richacl_move_everyone_aces_down(&x) ||
 		    richacl_propagate_everyone(&x) ||
-		    __richacl_apply_masks(&x) ||
+		    __richacl_apply_masks(&x, owner) ||
 		    richacl_isolate_owner_class(&x) ||
 		    richacl_isolate_group_class(&x))
 				retval = -1;
@@ -682,6 +684,5 @@ richacl_auto_inherit(const struct richacl *acl, const struct richacl *inherited_
 		richace_copy(ace, inherited_ace);
 		ace->e_flags |= RICHACE_INHERITED_ACE;
 	}
-	richacl_compute_max_masks(x.acl);
 	return x.acl;
 }

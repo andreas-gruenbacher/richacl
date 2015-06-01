@@ -18,6 +18,7 @@ void print_error(const char *fmt, ...)
 
 int main(int argc, char *argv[])
 {
+	uid_t owner = getuid();
 	mode_t mode;
 	bool do_chmod = false;
 	int opt;
@@ -47,7 +48,7 @@ int main(int argc, char *argv[])
 		}
 		if (do_chmod)
 			richacl_chmod(acl, mode);
-		richacl_apply_masks(&acl);
+		richacl_apply_masks(&acl, owner);
 		text = richacl_to_text(acl, RICHACL_TEXT_NUMERIC_IDS);
 		printf("%s\n", text);
 		free(text);

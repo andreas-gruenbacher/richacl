@@ -59,7 +59,7 @@ static int print_richacl(const char *file, struct richacl **acl,
 	char *text;
 
 	if (!(fmt & RICHACL_TEXT_SHOW_MASKS)) {
-		if (richacl_apply_masks(acl))
+		if (richacl_apply_masks(acl, st->st_uid))
 			goto fail;
 	}
 	text = richacl_to_text(*acl, fmt | format_for_mode(st->st_mode));

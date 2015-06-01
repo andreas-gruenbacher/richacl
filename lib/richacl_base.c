@@ -158,7 +158,7 @@ static unsigned int richacl_group_class_allowed(struct richacl *acl)
  * the mask flags allowed by the acl are disabled (for any choice of the
  * file owner or group membership).
  */
-void richacl_compute_max_masks(struct richacl *acl)
+void richacl_compute_max_masks(struct richacl *acl, uid_t owner)
 {
 	unsigned int gmask = ~0;
 	struct richace *ace;
@@ -187,7 +187,8 @@ restart:
 		if (richace_is_inherit_only(ace))
 			continue;
 
-		if (richace_is_owner(ace)) {
+		if (richace_is_owner(ace) ||
+		    (richace_is_unix_user(ace) && ace->e_id == owner)) {
 			if (richace_is_allow(ace))
 				acl->a_owner_mask |= ace->e_mask;
 			else if (richace_is_deny(ace))
@@ -468,6 +469,8 @@ int richacl_access(const char *file, const struct stat *st, uid_t user,
 		} else if (richace_is_unix_user(ace)) {
 			if (user != ace->e_id)
 				continue;
+			if (user == st->st_uid)
+				goto is_owner;
 		} else if (richace_is_unix_group(ace)) {
 			if (!in_groups(ace->e_id, groups, n_groups))
 				continue;
@@ -539,19 +542,17 @@ bool richacl_permission(struct richacl *acl, uid_t owner, gid_t owning_group,
 	int in_owner_or_group_class = in_owning_group;
 
         /*
-	 * We don't need to know which class the process is in when the acl is
-	 * not masked.
-	 */
-	if (!(acl->a_flags & RICHACL_MASKED))
-		in_owner_or_group_class = 1;
-
-	/*
 	 * A process is
 	 *   - in the owner file class if it owns the file,
 	 *   - in the group file class if it is in the file's owning group or
 	 *     it matches any of the user or group entries, and
 	 *   - in the other file class otherwise.
+	 *
+	 * We don't need to know which class the process is in when the acl is
+	 * not masked.
 	 */
+	if (!(acl->a_flags & RICHACL_MASKED))
+		in_owner_or_group_class = 1;
 
 	/*
 	 * Check if the acl grants the requested access and determine which
@@ -572,6 +573,8 @@ bool richacl_permission(struct richacl *acl, uid_t owner, gid_t owning_group,
 		} else if (richace_is_unix_user(ace)) {
 			if (user != ace->e_id)
 				continue;
+			if (user == owner)
+				goto is_owner;
 		} else if (richace_is_unix_group(ace)) {
 			if (!in_groups(ace->e_id, groups, n_groups))
 				continue;

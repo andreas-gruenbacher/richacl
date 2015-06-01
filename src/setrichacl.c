@@ -60,7 +60,7 @@ void printf_stderr(const char *fmt, ...)
 	     (_ace) != (_acl)->a_entries + (_acl)->a_count; \
 	     (_ace)++)
 
-static void compute_masks(struct richacl *acl, int what_acl_contains)
+static void compute_masks(struct richacl *acl, int what_acl_contains, uid_t owner)
 {
 	unsigned int owner_mask = acl->a_owner_mask;
 	unsigned int group_mask = acl->a_group_mask;
@@ -74,7 +74,7 @@ static void compute_masks(struct richacl *acl, int what_acl_contains)
 
 	if (!(what_acl_contains & RICHACL_TEXT_FLAGS))
 		acl->a_flags &= ~RICHACL_MASKED;
-	richacl_compute_max_masks(acl);
+	richacl_compute_max_masks(acl, owner);
 	if (what_acl_contains & RICHACL_TEXT_OWNER_MASK) {
 		if (!(what_acl_contains & RICHACL_TEXT_FLAGS) &&
 		    (acl->a_owner_mask & ~owner_mask))
@@ -95,11 +95,11 @@ static void compute_masks(struct richacl *acl, int what_acl_contains)
 	}
 }
 
-int modify_richacl(struct richacl **acl2, struct richacl *acl, int what_acl_contains)
+static int modify_richacl(struct richacl **acl2, struct richacl *acl, int what_acl_contains, uid_t owner)
 {
 	struct richace *ace2, *ace;
 
-	if (richacl_apply_masks(acl2))
+	if (richacl_apply_masks(acl2, owner))
 		return -1;
 
 	richacl_for_each_entry(ace, acl) {
@@ -202,7 +202,7 @@ int modify_richacl(struct richacl **acl2, struct richacl *acl, int what_acl_cont
 		(*acl2)->a_group_mask = acl->a_group_mask;
 	if (what_acl_contains & RICHACL_TEXT_OTHER_MASK)
 		(*acl2)->a_other_mask = acl->a_other_mask;
-	compute_masks(*acl2, what_acl_contains);
+	compute_masks(*acl2, what_acl_contains, owner);
 
 	return 0;
 }
@@ -277,7 +277,14 @@ static int auto_inherit(const char *dirname, struct richacl *dir_acl)
 			new_acl = old_acl;
 			old_acl = NULL;
 		} else {
+			struct stat st;
 			int equal;
+
+			if (stat(path, &st)) {
+				richacl_free(old_acl);
+				goto fail2;
+			}
+
 			if (old_acl->a_flags & RICHACL_DEFAULTED) {
 				/* RFC 5661: An application performing
 				 * automatic inheritance takes the
@@ -293,6 +300,7 @@ static int auto_inherit(const char *dirname, struct richacl *dir_acl)
 			new_acl = richacl_auto_inherit(old_acl,
 					isdir ? dir_inheritable :
 						file_inheritable);
+			richacl_compute_max_masks(new_acl, st.st_uid);
 			equal = !richacl_compare(old_acl, new_acl);
 			if (equal && !opt_repropagate)
 				goto next;
@@ -523,29 +531,29 @@ int main(int argc, char *argv[])
 		free_string_buffer(buffer);
 	}
 
-	/* Compute all masks which haven't been set explicitly. */
-	if (opt_set && acl)
-		compute_masks(acl, what_acl_contains);
-
 	for (; optind < argc; optind++) {
 		const char *file = argv[optind];
 		struct richacl *acl2 = NULL;
 		struct stat st;
 
-		if (opt_modify) {
+		if (opt_set || opt_modify) {
 			if (stat(file, &st))
 				goto fail;
 		} else
 			memset(&st, 0, sizeof(st));
 
 		if (opt_set) {
+			if (acl) {
+				/* Compute all masks which haven't been set explicitly. */
+				compute_masks(acl, what_acl_contains, st.st_uid);
+			}
 			if (set_richacl(file, acl))
 				goto fail;
 		} else if (opt_modify) {
 			acl2 = get_richacl(file, st.st_mode);
 			if (!acl2)
 				goto fail;
-			if (modify_richacl(&acl2, acl, what_acl_contains))
+			if (modify_richacl(&acl2, acl, what_acl_contains, st.st_uid))
 				goto fail;
 			if (set_richacl(file, acl2))
 				goto fail;

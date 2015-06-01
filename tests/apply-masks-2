@@ -60,7 +60,7 @@ EOF
 ncheck "chmod 644 x"
 check "getrichacl x" <<EOF
 x:
- root:r------------::allow
+ root:rw-----------::allow
 EOF
 
 ncheck "chmod 664 x"
@@ -145,7 +145,7 @@ EOF
 ncheck "chmod 646 x"
 check "getrichacl x" <<EOF
 x:
-      root:r------------::allow
+      root:rw-----------::allow
     owner@:rw-----------::allow
     group@:-w-----------::deny
       root:-w-----------::deny

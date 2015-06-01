@@ -28,5 +28,12 @@ owner@:rwpd::allow
 group@:r::allow
 EOF
 
+owner=`id -u`
+check "richacl-apply-masks -m 640 owner@:rwp::allow,$owner:rwpx::allow,group@:rwpx::allow" <<EOF
+owner@:rwp::allow
+$owner:rwp::allow
+group@:r::allow
+EOF
+
 check 'richacl-apply-masks -m 0 everyone@:rwpxd::allow' <<EOF
 EOF
