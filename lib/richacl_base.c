@@ -462,7 +462,7 @@ int richacl_access(const char *file, const struct stat *st, uid_t user,
 		if (richace_is_owner(ace)) {
 			if (user != st->st_uid)
 				continue;
-			goto is_owner;
+			goto entry_matches_owner;
 		} else if (richace_is_group(ace)) {
 			if (!in_owning_group)
 				continue;
@@ -470,27 +470,35 @@ int richacl_access(const char *file, const struct stat *st, uid_t user,
 			if (user != ace->e_id)
 				continue;
 			if (user == st->st_uid)
-				goto is_owner;
+				goto entry_matches_owner;
 		} else if (richace_is_unix_group(ace)) {
 			if (!in_groups(ace->e_id, groups, n_groups))
 				continue;
 		} else
-			goto is_everyone;
+			goto entry_matches_everyone;
 
 		/*
-		 * Apply the group file mask to entries other than OWNER@ and
-		 * EVERYONE@. This is not required for correct access checking
-		 * but ensures that we grant the same permissions as the acl
-		 * computed by richacl_apply_masks() would grant.
+		 * Apply the group file mask to entries other than owner@ and
+		 * everyone@ or user entries matching the owner.  This ensures
+		 * that we grant the same permissions as the acl computed by
+		 * richacl_apply_masks().
+		 *
+		 * Without this restriction, the following richacl would grant
+		 * rw access to processes which are both the owner and in the
+		 * owning group, but not to other users in the owning group,
+		 * which could not be represented without masks:
+		 *
+		 *  owner:rw::mask
+		 *  group@:rw::allow
 		 */
 		if ((acl->a_flags & RICHACL_MASKED) && richace_is_allow(ace))
 			ace_mask &= acl->a_group_mask;
 
-is_owner:
+entry_matches_owner:
 		/* The process is in the owner or group file class. */
 		in_owner_or_group_class = 1;
 
-is_everyone:
+entry_matches_everyone:
 		/* Check which mask flags the ACE allows or denies. */
 		if (richace_is_deny(ace))
 			denied |= ace_mask & mask;
@@ -566,7 +574,7 @@ bool richacl_permission(struct richacl *acl, uid_t owner, gid_t owning_group,
 		if (richace_is_owner(ace)) {
 			if (user != owner)
 				continue;
-			goto is_owner;
+			goto entry_matches_owner;
 		} else if (richace_is_group(ace)) {
 			if (!in_owning_group)
 				continue;
@@ -574,27 +582,35 @@ bool richacl_permission(struct richacl *acl, uid_t owner, gid_t owning_group,
 			if (user != ace->e_id)
 				continue;
 			if (user == owner)
-				goto is_owner;
+				goto entry_matches_owner;
 		} else if (richace_is_unix_group(ace)) {
 			if (!in_groups(ace->e_id, groups, n_groups))
 				continue;
 		} else
-			goto is_everyone;
+			goto entry_matches_everyone;
 
 		/*
-		 * Apply the group file mask to entries other than OWNER@ and
-		 * EVERYONE@. This is not required for correct access checking
-		 * but ensures that we grant the same permissions as the acl
-		 * computed by richacl_apply_masks() would grant.
+		 * Apply the group file mask to entries other than owner@ and
+		 * everyone@ or user entries matching the owner.  This ensures
+		 * that we grant the same permissions as the acl computed by
+		 * richacl_apply_masks().
+		 *
+		 * Without this restriction, the following richacl would grant
+		 * rw access to processes which are both the owner and in the
+		 * owning group, but not to other users in the owning group,
+		 * which could not be represented without masks:
+		 *
+		 *  owner:rw::mask
+		 *  group@:rw::allow
 		 */
 		if ((acl->a_flags & RICHACL_MASKED) && richace_is_allow(ace))
 			ace_mask &= acl->a_group_mask;
 
-is_owner:
+entry_matches_owner:
 		/* The process is in the owner or group file class. */
 		in_owner_or_group_class = 1;
 
-is_everyone:
+entry_matches_everyone:
 		/* Check which mask flags the ACE allows or denies. */
 		if (richace_is_deny(ace) && (ace_mask & mask))
 			return false;
