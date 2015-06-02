@@ -239,7 +239,7 @@ int main(int argc, char *argv[])
 			if (passwd) {
 				n_groups = n_groups_alloc;
 				if (getgrouplist(passwd->pw_name, passwd->pw_gid,
-					         groups, &n_groups) < 0) {
+						 groups, &n_groups) < 0) {
 					free(groups);
 					groups = malloc(sizeof(gid_t) * n_groups);
 					if (getgrouplist(passwd->pw_name, passwd->pw_gid,

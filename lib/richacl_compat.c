@@ -249,7 +249,7 @@ richacl_move_everyone_aces_down(struct richacl_alloc *x)
  */
 static int
 __richacl_propagate_everyone(struct richacl_alloc *x, struct richace *who,
-			  unsigned int allow)
+			     unsigned int allow)
 {
 	struct richace *allow_last = NULL, *ace;
 
@@ -664,7 +664,8 @@ richacl_apply_masks(struct richacl **acl, uid_t owner)
 }
 
 struct richacl *
-richacl_auto_inherit(const struct richacl *acl, const struct richacl *inherited_acl)
+richacl_auto_inherit(const struct richacl *acl,
+		     const struct richacl *inherited_acl)
 {
 	struct richacl_alloc x = {
 		.acl = richacl_clone(acl),

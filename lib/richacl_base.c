@@ -855,7 +855,7 @@ richacl_equiv_mode(const struct richacl *acl, mode_t *mode_p)
 	mode = (mode & ~S_IRWXUGO) |
 	       (richacl_mask_to_mode(owner.allowed) << 6) |
 	       (richacl_mask_to_mode(group.allowed) << 3) |
-	        richacl_mask_to_mode(everyone.allowed);
+		richacl_mask_to_mode(everyone.allowed);
 
 	/* Mask flags we can ignore */
 	x = S_ISDIR(mode) ? 0 : RICHACE_DELETE_CHILD;
