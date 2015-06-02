@@ -1,48 +1,44 @@
 RICHACL_1.0 {
     global:
 	# ace funcs
-	richace_is_owner;
-	richace_is_group;
-	richace_is_everyone;
-	richace_is_unix_user;
-	richace_is_unix_group;
-	richace_get_who;
-	richace_set_who;
-	richace_set_uid;
-	richace_set_gid;
-	richace_is_same_identifier;
 	richace_copy;
+	richace_get_who;
+	richace_is_everyone;
+	richace_is_group;
+	richace_is_owner;
+	richace_is_same_identifier;
+	richace_is_unix_group;
+	richace_is_unix_user;
+	richace_set_gid;
+	richace_set_uid;
+	richace_set_who;
 
 	# acl funcs
-	richacl_get_file;
-	richacl_get_fd;
-	richacl_set_file;
-	richacl_set_fd;
-	richacl_to_text;
-	richacl_from_text;
-	richacl_alloc;
-	richacl_clone;
-	richacl_free;
-	richacl_apply_masks;
-	richacl_compute_max_masks;
-	richacl_from_mode;
-	richacl_masks_to_mode;
-	richacl_equiv_mode;
 	richacl_access;
-	richacl_mask_to_text;
-	richacl_inherit;
+	richacl_alloc;
+	richacl_apply_masks;
 	richacl_auto_inherit;
+	richacl_chmod;
+	richacl_clone;
 	richacl_compare;
+	richacl_compute_max_masks;
+	richacl_equiv_mode;
+	richacl_free;
+	richacl_from_mode;
+	richacl_from_text;
+	richacl_from_xattr;
+	richacl_get_fd;
+	richacl_get_file;
+	richacl_inherit;
+	richacl_mask_to_text;
+	richacl_masks_to_mode;
+	richacl_set_fd;
+	richacl_set_file;
+	richacl_to_text;
+	richacl_to_xattr;
+	richacl_xattr_size;
 
     local:
     	# Library internal stuff
 	*;
-};
-
-RICHACL_1.1 {
-    global:
-	richacl_from_xattr;
-	richacl_xattr_size;
-	richacl_to_xattr;
-	richacl_chmod;
 };
