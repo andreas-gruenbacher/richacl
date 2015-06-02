@@ -274,6 +274,17 @@ __richacl_propagate_everyone(struct richacl_alloc *x, struct richace *who,
 				allow_last = NULL;
 		}
 	}
+	ace--;
+
+	/*
+	 * If for group class entries, all the remaining permissions will
+	 * remain granted by the trailing everyone@ ace, no additional entry is
+	 * needed.
+	 */
+	if (!richace_is_owner(who) &&
+	    richace_is_everyone(ace) && richace_is_allow(ace) &&
+	    !(allow & ~(ace->e_mask & x->acl->a_other_mask)))
+		allow = 0;
 
 	if (allow) {
 		if (allow_last)
