@@ -182,7 +182,8 @@ struct richacl {
 extern bool richace_is_owner(const struct richace *);
 extern bool richace_is_group(const struct richace *);
 extern bool richace_is_everyone(const struct richace *);
-extern bool richace_is_unix_id(const struct richace *);
+extern bool richace_is_unix_user(const struct richace *);
+extern bool richace_is_unix_group(const struct richace *);
 
 static inline bool richace_is_allow(const struct richace *ace)
 {

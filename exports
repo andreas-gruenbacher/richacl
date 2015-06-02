@@ -4,7 +4,8 @@ RICHACL_1.0 {
 	richace_is_owner;
 	richace_is_group;
 	richace_is_everyone;
-	richace_is_unix_id;
+	richace_is_unix_user;
+	richace_is_unix_group;
 	richace_get_who;
 	richace_set_who;
 	richace_set_uid;

@@ -371,10 +371,16 @@ struct richacl *richacl_from_mode(mode_t mode)
 	return acl;
 }
 
-bool richace_is_unix_id(const struct richace *ace)
+bool richace_is_unix_user(const struct richace *ace)
 {
-	return !(ace->e_flags & RICHACE_SPECIAL_WHO);
+	return !(ace->e_flags & RICHACE_SPECIAL_WHO) &&
+	       !(ace->e_flags & RICHACE_IDENTIFIER_GROUP);
+}
 
+bool richace_is_unix_group(const struct richace *ace)
+{
+	return !(ace->e_flags & RICHACE_SPECIAL_WHO) &&
+	       (ace->e_flags & RICHACE_IDENTIFIER_GROUP);
 }
 
 static int in_groups(gid_t group, const gid_t groups[], int n_groups)
@@ -459,14 +465,12 @@ int richacl_access(const char *file, const struct stat *st, uid_t user,
 		} else if (richace_is_group(ace)) {
 			if (!in_owning_group)
 				continue;
-		} else if (richace_is_unix_id(ace)) {
-			if (ace->e_flags & RICHACE_IDENTIFIER_GROUP) {
-				if (!in_groups(ace->e_id, groups, n_groups))
-					continue;
-			} else {
-				if (user != ace->e_id)
-					continue;
-			}
+		} else if (richace_is_unix_user(ace)) {
+			if (user != ace->e_id)
+				continue;
+		} else if (richace_is_unix_group(ace)) {
+			if (!in_groups(ace->e_id, groups, n_groups))
+				continue;
 		} else
 			goto is_everyone;
 
@@ -565,14 +569,12 @@ bool richacl_permission(struct richacl *acl, uid_t owner, gid_t owning_group,
 		} else if (richace_is_group(ace)) {
 			if (!in_owning_group)
 				continue;
-		} else if (richace_is_unix_id(ace)) {
-			if (ace->e_flags & RICHACE_IDENTIFIER_GROUP) {
-				if (!in_groups(ace->e_id, groups, n_groups))
-					continue;
-			} else {
-				if (user != ace->e_id)
-					continue;
-			}
+		} else if (richace_is_unix_user(ace)) {
+			if (user != ace->e_id)
+				continue;
+		} else if (richace_is_unix_group(ace)) {
+			if (!in_groups(ace->e_id, groups, n_groups))
+				continue;
 		} else
 			goto is_everyone;
 
