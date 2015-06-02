@@ -37,3 +37,10 @@ EOF
 
 check 'richacl-apply-masks -m 0 everyone@:rwpxd::allow' <<EOF
 EOF
+
+check 'richacl-apply-masks -m 664 1234:w::deny,everyone@:rw::allow' <<EOF
+1234:w::deny
+owner@:rw::allow
+group@:rw::allow
+everyone@:r::allow
+EOF
