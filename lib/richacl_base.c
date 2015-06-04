@@ -399,7 +399,7 @@ int richacl_access(const char *file, const struct stat *st, uid_t user,
 	const struct richacl *acl;
 	struct stat local_st;
 	const struct richace *ace;
-	unsigned int file_mask, mask = RICHACE_VALID_MASK, denied = 0;
+	unsigned int mask = RICHACE_VALID_MASK, allowed = 0;
 	int in_owning_group;
 	int in_owner_or_group_class;
 	gid_t *groups = NULL;
@@ -499,34 +499,36 @@ entry_matches_owner:
 
 entry_matches_everyone:
 		/* Check which mask flags the ACE allows or denies. */
-		if (richace_is_deny(ace))
-			denied |= ace_mask & mask;
+		if (richace_is_allow(ace))
+			allowed |= ace_mask & mask;
 		mask &= ~ace_mask;
 		if (!mask)
 			break;
 	}
-	denied |= mask;
 
 	/*
 	 * Figure out which file mask applies.
 	 */
-	if (!(acl->a_flags & RICHACL_MASKED))
-		file_mask = RICHACE_VALID_MASK;
-	else if (user == st->st_uid)
-		file_mask = acl->a_owner_mask;
-	else if (in_owner_or_group_class)
-		file_mask = acl->a_group_mask;
-	else
-		file_mask = acl->a_other_mask;
+	if (acl->a_flags & RICHACL_MASKED) {
+		unsigned int file_mask;
+
+		if (user == st->st_uid)
+			file_mask = acl->a_owner_mask;
+		if (in_owner_or_group_class)
+			file_mask = acl->a_group_mask;
+		else
+			file_mask = acl->a_other_mask;
+		allowed &= file_mask;
+	}
 
 	/* RICHACE_DELETE_CHILD is meaningless for non-directories. */
 	if (!S_ISDIR(st->st_mode))
-		file_mask &= ~RICHACE_DELETE_CHILD;
+		allowed &= ~RICHACE_DELETE_CHILD;
 
 	if (groups != const_groups)
 		free(groups);
 
-	return file_mask & ~denied;
+	return allowed;
 }
 
 /**
