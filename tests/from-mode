@@ -2,131 +2,133 @@
 
 . $srcdir/tests/test-lib.sh
 
-check 'richacl-from-mode -m 0000' <<EOF
-----------
-EOF
+for args in '' ' -m'; do
+    check "richacl-from-mode$args 0000" <<-EOF
+	----------
+	EOF
 
-check 'richacl-from-mode -m 0001 0002 0003 0004 0005 0006 0007' <<EOF
----------x
-owner@:x::deny
-group@:x::deny
-everyone@:x::allow
+    check "richacl-from-mode$args 0001 0002 0003 0004 0005 0006 0007" <<-EOF
+	---------x
+	owner@:x::deny
+	group@:x::deny
+	everyone@:x::allow
 
---------w-
-owner@:wp::deny
-group@:wp::deny
-everyone@:wp::allow
+	--------w-
+	owner@:wp::deny
+	group@:wp::deny
+	everyone@:wp::allow
 
---------wx
-owner@:wpx::deny
-group@:wpx::deny
-everyone@:wpx::allow
+	--------wx
+	owner@:wpx::deny
+	group@:wpx::deny
+	everyone@:wpx::allow
 
--------r--
-owner@:r::deny
-group@:r::deny
-everyone@:r::allow
+	-------r--
+	owner@:r::deny
+	group@:r::deny
+	everyone@:r::allow
 
--------r-x
-owner@:rx::deny
-group@:rx::deny
-everyone@:rx::allow
+	-------r-x
+	owner@:rx::deny
+	group@:rx::deny
+	everyone@:rx::allow
 
--------rw-
-owner@:rwp::deny
-group@:rwp::deny
-everyone@:rwp::allow
+	-------rw-
+	owner@:rwp::deny
+	group@:rwp::deny
+	everyone@:rwp::allow
 
--------rwx
-owner@:rwpx::deny
-group@:rwpx::deny
-everyone@:rwpx::allow
-EOF
+	-------rwx
+	owner@:rwpx::deny
+	group@:rwpx::deny
+	everyone@:rwpx::allow
+	EOF
 
-check 'richacl-from-mode -m 0010 0020 0030 0040 0050 0060 0070' <<EOF
-------x---
-owner@:x::deny
-group@:x::allow
+    check "richacl-from-mode$args 0010 0020 0030 0040 0050 0060 0070" <<-EOF
+	------x---
+	owner@:x::deny
+	group@:x::allow
 
------w----
-owner@:wp::deny
-group@:wp::allow
+	-----w----
+	owner@:wp::deny
+	group@:wp::allow
 
------wx---
-owner@:wpx::deny
-group@:wpx::allow
+	-----wx---
+	owner@:wpx::deny
+	group@:wpx::allow
 
-----r-----
-owner@:r::deny
-group@:r::allow
+	----r-----
+	owner@:r::deny
+	group@:r::allow
 
-----r-x---
-owner@:rx::deny
-group@:rx::allow
+	----r-x---
+	owner@:rx::deny
+	group@:rx::allow
 
-----rw----
-owner@:rwp::deny
-group@:rwp::allow
+	----rw----
+	owner@:rwp::deny
+	group@:rwp::allow
 
-----rwx---
-owner@:rwpx::deny
-group@:rwpx::allow
-EOF
+	----rwx---
+	owner@:rwpx::deny
+	group@:rwpx::allow
+	EOF
 
-check 'richacl-from-mode -m 0100 0200 0300 0400 0500 0600 0700' <<EOF
----x------
-owner@:x::allow
+    check "richacl-from-mode$args 0100 0200 0300 0400 0500 0600 0700" <<-EOF
+	---x------
+	owner@:x::allow
 
---w-------
-owner@:wp::allow
+	--w-------
+	owner@:wp::allow
 
---wx------
-owner@:wpx::allow
+	--wx------
+	owner@:wpx::allow
 
--r--------
-owner@:r::allow
+	-r--------
+	owner@:r::allow
 
--r-x------
-owner@:rx::allow
+	-r-x------
+	owner@:rx::allow
 
--rw-------
-owner@:rwp::allow
+	-rw-------
+	owner@:rwp::allow
 
--rwx------
-owner@:rwpx::allow
-EOF
+	-rwx------
+	owner@:rwpx::allow
+	EOF
 
-check 'richacl-from-mode -m 0077 0707 0770 0777' <<EOF
-----rwxrwx
-owner@:rwpx::deny
-everyone@:rwpx::allow
+    check "richacl-from-mode$args 0077 0707 0770 0777" <<-EOF
+	----rwxrwx
+	owner@:rwpx::deny
+	everyone@:rwpx::allow
 
--rwx---rwx
-owner@:rwpx::allow
-group@:rwpx::deny
-everyone@:rwpx::allow
+	-rwx---rwx
+	owner@:rwpx::allow
+	group@:rwpx::deny
+	everyone@:rwpx::allow
 
--rwxrwx---
-owner@:rwpx::allow
-group@:rwpx::allow
+	-rwxrwx---
+	owner@:rwpx::allow
+	group@:rwpx::allow
 
--rwxrwxrwx
-everyone@:rwpx::allow
-EOF
+	-rwxrwxrwx
+	everyone@:rwpx::allow
+	EOF
 
-check 'richacl-from-mode -d -m 0001 0002 0004' <<EOF
-d--------x
-owner@:x::deny
-group@:x::deny
-everyone@:x::allow
+    check "richacl-from-mode$args -d 0001 0002 0004" <<-EOF
+	d--------x
+	owner@:x::deny
+	group@:x::deny
+	everyone@:x::allow
 
-d-------w-
-owner@:wpd::deny
-group@:wpd::deny
-everyone@:wpd::allow
+	d-------w-
+	owner@:wpd::deny
+	group@:wpd::deny
+	everyone@:wpd::allow
 
-d------r--
-owner@:r::deny
-group@:r::deny
-everyone@:r::allow
-EOF
+	d------r--
+	owner@:r::deny
+	group@:r::deny
+	everyone@:r::allow
+	EOF
+done

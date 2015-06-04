@@ -20,7 +20,7 @@ int main(int argc, char *argv[])
 {
 	struct richacl *acl;
 	mode_t file_type = S_IFREG;
-	bool compare_with_masking = false;
+	bool masking = false;
 	int opt;
 
 	while ((opt = getopt(argc, argv, "dm")) != -1) {
@@ -30,7 +30,7 @@ int main(int argc, char *argv[])
 			break;
 
 		case 'm':
-			compare_with_masking = true;
+			masking = true;
 			break;
 
 		default:
@@ -44,10 +44,30 @@ int main(int argc, char *argv[])
 		mode_t mode = file_type | strtoul(argv[optind], NULL, 0);
 		char *text;
 
-		acl = richacl_from_mode(mode);
-		if (!acl) {
-			perror(argv[optind]);
-			return 1;
+		if (masking) {
+			struct richace *ace;
+
+			acl = richacl_alloc(1);
+			if (!acl) {
+				perror(argv[optind]);
+				return 1;
+			}
+			ace = acl->a_entries;
+			ace->e_mask = S_ISDIR(mode) ?
+				RICHACE_POSIX_MODE_ALL :
+				(RICHACE_POSIX_MODE_ALL & ~RICHACE_DELETE_CHILD);
+			richace_set_who(ace, "EVERYONE@");
+			richacl_chmod(acl, mode);
+			if (richacl_apply_masks(&acl, getuid())) {
+				perror(argv[optind]);
+				return 1;
+			}
+		} else {
+			acl = richacl_from_mode(mode);
+			if (!acl) {
+				perror(argv[optind]);
+				return 1;
+			}
 		}
 
 		text = richacl_to_text(acl, RICHACL_TEXT_NUMERIC_IDS);
@@ -68,34 +88,6 @@ int main(int argc, char *argv[])
 		       mode & S_IXOTH ? 'x' : '-',
 		       text);
 		richacl_free(acl);
-
-		if (compare_with_masking) {
-			struct richace *ace;
-			char *text2;
-
-			acl = richacl_alloc(1);
-			if (!acl) {
-				perror(argv[optind]);
-				return 1;
-			}
-			ace = acl->a_entries;
-			ace->e_mask = S_ISDIR(mode) ?
-				RICHACE_POSIX_MODE_ALL :
-				(RICHACE_POSIX_MODE_ALL & ~RICHACE_DELETE_CHILD);
-			richace_set_who(ace, "EVERYONE@");
-			richacl_chmod(acl, mode);
-			if (richacl_apply_masks(&acl, getuid())) {
-				perror(argv[optind]);
-				return 1;
-			}
-			text2 = richacl_to_text(acl, RICHACL_TEXT_NUMERIC_IDS);
-			richacl_free(acl);
-			if (strcmp(text, text2)) {
-				printf("Warning: result when using masking "
-				       "differs:\n%s\n", text2);
-			}
-			free(text2);
-		}
 		free(text);
 	}
 	return 0;
