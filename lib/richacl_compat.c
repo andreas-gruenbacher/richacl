@@ -139,8 +139,8 @@ richace_change_mask(struct richacl_alloc *x, struct richace **ace,
 			   unsigned int mask)
 {
 	if (mask && (*ace)->e_mask == mask)
-		return 0;
-	if (mask & ~RICHACE_POSIX_ALWAYS_ALLOWED) {
+		(*ace)->e_flags &= ~RICHACE_INHERIT_ONLY_ACE;
+	else if (mask & ~RICHACE_POSIX_ALWAYS_ALLOWED) {
 		if (richace_is_inheritable(*ace)) {
 			if (richacl_insert_entry(x, ace))
 				return -1;
