@@ -265,7 +265,7 @@ void richace_copy(struct richace *dst, const struct richace *src)
  */
 static unsigned int richacl_mode_to_mask(mode_t mode)
 {
-	unsigned int mask = RICHACE_POSIX_ALWAYS_ALLOWED;
+	unsigned int mask = 0;
 
 	if (mode & S_IROTH)
 		mask |= RICHACE_POSIX_MODE_READ;
@@ -294,10 +294,9 @@ void richacl_chmod(struct richacl *acl, mode_t mode)
  */
 struct richacl *richacl_from_mode(mode_t mode)
 {
-	unsigned int x = RICHACE_POSIX_ALWAYS_ALLOWED;
-	unsigned int owner_mask = richacl_mode_to_mask(mode >> 6) & ~x;
-	unsigned int group_mask = richacl_mode_to_mask(mode >> 3) & ~x;
-	unsigned int other_mask = richacl_mode_to_mask(mode) & ~x;
+	unsigned int owner_mask = richacl_mode_to_mask(mode >> 6);
+	unsigned int group_mask = richacl_mode_to_mask(mode >> 3);
+	unsigned int other_mask = richacl_mode_to_mask(mode);
 	unsigned int denied;
 	unsigned int entries = 0;
 	struct richacl *acl;
@@ -793,13 +792,10 @@ richacl_equiv_mode(const struct richacl *acl, mode_t *mode_p)
 		unsigned int allowed;
 		unsigned int defined;  /* allowed or denied */
 	} owner = {
-		.allowed = RICHACE_POSIX_ALWAYS_ALLOWED,
 		.defined = RICHACE_POSIX_ALWAYS_ALLOWED | RICHACE_POSIX_OWNER_ALLOWED | x,
 	}, group = {
-		.allowed = RICHACE_POSIX_ALWAYS_ALLOWED,
 		.defined = RICHACE_POSIX_ALWAYS_ALLOWED | x,
 	}, everyone = {
-		.allowed = RICHACE_POSIX_ALWAYS_ALLOWED,
 		.defined = RICHACE_POSIX_ALWAYS_ALLOWED | x,
 	};
 	const struct richace *ace;
