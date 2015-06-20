@@ -1,0 +1,54 @@
+#! /bin/sh
+
+. $srcdir/tests/test-lib.sh
+
+require_su
+require_richacls
+use_tmpdir
+
+export LC_ALL=C
+
+ncheck "touch a b c d e f"
+ncheck "setrichacl --set 'owner@:rwp::allow' a"
+ncheck "setrichacl --set 'owner@:rwp::allow 99:w::allow' b"
+ncheck "setrichacl --set 'owner@:rwp::allow 99:p::allow' c"
+ncheck "setrichacl --set 'owner@:rwp::allow 99:wp::allow' d"
+ncheck "setrichacl --set '99:a::deny owner@:rwp::allow 99:w::allow' e"
+ncheck "setrichacl --set '99:w::deny owner@:rwp::allow 99:p::allow' f"
+
+su 99 99
+check "sh -c 'echo a > a' || :" <<EOF
+sh: a: Permission denied
+EOF
+ncheck "sh -c 'echo b > b' || :"
+check "sh -c 'echo c > c' || :" <<EOF
+sh: c: Permission denied
+EOF
+ncheck "sh -c 'echo d > d' || :"
+ncheck "sh -c 'echo e > e' || :"
+check "sh -c 'echo f > f' || :" <<EOF
+sh: f: Permission denied
+EOF
+
+check "sh -c 'echo A >> a' || :" <<EOF
+sh: a: Permission denied
+EOF
+check "sh -c 'echo B >> b' || :" <<EOF
+sh: b: Permission denied
+EOF
+ncheck "sh -c 'echo C >> c' || :"
+ncheck "sh -c 'echo D >> d' || :"
+check "sh -c 'echo E >> e' || :" <<EOF
+sh: e: Permission denied
+EOF
+ncheck "sh -c 'echo F >> f' || :"
+
+su
+check "cat a b c d e f" <<EOF
+b
+C
+d
+D
+e
+F
+EOF

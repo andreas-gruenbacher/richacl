@@ -1,0 +1,80 @@
+#! /bin/sh
+
+. $srcdir/tests/test-lib.sh
+
+require_su
+require_richacls
+use_tmpdir
+
+umask 022
+export LC_ALL=C
+
+ncheck "mkdir d1 d2 d3 d4 d5 d6 d7"
+ncheck "touch d1/f d1/g d2/f d3/f d4/f d5/f d6/f d7/f d7/g"
+ncheck "chmod o+w d1/g"
+ncheck "chown 99 d2"
+ncheck "chgrp 99 d3"
+ncheck "chmod g+w d3"
+ncheck "setrichacl --set '99:wx::allow' d4"
+ncheck "setrichacl --set '99:d::allow' d5"
+ncheck "setrichacl --set '99:xd::allow' d6"
+ncheck "setrichacl --set '99:D::allow' d7/f d7/g"
+ncheck "chmod 664 d7/g"
+
+ncheck "mkdir s2 s3 s4 s5 s6 s7"
+ncheck "chmod +t s2 s3 s4 s5 s6 s7"
+ncheck "touch s2/f s3/f s4/f s5/f s6/f s7/f s7/g"
+ncheck "chown 99 s2"
+ncheck "chgrp 99 s3"
+ncheck "chmod g+w s3"
+ncheck "setrichacl --set '99:wx::allow' s4"
+ncheck "setrichacl --set '99:d::allow' s5"
+ncheck "setrichacl --set '99:xd::allow' s6"
+ncheck "setrichacl --set '99:D::allow' s7/f s7/g"
+ncheck "chmod 664 s7/g"
+
+su 99 99
+
+# Cannot delete files with no or only with write permissions
+check "rm d1/f d1/g || :" <<EOF
+rm: cannot remove 'd1/f': Permission denied
+rm: cannot remove 'd1/g': Permission denied
+EOF
+
+# Can delete files in directories we own
+ncheck "rm d2/f s2/f"
+
+# Can delete files in non-sticky directories we have write access to
+check "rm d3/f s3/f || :" <<EOF
+rm: cannot remove 's3/f': Operation not permitted
+EOF
+
+# "Write_data/execute" access does not include delete_child access, so deleting
+# is not allowed:
+check "rm d4/f s4/f || :" <<EOF
+rm: cannot remove 'd4/f': Permission denied
+rm: cannot remove 's4/f': Permission denied
+EOF
+
+# "Delete_child" access alone also is not sufficient
+check "rm d5/f s5/f || :" <<EOF
+rm: cannot remove 'd5/f': Permission denied
+rm: cannot remove 's5/f': Permission denied
+EOF
+
+# "Execute/delete_child" access is sufficient for non-sticky directories
+check "rm d6/f s6/f || :" <<EOF
+rm: cannot remove 's6/f': Operation not permitted
+EOF
+
+# "Delete" access on the child is sufficient for non-sticky directories,
+# but it does not override the sticky check
+check "rm d7/f s7/f || :" <<EOF
+rm: cannot remove 's7/f': Operation not permitted
+EOF
+
+# A chmod turns off the "delete permission
+check "rm d7/g s7/g || :" <<EOF
+rm: cannot remove 'd7/g': Permission denied
+rm: cannot remove 's7/g': Permission denied
+EOF

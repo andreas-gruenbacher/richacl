@@ -3,7 +3,15 @@ TESTS = \
 	tests/from-mode \
 	tests/apply-masks \
 	tests/apply-masks-2 \
-	tests/basic
+	tests/basic \
+	tests/chmod \
+	tests/chown \
+	tests/create \
+	tests/delete \
+	tests/setrichacl-modify \
+	tests/write-vs-append \
+	tests/ctime \
+	tests/auto-inheritance
 
 EXTRA_DIST += \
 	$(TESTS) \

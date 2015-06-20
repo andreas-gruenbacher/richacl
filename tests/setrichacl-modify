@@ -1,0 +1,59 @@
+#! /bin/sh
+
+. $srcdir/tests/test-lib.sh
+
+require_richacls
+use_tmpdir
+
+umask 022
+#ncheck 'chown 99:99 .'
+#su 99 99
+
+ncheck "touch f"
+ncheck "setrichacl --set 'flags:a 101:w::deny 101:rw::allow 101:w:a:deny 101:rw:a:allow' f"
+ncheck "setrichacl --modify '202:w::deny' f"
+check "getrichacl --numeric f" <<EOF
+f:
+ flags:a
+   101:-w-----------::deny
+   202:-w-----------::deny
+   101:rw-----------::allow
+   101:-w-----------:a:deny
+   101:rw-----------:a:allow
+EOF
+
+ncheck "setrichacl --set 'flags:a 101:w::deny 101:rw::allow 101:w:a:deny 101:rw:a:allow' f"
+ncheck "setrichacl --modify '202:rw::allow' f"
+check "getrichacl --numeric f" <<EOF
+f:
+ flags:a
+   101:-w-----------::deny
+   101:rw-----------::allow
+   202:rw-----------::allow
+   101:-w-----------:a:deny
+   101:rw-----------:a:allow
+EOF
+
+ncheck "setrichacl --set 'flags:a 101:w::deny 101:rw::allow 101:w:a:deny 101:rw:a:allow' f"
+ncheck "setrichacl --modify '202:w:a:deny' f"
+check "getrichacl --numeric f" <<EOF
+f:
+ flags:a
+   101:-w-----------::deny
+   101:rw-----------::allow
+   101:-w-----------:a:deny
+   202:-w-----------:a:deny
+   101:rw-----------:a:allow
+EOF
+
+ncheck "setrichacl --set 'flags:a 101:w::deny 101:rw::allow 101:w:a:deny 101:rw:a:allow' f"
+ncheck "setrichacl --modify ' 202:rw:a:allow' f"
+check "getrichacl --numeric f" <<EOF
+f:
+ flags:a
+   101:-w-----------::deny
+   101:rw-----------::allow
+   101:-w-----------:a:deny
+   101:rw-----------:a:allow
+   202:rw-----------:a:allow
+EOF

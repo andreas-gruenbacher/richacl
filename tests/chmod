@@ -1,0 +1,40 @@
+#! /bin/sh
+
+. $srcdir/tests/test-lib.sh
+
+require_su
+require_richacls
+use_tmpdir
+
+export LC_ALL=C
+
+# Create file as root
+ncheck "touch a"
+
+# We cannot set the acl as another user
+su 99 99
+check "setrichacl --set '99:rwc::allow' a || echo status: \$?" <<EOF
+a: Operation not permitted
+status: 1
+EOF
+
+# We cannot chmod as another user
+check "chmod 666 a || echo status: \$?" <<EOF
+chmod: changing permissions of 'a': Operation not permitted
+status: 1
+EOF
+
+# Give user 99 the write_acl permission
+su
+ncheck "setrichacl --set '99:rwpC::allow' a"
+
+# Now user 99 can setrichacl and chmod ...
+su 99 99
+ncheck "setrichacl --set '99:rwpC::allow' a"
+ncheck "chmod 666 a"
+
+# ... but chmod disables the write_acl permission
+check "setrichacl --set '99:rwpC::allow' a || echo status: \$?" <<EOF
+a: Operation not permitted
+status: 1
+EOF
