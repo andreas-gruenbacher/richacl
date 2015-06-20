@@ -39,6 +39,7 @@ RICHACL_1.0 {
 	richacl_to_text;
 	richacl_to_xattr;
 	richacl_xattr_size;
+	richacl_valid;
 
     local:
     	# Library internal stuff
