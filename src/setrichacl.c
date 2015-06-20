@@ -346,18 +346,21 @@ static int set_richacl(const char *path, struct richacl *acl)
 		int saved_errno = errno;
 		struct stat st;
 
-		if (stat(path, &st))
+		if (stat(path, &st)) {
+			errno = saved_errno;
 			return -1;
+		}
 		if (!richacl_equiv_mode(acl, &st.st_mode))
 			return chmod(path, st.st_mode);
 		if (saved_errno != ENOSYS && has_posix_acl(path, st.st_mode))
-			errno = 0;
+			saved_errno = 0;
+		errno = saved_errno;
 		return -1;
 	}
 	if (richacl_is_auto_inherit(acl)) {
 		int ret;
 
-		ret =  auto_inherit(path, acl);
+		ret = auto_inherit(path, acl);
 		return ret;
 	}
 	return 0;
