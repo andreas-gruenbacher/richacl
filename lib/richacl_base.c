@@ -279,13 +279,16 @@ static unsigned int richacl_mode_to_mask(mode_t mode)
 
 /**
  * richacl_chmod  -  set the file masks of the acl
+ * @mode:	file mode including the file type
  */
 void richacl_chmod(struct richacl *acl, mode_t mode)
 {
+	unsigned int x = S_ISDIR(mode) ? 0 : RICHACE_DELETE_CHILD;
+
 	acl->a_flags |= RICHACL_MASKED;
-	acl->a_owner_mask = richacl_mode_to_mask(mode >> 6);
-	acl->a_group_mask = richacl_mode_to_mask(mode >> 3);
-	acl->a_other_mask = richacl_mode_to_mask(mode);
+	acl->a_owner_mask = richacl_mode_to_mask(mode >> 6) & ~x;
+	acl->a_group_mask = richacl_mode_to_mask(mode >> 3) & ~x;
+	acl->a_other_mask = richacl_mode_to_mask(mode)      & ~x;
 }
 
 /**
