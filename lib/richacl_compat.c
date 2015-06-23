@@ -169,7 +169,7 @@ richace_change_mask(struct richacl_alloc *alloc, struct richace **ace,
  * granted any permissions, no empty everyone@ acl entry is inserted.
  *
  * This transformation does not modify the permissions that the acl
- * grants, but we need it to simplify successive transformations.
+ * grants, but simplifies successive transformations.
  */
 static int
 richacl_move_everyone_aces_down(struct richacl_alloc *alloc)
@@ -234,7 +234,7 @@ richacl_move_everyone_aces_down(struct richacl_alloc *alloc)
  * The simplest possible approach to achieve this would be to insert a
  * "<who>:<allow>::allow" ace before the final everyone@ allow ace.  Since this
  * would often result in aces which are not needed or which could be merged
- * with an existing ace, we make the following optimizations:
+ * with existing aces, we make the following optimizations:
  *
  *   - We go through the acl and determine which permissions are already
  *     allowed or denied to @who, and we remove those permissions from
@@ -242,8 +242,8 @@ richacl_move_everyone_aces_down(struct richacl_alloc *alloc)
  *
  *   - If the acl contains an allow ace for @who and no aces after this entry
  *     deny permissions in @allow, we add the permissions in @allow to this
- *     ace.  (Propagating permissions across a deny ace which can match the
- *     process can elevate permissions.)
+ *     ace.  (Propagating permissions across a deny ace which could match the
+ *     process could elevate permissions.)
  *
  * This transformation does not alter the permissions that the acl grants.
  */
@@ -310,56 +310,42 @@ __richacl_propagate_everyone(struct richacl_alloc *alloc, struct richace *who,
  * richacl_propagate_everyone  -  propagate everyone@ mask flags up the acl
  * @alloc:	acl and number of allocated entries
  *
- * Make sure for owner@, group@, and all other users, groups, and
- * special identifiers that they are allowed or denied all permissions
- * that are granted be the trailing everyone@ acl entry. If they are
- * not, try to add the missing permissions to existing allow acl entries
- * for those users, or introduce additional acl entries if that is not
- * possible.
+ * Make sure that group@ and all other users and groups mentioned in the acl
+ * will not lose any permissions when finally applying the other mask to the
+ * everyone@ allow ace at the end of the acl.  We modify the permissions of
+ * existing entries or add new entries before the final everyone@ allow ace to
+ * achieve that.
  *
- * We do this so that no mask flags will get lost when finally applying
- * the file masks to the acl entries: otherwise, with an other file mask
- * that is more restrictive than the owner and/or group file mask, mask
- * flags that were allowed to processes in the owner and group classes
- * and that the other mask denies would be lost. For example, the
- * following two acls show the problem when mode 0664 is applied to
- * them:
+ * Entries for owner@ are ignored here; see richacl_set_owner_permissions().
  *
- *    masking without propagation (wrong)
- *    ===========================================================
- *    joe:r::allow		=> joe:r::allow
- *    everyone@:rwx::allow	=> everyone@:r::allow
- *    -----------------------------------------------------------
- *    joe:w::deny		=> joe:w::deny
- *    everyone@:rwx::allow	   everyone@:r::allow
+ * For example, the following acl implicitly grants everyone rwpx access:
  *
- * Note that the permissions of joe end up being more restrictive than
- * what the acl would allow when first computing the allowed flags and
- * then applying the respective mask. With propagation of permissions,
- * we get:
+ *    joe:r::allow
+ *    everyone@:rwpx::allow
  *
- *    masking after propagation (correct)
- *    ===========================================================
- *    joe:r::allow		=> joe:rw::allow
- *				   owner@:rw::allow
- *				   group@:rw::allow
- *    everyone@:rwx::allow	   everyone@:r::allow
- *    -----------------------------------------------------------
- *    joe:w::deny		=> owner@:x::deny
- *				   joe:w::deny
- *				   owner@:rw::allow
- *				   owner@:rw::allow
- *				   joe:r::allow
- *    everyone@:rwx::allow	   everyone@:r::allow
+ * When applying mode 0660 to this acl, group@ would lose rwp access, and joe
+ * would lose wp access even though the mode does not exclude those
+ * permissions.  After propagating the everyone@ permissions, the result for
+ * applying mode 0660 becomes:
  *
- * The examples show the acls that would result from propagation with no
- * masking performed. In fact, we do apply the respective mask to the
- * acl entries before computing the propagation because this will save
- * us from adding acl entries that would end up with empty mask fields
- * after applying the masks.
+ *    owner@:rwp::allow
+ *    joe:rwp::allow
+ *    group@:rwp::allow
  *
- * It is ensured that no more than one entry will be inserted for each
- * who value, no matter how many entries each who value has already.
+ * Deny aces complicate the matter.  For example, the following acl grants
+ * everyone but joe write access:
+ *
+ *    joe:wp::deny
+ *    everyone@:rwpx::allow
+ *
+ * When applying mode 0660 to this acl, group@ would lose rwp access, and joe
+ * would lose r access.  After propagating the everyone@ permissions, the
+ * result for applying mode 0660 becomes:
+ *
+ *    owner@:rwp::allow
+ *    joe:w::deny
+ *    group@:rwp::allow
+ *    joe:r::allow
  */
 static int
 richacl_propagate_everyone(struct richacl_alloc *alloc)
@@ -367,38 +353,22 @@ richacl_propagate_everyone(struct richacl_alloc *alloc)
 	struct richace who = { .e_flags = RICHACE_SPECIAL_WHO };
 	struct richacl *acl = alloc->acl;
 	struct richace *ace;
-	unsigned int owner_allow, group_allow;
+	unsigned int group_allow;
 
 	/*
-	 * If the owner mask contains permissions which are not in the group mask,
-	 * the group mask contains permissions which are not in the other mask,
-	 * or the owner class contains permissions which are not in the other mask,
-	 * we may need to propagate permissions up from the everyone@ allow ace.
-	 * The third condition is implied by the first two.
+	 * If the group mask contains permissions which are not in the other
+	 * mask, we may need to propagate permissions up from the everyone@
+	 * allow ace.
 	 */
-	if (!((acl->a_owner_mask & ~acl->a_group_mask) ||
-	      (acl->a_group_mask & ~acl->a_other_mask)))
+	if (!(acl->a_group_mask & ~acl->a_other_mask))
 		return 0;
 	if (!acl->a_count)
 		return 0;
 	ace = acl->a_entries + acl->a_count - 1;
 	if (richace_is_inherit_only(ace) || !richace_is_everyone(ace))
 		return 0;
-	if (!(ace->e_mask & ~(acl->a_group_mask & acl->a_other_mask))) {
-		/* None of the allowed permissions will get masked. */
-		return 0;
-	}
-	owner_allow = ace->e_mask & acl->a_owner_mask;
+
 	group_allow = ace->e_mask & acl->a_group_mask;
-
-	/* Propagate everyone@ permissions through to owner@. */
-	if (owner_allow & ~(acl->a_group_mask & acl->a_other_mask)) {
-		who.e_id = RICHACE_OWNER_SPECIAL_ID;
-		if (__richacl_propagate_everyone(alloc, &who, owner_allow))
-			return -1;
-		acl = alloc->acl;
-	}
-
 	if (group_allow & ~acl->a_other_mask) {
 		int n;
 
@@ -445,10 +415,10 @@ __richacl_apply_masks(struct richacl_alloc *alloc, uid_t owner)
 	richacl_for_each_entry(ace, alloc->acl) {
 		unsigned int mask;
 
-		if (richace_is_inherit_only(ace) || !richace_is_allow(ace))
+		if (richace_is_inherit_only(ace) || !richace_is_allow(ace) ||
+		    richace_is_owner(ace))
 			continue;
-		if (richace_is_owner(ace) ||
-		    (richace_is_unix_user(ace) && ace->e_id == owner))
+		if (richace_is_unix_user(ace) && ace->e_id == owner)
 			mask = alloc->acl->a_owner_mask;
 		else if (richace_is_everyone(ace))
 			mask = alloc->acl->a_other_mask;
@@ -609,15 +579,9 @@ richacl_isolate_group_class(struct richacl_alloc *alloc)
 		.e_flags = RICHACE_SPECIAL_WHO,
 		.e_id = RICHACE_GROUP_SPECIAL_ID,
 	};
-	struct richace *ace;
 	unsigned int deny;
 
-	if (!alloc->acl->a_count)
-		return 0;
-	ace = alloc->acl->a_entries + alloc->acl->a_count - 1;
-	if (richace_is_inherit_only(ace) || !richace_is_everyone(ace))
-		return 0;
-	deny = ace->e_mask & ~alloc->acl->a_group_mask;
+	deny = alloc->acl->a_other_mask & ~alloc->acl->a_group_mask;
 
 	if (deny) {
 		unsigned int n;
@@ -627,17 +591,85 @@ richacl_isolate_group_class(struct richacl_alloc *alloc)
 
 		/* Start from the entry before the trailing EVERYONE@ ALLOW
 		   entry. We will not hit EVERYONE@ entries in the loop. */
-		for (n = alloc->acl->a_count - 2; n != -1; n--) {
-			ace = alloc->acl->a_entries + n;
+		for (n = alloc->acl->a_count - 1; n != -1; n--) {
+			struct richace *ace = alloc->acl->a_entries + n;
 
 			if (richace_is_inherit_only(ace) ||
 			    richace_is_owner(ace) ||
-			    richace_is_group(ace))
+			    richace_is_group(ace) ||
+			    richace_is_everyone(ace))
 				continue;
 			if (__richacl_isolate_who(alloc, ace, deny))
 				return -1;
 		}
 	}
+	return 0;
+}
+
+/**
+ * richacl_set_owner_permissions  -  set the owner permissions to the owner mask
+ */
+static int
+richacl_set_owner_permissions(struct richacl_alloc *alloc)
+{
+	unsigned int x = RICHACE_POSIX_ALWAYS_ALLOWED;
+	unsigned int owner_mask = alloc->acl->a_owner_mask & ~x;
+	unsigned int denied = 0;
+	struct richace *ace;
+
+	if (!owner_mask)
+		return 0;
+
+	richacl_for_each_entry(ace, alloc->acl) {
+		if (richace_is_owner(ace)) {
+			if (!richace_is_inherit_only(ace))
+				richace_change_mask(alloc, &ace, 0);
+		} else {
+			if (richace_is_deny(ace))
+				denied |= ace->e_mask;
+		}
+	}
+
+	if (owner_mask & (denied |
+			  ~alloc->acl->a_other_mask |
+			  ~alloc->acl->a_group_mask)) {
+		ace = alloc->acl->a_entries;
+		if (richacl_insert_entry(alloc, &ace))
+			return -1;
+		ace->e_type = RICHACE_ACCESS_ALLOWED_ACE_TYPE;
+		ace->e_flags = RICHACE_SPECIAL_WHO;
+		ace->e_mask = owner_mask;
+		ace->e_id = RICHACE_OWNER_SPECIAL_ID;
+	}
+	return 0;
+}
+
+/**
+ * richacl_set_other_permissions  -  set the other permissions to the other mask
+ */
+static int
+richacl_set_other_permissions(struct richacl_alloc *alloc)
+{
+	struct richacl *acl = alloc->acl;
+	unsigned int x = RICHACE_POSIX_ALWAYS_ALLOWED;
+	unsigned int other_mask = acl->a_other_mask & ~x;
+	struct richace *ace = acl->a_entries + acl->a_count - 1;
+
+	if (!other_mask)
+		return 0;
+
+	if (acl->a_count == 0 ||
+	    !richace_is_everyone(ace) ||
+	    richace_is_inherit_only(ace)) {
+		ace++;
+		if (richacl_insert_entry(alloc, &ace))
+			return -1;
+		ace->e_type = RICHACE_ACCESS_ALLOWED_ACE_TYPE;
+		ace->e_flags = RICHACE_SPECIAL_WHO;
+		ace->e_mask = other_mask;
+		ace->e_id = RICHACE_EVERYONE_SPECIAL_ID;
+	} else
+		richace_change_mask(alloc, &ace, other_mask);
 	return 0;
 }
 
@@ -664,6 +696,8 @@ richacl_apply_masks(struct richacl **acl, uid_t owner)
 		if (richacl_move_everyone_aces_down(&alloc) ||
 		    richacl_propagate_everyone(&alloc) ||
 		    __richacl_apply_masks(&alloc, owner) ||
+		    richacl_set_owner_permissions(&alloc) ||
+		    richacl_set_other_permissions(&alloc) ||
 		    richacl_isolate_owner_class(&alloc) ||
 		    richacl_isolate_group_class(&alloc))
 				retval = -1;
