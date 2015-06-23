@@ -38,8 +38,8 @@ struct richacl_alloc {
 
 /**
  * richacl_delete_entry  -  delete an entry in an acl
- * @x:		acl and number of allocated entries
- * @ace:	an entry in @x->acl
+ * @alloc:	acl and number of allocated entries
+ * @ace:	an entry in @alloc->acl
  *
  * Updates @ace so that it points to the entry before the deleted entry
  * on return. (When deleting the first entry, @ace will point to the
@@ -48,78 +48,78 @@ struct richacl_alloc {
  * an acl.
  */
 static void
-richacl_delete_entry(struct richacl_alloc *x, struct richace **ace)
+richacl_delete_entry(struct richacl_alloc *alloc, struct richace **ace)
 {
-	void *end = x->acl->a_entries + x->acl->a_count;
+	void *end = alloc->acl->a_entries + alloc->acl->a_count;
 
 	memmove(*ace, *ace + 1, end - (void *)(*ace + 1));
 	(*ace)--;
-	x->acl->a_count--;
+	alloc->acl->a_count--;
 }
 
 /**
  * richacl_insert_entry  -  insert an entry in an acl
- * @x:		acl and number of allocated entries
+ * @alloc:	acl and number of allocated entries
  * @ace:	entry before which the new entry shall be inserted
  *
- * Insert a new entry in @x->acl at position @ace, and zero-initialize
- * it.  This may require reallocating @x->acl.
+ * Insert a new entry in @alloc->acl at position @ace, and zero-initialize
+ * it.  This may require reallocating @alloc->acl.
  */
 static int
-richacl_insert_entry(struct richacl_alloc *x, struct richace **ace)
+richacl_insert_entry(struct richacl_alloc *alloc, struct richace **ace)
 {
-	int n = *ace - x->acl->a_entries;
+	int n = *ace - alloc->acl->a_entries;
 
-	if (x->count == x->acl->a_count) {
+	if (alloc->count == alloc->acl->a_count) {
 		size_t size = sizeof(struct richacl) +
-			      (x->count + 1) * sizeof(struct richace);
+			      (alloc->count + 1) * sizeof(struct richace);
 		struct richacl *acl2;
 
-		acl2 = realloc(x->acl, size);
+		acl2 = realloc(alloc->acl, size);
 		if (!acl2)
 			return -1;
-		x->count++;
-		x->acl = acl2;
+		alloc->count++;
+		alloc->acl = acl2;
 		*ace = acl2->a_entries + n;
 	}
-	memmove(*ace + 1, *ace, sizeof(struct richace) * (x->acl->a_count - n));
+	memmove(*ace + 1, *ace, sizeof(struct richace) * (alloc->acl->a_count - n));
 	memset(*ace, 0, sizeof(struct richace));
-	x->acl->a_count++;
+	alloc->acl->a_count++;
 	return 0;
 }
 
 /**
  * richacl_append_entry  -  append an entry to an acl
- * @x:		acl and number of allocated entries
+ * @alloc:	acl and number of allocated entries
  *
- * Append a new entry to @x->acl and zero-initialize it.
- * This may require reallocating @x->acl.
+ * Append a new entry to @alloc->acl and zero-initialize it.
+ * This may require reallocating @alloc->acl.
  */
 static struct richace *
-richacl_append_entry(struct richacl_alloc *x)
+richacl_append_entry(struct richacl_alloc *alloc)
 {
 	struct richace *ace;
 
-	if (x->count == x->acl->a_count) {
+	if (alloc->count == alloc->acl->a_count) {
 		size_t size = sizeof(struct richacl) +
-			      (x->count + 1) * sizeof(struct richace);
+			      (alloc->count + 1) * sizeof(struct richace);
 		struct richacl *acl2;
 
-		acl2 = realloc(x->acl, size);
+		acl2 = realloc(alloc->acl, size);
 		if (!acl2)
 			return NULL;
-		x->count++;
-		x->acl = acl2;
+		alloc->count++;
+		alloc->acl = acl2;
 	}
-	ace = x->acl->a_entries + x->acl->a_count;
-	x->acl->a_count++;
+	ace = alloc->acl->a_entries + alloc->acl->a_count;
+	alloc->acl->a_count++;
 	memset(ace, 0, sizeof(struct richace));
 	return ace;
 }
 
 /**
  * richace_change_mask  -  change the mask in @ace to @mask
- * @x:		acl and number of allocated entries
+ * @alloc:	acl and number of allocated entries
  * @ace:	entry to modify
  * @mask:	new mask for @ace
  *
@@ -135,14 +135,14 @@ richacl_append_entry(struct richacl_alloc *x)
  * modifying masks while forward iterating over an acl.
  */
 static int
-richace_change_mask(struct richacl_alloc *x, struct richace **ace,
+richace_change_mask(struct richacl_alloc *alloc, struct richace **ace,
 			   unsigned int mask)
 {
 	if (mask && (*ace)->e_mask == mask)
 		(*ace)->e_flags &= ~RICHACE_INHERIT_ONLY_ACE;
 	else if (mask & ~RICHACE_POSIX_ALWAYS_ALLOWED) {
 		if (richace_is_inheritable(*ace)) {
-			if (richacl_insert_entry(x, ace))
+			if (richacl_insert_entry(alloc, ace))
 				return -1;
 			memcpy(*ace, *ace + 1, sizeof(struct richace));
 			(*ace)->e_flags |= RICHACE_INHERIT_ONLY_ACE;
@@ -154,14 +154,14 @@ richace_change_mask(struct richacl_alloc *x, struct richace **ace,
 		if (richace_is_inheritable(*ace))
 			(*ace)->e_flags |= RICHACE_INHERIT_ONLY_ACE;
 		else
-			richacl_delete_entry(x, ace);
+			richacl_delete_entry(alloc, ace);
 	}
 	return 0;
 }
 
 /**
  * richacl_move_everyone_aces_down  -  move everyone@ acl entries to the end
- * @x:		acl and number of allocated entries
+ * @alloc:	acl and number of allocated entries
  *
  * Move all everyone acl entries to the bottom of the acl so that only a
  * single everyone@ allow acl entry remains at the end, and update the
@@ -172,12 +172,12 @@ richace_change_mask(struct richacl_alloc *x, struct richace **ace,
  * grants, but we need it to simplify successive transformations.
  */
 static int
-richacl_move_everyone_aces_down(struct richacl_alloc *x)
+richacl_move_everyone_aces_down(struct richacl_alloc *alloc)
 {
 	struct richace *ace;
 	unsigned int allowed = 0, denied = 0;
 
-	richacl_for_each_entry(ace, x->acl) {
+	richacl_for_each_entry(ace, alloc->acl) {
 		if (richace_is_inherit_only(ace))
 			continue;
 		if (richace_is_everyone(ace)) {
@@ -187,15 +187,15 @@ richacl_move_everyone_aces_down(struct richacl_alloc *x)
 				denied |= (ace->e_mask & ~allowed);
 			else
 				continue;
-			if (richace_change_mask(x, &ace, 0))
+			if (richace_change_mask(alloc, &ace, 0))
 				return -1;
 		} else {
 			if (richace_is_allow(ace)) {
-				if (richace_change_mask(x, &ace, allowed |
+				if (richace_change_mask(alloc, &ace, allowed |
 						(ace->e_mask & ~denied)))
 					return -1;
 			} else if (richace_is_deny(ace)) {
-				if (richace_change_mask(x, &ace, denied |
+				if (richace_change_mask(alloc, &ace, denied |
 						(ace->e_mask & ~allowed)))
 					return -1;
 			}
@@ -204,14 +204,14 @@ richacl_move_everyone_aces_down(struct richacl_alloc *x)
 	if (allowed & ~RICHACE_POSIX_ALWAYS_ALLOWED) {
 		struct richace *last_ace = ace - 1;
 
-		if (x->acl->a_entries &&
+		if (alloc->acl->a_entries &&
 		    richace_is_everyone(last_ace) &&
 		    richace_is_allow(last_ace) &&
 		    richace_is_inherit_only(last_ace) &&
 		    last_ace->e_mask == allowed)
 			last_ace->e_flags &= ~RICHACE_INHERIT_ONLY_ACE;
 		else {
-			if (richacl_insert_entry(x, &ace))
+			if (richacl_insert_entry(alloc, &ace))
 				return -1;
 			ace->e_type = RICHACE_ACCESS_ALLOWED_ACE_TYPE;
 			ace->e_flags = RICHACE_SPECIAL_WHO;
@@ -224,7 +224,7 @@ richacl_move_everyone_aces_down(struct richacl_alloc *x)
 
 /*
  * __richacl_propagate_everyone  -  propagate everyone@ permissions up for @who
- * @x:		acl and number of allocated entries
+ * @alloc:	acl and number of allocated entries
  * @who:	identifier to propagate permissions for
  * @allow:	permissions to propagate up
  *
@@ -248,7 +248,7 @@ richacl_move_everyone_aces_down(struct richacl_alloc *x)
  * This transformation does not alter the permissions that the acl grants.
  */
 static int
-__richacl_propagate_everyone(struct richacl_alloc *x, struct richace *who,
+__richacl_propagate_everyone(struct richacl_alloc *alloc, struct richace *who,
 			     unsigned int allow)
 {
 	struct richace *allow_last = NULL, *ace;
@@ -259,7 +259,7 @@ __richacl_propagate_everyone(struct richacl_alloc *x, struct richace *who,
 	 * this who value that is "reachable" from the trailing EVERYONE@
 	 * ALLOW ACE
 	 */
-	richacl_for_each_entry(ace, x->acl) {
+	richacl_for_each_entry(ace, alloc->acl) {
 		if (richace_is_inherit_only(ace))
 			continue;
 		if (richace_is_allow(ace)) {
@@ -283,19 +283,19 @@ __richacl_propagate_everyone(struct richacl_alloc *x, struct richace *who,
 	 */
 	if (!richace_is_owner(who) &&
 	    richace_is_everyone(ace) && richace_is_allow(ace) &&
-	    !(allow & ~(ace->e_mask & x->acl->a_other_mask)))
+	    !(allow & ~(ace->e_mask & alloc->acl->a_other_mask)))
 		allow = 0;
 
 	if (allow) {
 		if (allow_last)
-			return richace_change_mask(x, &allow_last,
+			return richace_change_mask(alloc, &allow_last,
 						   allow_last->e_mask | allow);
 		else {
 			struct richace who_copy;
 
-			ace = x->acl->a_entries + x->acl->a_count - 1;
+			ace = alloc->acl->a_entries + alloc->acl->a_count - 1;
 			memcpy(&who_copy, who, sizeof(struct richace));
-			if (richacl_insert_entry(x, &ace))
+			if (richacl_insert_entry(alloc, &ace))
 				return -1;
 			memcpy(ace, &who_copy, sizeof(struct richace));
 			ace->e_type = RICHACE_ACCESS_ALLOWED_ACE_TYPE;
@@ -308,7 +308,7 @@ __richacl_propagate_everyone(struct richacl_alloc *x, struct richace *who,
 
 /**
  * richacl_propagate_everyone  -  propagate everyone@ mask flags up the acl
- * @x:		acl and number of allocated entries
+ * @alloc:	acl and number of allocated entries
  *
  * Make sure for owner@, group@, and all other users, groups, and
  * special identifiers that they are allowed or denied all permissions
@@ -362,10 +362,10 @@ __richacl_propagate_everyone(struct richacl_alloc *x, struct richace *who,
  * who value, no matter how many entries each who value has already.
  */
 static int
-richacl_propagate_everyone(struct richacl_alloc *x)
+richacl_propagate_everyone(struct richacl_alloc *alloc)
 {
 	struct richace who = { .e_flags = RICHACE_SPECIAL_WHO };
-	struct richacl *acl = x->acl;
+	struct richacl *acl = alloc->acl;
 	struct richace *ace;
 	unsigned int owner_allow, group_allow;
 
@@ -394,9 +394,9 @@ richacl_propagate_everyone(struct richacl_alloc *x)
 	/* Propagate everyone@ permissions through to owner@. */
 	if (owner_allow & ~(acl->a_group_mask & acl->a_other_mask)) {
 		who.e_id = RICHACE_OWNER_SPECIAL_ID;
-		if (__richacl_propagate_everyone(x, &who, owner_allow))
+		if (__richacl_propagate_everyone(alloc, &who, owner_allow))
 			return -1;
-		acl = x->acl;
+		acl = alloc->acl;
 	}
 
 	if (group_allow & ~acl->a_other_mask) {
@@ -404,9 +404,9 @@ richacl_propagate_everyone(struct richacl_alloc *x)
 
 		/* Propagate everyone@ permissions through to group@. */
 		who.e_id = RICHACE_GROUP_SPECIAL_ID;
-		if (__richacl_propagate_everyone(x, &who, group_allow))
+		if (__richacl_propagate_everyone(alloc, &who, group_allow))
 			return -1;
-		acl = x->acl;
+		acl = alloc->acl;
 
 		/* Start from the entry before the trailing EVERYONE@ ALLOW
 		   entry. We will not hit EVERYONE@ entries in the loop. */
@@ -420,7 +420,7 @@ richacl_propagate_everyone(struct richacl_alloc *x)
 			if (richace_is_allow(ace) || richace_is_deny(ace)) {
 				/* Any inserted entry will end up below the
 				   current entry. */
-				if (__richacl_propagate_everyone(x, ace, group_allow))
+				if (__richacl_propagate_everyone(alloc, ace, group_allow))
 					return -1;
 			}
 		}
@@ -430,7 +430,7 @@ richacl_propagate_everyone(struct richacl_alloc *x)
 
 /**
  * __richacl_apply_masks  -  apply the masks to the acl entries
- * @x:		acl and number of allocated entries
+ * @alloc:	acl and number of allocated entries
  * @owner:	the file owner the acl belongs to
  *
  * Apply the owner file mask to owner@ entries and entries matching the owner
@@ -438,23 +438,23 @@ richacl_propagate_everyone(struct richacl_alloc *x)
  * all other entries.
  */
 static int
-__richacl_apply_masks(struct richacl_alloc *x, uid_t owner)
+__richacl_apply_masks(struct richacl_alloc *alloc, uid_t owner)
 {
 	struct richace *ace;
 
-	richacl_for_each_entry(ace, x->acl) {
+	richacl_for_each_entry(ace, alloc->acl) {
 		unsigned int mask;
 
 		if (richace_is_inherit_only(ace) || !richace_is_allow(ace))
 			continue;
 		if (richace_is_owner(ace) ||
 		    (richace_is_unix_user(ace) && ace->e_id == owner))
-			mask = x->acl->a_owner_mask;
+			mask = alloc->acl->a_owner_mask;
 		else if (richace_is_everyone(ace))
-			mask = x->acl->a_other_mask;
+			mask = alloc->acl->a_other_mask;
 		else
-			mask = x->acl->a_group_mask;
-		if (richace_change_mask(x, &ace, ace->e_mask & mask))
+			mask = alloc->acl->a_group_mask;
+		if (richace_change_mask(alloc, &ace, ace->e_mask & mask))
 			return -1;
 	}
 	return 0;
@@ -484,44 +484,44 @@ richacl_max_allowed(struct richacl *acl)
 
 /**
  * richacl_isolate_owner_class  -  limit the owner class to the owner file mask
- * @x:		acl and number of allocated entries
+ * @alloc:	acl and number of allocated entries
  *
  * Make sure the owner class (owner@) is granted no more than the owner
  * mask by first checking which permissions anyone is granted, and then
  * denying owner@ all permissions beyond that.
  */
 static int
-richacl_isolate_owner_class(struct richacl_alloc *x)
+richacl_isolate_owner_class(struct richacl_alloc *alloc)
 {
 	struct richace *ace;
 	unsigned int allowed = 0;
 
-	allowed = richacl_max_allowed(x->acl);
-	if (allowed & ~x->acl->a_owner_mask) {
+	allowed = richacl_max_allowed(alloc->acl);
+	if (allowed & ~alloc->acl->a_owner_mask) {
 		/* Figure out if we can update an existig OWNER@ DENY entry. */
-		richacl_for_each_entry(ace, x->acl) {
+		richacl_for_each_entry(ace, alloc->acl) {
 			if (richace_is_inherit_only(ace))
 				continue;
 			if (richace_is_deny(ace)) {
 				if (richace_is_owner(ace))
 					break;
 			} else if (richace_is_allow(ace)) {
-				ace = x->acl->a_entries + x->acl->a_count;
+				ace = alloc->acl->a_entries + alloc->acl->a_count;
 				break;
 			}
 		}
-		if (ace != x->acl->a_entries + x->acl->a_count) {
-			if (richace_change_mask(x, &ace, ace->e_mask |
-					(allowed & ~x->acl->a_owner_mask)))
+		if (ace != alloc->acl->a_entries + alloc->acl->a_count) {
+			if (richace_change_mask(alloc, &ace, ace->e_mask |
+					(allowed & ~alloc->acl->a_owner_mask)))
 				return -1;
 		} else {
 			/* Insert an owner@ deny entry at the front. */
-			ace = x->acl->a_entries;
-			if (richacl_insert_entry(x, &ace))
+			ace = alloc->acl->a_entries;
+			if (richacl_insert_entry(alloc, &ace))
 				return -1;
 			ace->e_type = RICHACE_ACCESS_DENIED_ACE_TYPE;
 			ace->e_flags = RICHACE_SPECIAL_WHO;
-			ace->e_mask = allowed & ~x->acl->a_owner_mask;
+			ace->e_mask = allowed & ~alloc->acl->a_owner_mask;
 			ace->e_id = RICHACE_OWNER_SPECIAL_ID;
 		}
 	}
@@ -530,14 +530,14 @@ richacl_isolate_owner_class(struct richacl_alloc *x)
 
 /**
  * __richacl_isolate_who  -  isolate entry from EVERYONE@ ALLOW entry
- * @x:		acl and number of allocated entries
+ * @alloc:	acl and number of allocated entries
  * @who:	identifier to isolate
  * @deny:	permissions this identifier should not be allowed
  *
  * See richacl_isolate_group_class().
  */
 static int
-__richacl_isolate_who(struct richacl_alloc *x, struct richace *who,
+__richacl_isolate_who(struct richacl_alloc *alloc, struct richace *who,
 		      unsigned int deny)
 {
 	struct richace *ace;
@@ -545,7 +545,7 @@ __richacl_isolate_who(struct richacl_alloc *x, struct richace *who,
 	/*
 	 * Compute the permissions already denied to @who.
 	 */
-	richacl_for_each_entry(ace, x->acl) {
+	richacl_for_each_entry(ace, alloc->acl) {
 		if (richace_is_inherit_only(ace))
 			continue;
 		if (richace_is_same_identifier(ace, who) &&
@@ -560,8 +560,8 @@ __richacl_isolate_who(struct richacl_alloc *x, struct richace *who,
 	 * entry before the trailing EVERYONE@ ALLOW entry. We will not hit
 	 * EVERYONE@ entries in the loop.
 	 */
-	for (n = x->acl->a_count - 2; n != -1; n--) {
-		ace = x->acl->a_entries + n;
+	for (n = alloc->acl->a_count - 2; n != -1; n--) {
+		ace = alloc->acl->a_entries + n;
 		if (richace_is_inherit_only(ace))
 			continue;
 		if (richace_is_deny(ace)) {
@@ -574,7 +574,7 @@ __richacl_isolate_who(struct richacl_alloc *x, struct richace *who,
 		}
 	}
 	if (n != -1) {
-		if (richace_change_mask(x, &ace, ace->e_mask | deny))
+		if (richace_change_mask(alloc, &ace, ace->e_mask | deny))
 			return -1;
 	} else {
 		/*
@@ -582,9 +582,9 @@ __richacl_isolate_who(struct richacl_alloc *x, struct richace *who,
 		 */
 		struct richace who_copy;
 
-		ace = x->acl->a_entries + x->acl->a_count - 1;
+		ace = alloc->acl->a_entries + alloc->acl->a_count - 1;
 		memcpy(&who_copy, who, sizeof(struct richace));
-		if (richacl_insert_entry(x, &ace))
+		if (richacl_insert_entry(alloc, &ace))
 			return -1;
 		memcpy(ace, &who_copy, sizeof(struct richace));
 		ace->e_type = RICHACE_ACCESS_DENIED_ACE_TYPE;
@@ -596,14 +596,14 @@ __richacl_isolate_who(struct richacl_alloc *x, struct richace *who,
 
 /**
  * richacl_isolate_group_class  -  limit the group class to the group file mask
- * @x:		acl and number of allocated entries
+ * @alloc:	acl and number of allocated entries
  *
  * Make sure the group class (all entries except owner@ and everyone@) is
  * granted no more than the group mask by inserting DENY entries for group
  * class entries where necessary.
  */
 static int
-richacl_isolate_group_class(struct richacl_alloc *x)
+richacl_isolate_group_class(struct richacl_alloc *alloc)
 {
 	struct richace who = {
 		.e_flags = RICHACE_SPECIAL_WHO,
@@ -612,29 +612,29 @@ richacl_isolate_group_class(struct richacl_alloc *x)
 	struct richace *ace;
 	unsigned int deny;
 
-	if (!x->acl->a_count)
+	if (!alloc->acl->a_count)
 		return 0;
-	ace = x->acl->a_entries + x->acl->a_count - 1;
+	ace = alloc->acl->a_entries + alloc->acl->a_count - 1;
 	if (richace_is_inherit_only(ace) || !richace_is_everyone(ace))
 		return 0;
-	deny = ace->e_mask & ~x->acl->a_group_mask;
+	deny = ace->e_mask & ~alloc->acl->a_group_mask;
 
 	if (deny) {
 		unsigned int n;
 
-		if (__richacl_isolate_who(x, &who, deny))
+		if (__richacl_isolate_who(alloc, &who, deny))
 			return -1;
 
 		/* Start from the entry before the trailing EVERYONE@ ALLOW
 		   entry. We will not hit EVERYONE@ entries in the loop. */
-		for (n = x->acl->a_count - 2; n != -1; n--) {
-			ace = x->acl->a_entries + n;
+		for (n = alloc->acl->a_count - 2; n != -1; n--) {
+			ace = alloc->acl->a_entries + n;
 
 			if (richace_is_inherit_only(ace) ||
 			    richace_is_owner(ace) ||
 			    richace_is_group(ace))
 				continue;
-			if (__richacl_isolate_who(x, ace, deny))
+			if (__richacl_isolate_who(alloc, ace, deny))
 				return -1;
 		}
 	}
@@ -657,19 +657,19 @@ richacl_apply_masks(struct richacl **acl, uid_t owner)
 	int retval = 0;
 
 	if ((*acl)->a_flags & RICHACL_MASKED) {
-		struct richacl_alloc x = {
+		struct richacl_alloc alloc = {
 			.acl = *acl,
 			.count = (*acl)->a_count,
 		};
-		if (richacl_move_everyone_aces_down(&x) ||
-		    richacl_propagate_everyone(&x) ||
-		    __richacl_apply_masks(&x, owner) ||
-		    richacl_isolate_owner_class(&x) ||
-		    richacl_isolate_group_class(&x))
+		if (richacl_move_everyone_aces_down(&alloc) ||
+		    richacl_propagate_everyone(&alloc) ||
+		    __richacl_apply_masks(&alloc, owner) ||
+		    richacl_isolate_owner_class(&alloc) ||
+		    richacl_isolate_group_class(&alloc))
 				retval = -1;
 
-		x.acl->a_flags &= ~RICHACL_MASKED;
-		*acl = x.acl;
+		alloc.acl->a_flags &= ~RICHACL_MASKED;
+		*acl = alloc.acl;
 	}
 	return retval;
 }
@@ -678,23 +678,23 @@ struct richacl *
 richacl_auto_inherit(const struct richacl *acl,
 		     const struct richacl *inherited_acl)
 {
-	struct richacl_alloc x = {
+	struct richacl_alloc alloc = {
 		.acl = richacl_clone(acl),
 		.count = acl->a_count,
 	};
 	const struct richace *inherited_ace;
 	struct richace *ace;
 
-	richacl_for_each_entry(ace, x.acl) {
+	richacl_for_each_entry(ace, alloc.acl) {
 		if (ace->e_flags & RICHACE_INHERITED_ACE)
-			richacl_delete_entry(&x, &ace);
+			richacl_delete_entry(&alloc, &ace);
 	}
 	richacl_for_each_entry(inherited_ace, inherited_acl) {
-		ace = richacl_append_entry(&x);
+		ace = richacl_append_entry(&alloc);
 		if (!ace)
 			return NULL;
 		richace_copy(ace, inherited_ace);
 		ace->e_flags |= RICHACE_INHERITED_ACE;
 	}
-	return x.acl;
+	return alloc.acl;
 }
