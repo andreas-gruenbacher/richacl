@@ -7,24 +7,29 @@ everyone@:rwpxd::allow
 EOF
 
 check 'richacl-apply-masks -m 644 everyone@:rwpxd::allow' <<EOF
-owner@:rwpd::allow
+owner@:rwp::allow
 everyone@:r::allow
 EOF
 
+check 'richacl-apply-masks -d -m 755 everyone@:rwpxd::allow' <<EOF
+owner@:rwpxd::allow
+everyone@:rx::allow
+EOF
+
 check 'richacl-apply-masks -m 640 everyone@:rwpxd::allow' <<EOF
-owner@:rwpd::allow
+owner@:rwp::allow
 group@:r::allow
 EOF
 
 check 'richacl-apply-masks -m 644 group@:wpd::deny,everyone@:rwpxd::allow' <<EOF
+owner@:rwp::allow
 group@:wpd::deny
-owner@:rwpd::allow
 everyone@:r::allow
 EOF
 
 check 'richacl-apply-masks -m 640 group@:wpd::deny,everyone@:rwpxd::allow' <<EOF
+owner@:rwp::allow
 group@:wpd::deny
-owner@:rwpd::allow
 group@:r::allow
 EOF
 
@@ -38,9 +43,10 @@ EOF
 check 'richacl-apply-masks -m 0 everyone@:rwpxd::allow' <<EOF
 EOF
 
-check 'richacl-apply-masks -m 664 1234:w::deny,everyone@:rw::allow' <<EOF
-1234:w::deny
-owner@:rw::allow
-group@:rw::allow
+check 'richacl-apply-masks -m 664 1234:x::deny,everyone@:rwpx::allow' <<EOF
+owner@:rwp::allow
+1234:x::deny
+group@:rwp::allow
+1234:rwp::allow
 everyone@:r::allow
 EOF

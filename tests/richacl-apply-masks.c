@@ -19,15 +19,19 @@ void print_error(const char *fmt, ...)
 int main(int argc, char *argv[])
 {
 	uid_t owner = getuid();
-	mode_t mode;
+	mode_t mode = 0;
 	bool do_chmod = false;
 	int opt;
 
-	while ((opt = getopt(argc, argv, "m:")) != -1) {
+	while ((opt = getopt(argc, argv, "m:d")) != -1) {
 		switch(opt) {
 		case 'm':
-			mode = strtoul(optarg, NULL, 8);
+			mode = (mode & ~0777) | strtoul(optarg, NULL, 8);
 			do_chmod = true;
+			break;
+
+		case 'd':
+			mode |= S_IFDIR;
 			break;
 
 		default:
