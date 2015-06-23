@@ -233,6 +233,7 @@ static int auto_inherit(const char *dirname, struct richacl *dir_acl)
 	file_inheritable = richacl_inherit(dir_acl, 0);
 	if (!file_inheritable && errno != 0)
 		goto fail;
+	errno = 0;
 	dir_inheritable = richacl_inherit(dir_acl, 1);
 	if (!dir_inheritable && errno != 0)
 		goto fail;
