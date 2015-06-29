@@ -11,7 +11,8 @@ RICHACL_1.0 {
 	richace_is_unix_user;
 	richace_set_gid;
 	richace_set_uid;
-	richace_set_who;
+	richace_set_special_who;
+	richace_set_unmapped_who;
 
 	# acl funcs
 	richacl_access;

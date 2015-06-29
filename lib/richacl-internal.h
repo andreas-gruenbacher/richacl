@@ -38,4 +38,6 @@ extern const char *richace_owner_who;
 extern const char *richace_group_who;
 extern const char *richace_everyone_who;
 
+extern void richace_free(struct richace *);
+
 #endif  /* __RICHACL_INTERNAL_H */

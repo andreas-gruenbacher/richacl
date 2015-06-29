@@ -131,7 +131,8 @@ static int modify_richacl(struct richacl **acl2, struct richacl *acl, int what_a
 					if (!richace_is_deny(ace2) ||
 					    richace_is_inherited(ace2))
 						break;
-					richace_copy(ace3++, ace2);
+					if (richace_copy(ace3++, ace2))
+						goto fail;
 				}
 			} else {
 				/*
@@ -141,13 +142,16 @@ static int modify_richacl(struct richacl **acl2, struct richacl *acl, int what_a
 				richacl_for_each_entry(ace2, *acl2) {
 					if (richace_is_inherited(ace2))
 						break;
-					richace_copy(ace3++, ace2);
+					if (richace_copy(ace3++, ace2))
+						goto fail;
 				}
 			}
-			richace_copy(ace3++, ace);
+			if (richace_copy(ace3++, ace))
+				goto fail;
 			ace2--;
 			richacl_for_each_entry_continue(ace2, *acl2)
-				richace_copy(ace3++, ace2);
+				if (richace_copy(ace3++, ace2))
+					goto fail;
 		} else {
 			struct richace *last_inherited;
 
@@ -159,7 +163,8 @@ static int modify_richacl(struct richacl **acl2, struct richacl *acl, int what_a
 			richacl_for_each_entry(ace2, *acl2) {
 				if (ace2 == last_inherited)
 					break;
-				richace_copy(ace3++, ace2);
+				if (richace_copy(ace3++, ace2))
+					goto fail;
 			}
 			if (richace_is_deny(ace)) {
 				/*
@@ -170,7 +175,8 @@ static int modify_richacl(struct richacl **acl2, struct richacl *acl, int what_a
 				richacl_for_each_entry_continue(ace2, *acl2) {
 					if (!richace_is_deny(ace2))
 						break;
-					richace_copy(ace3++, ace2);
+					if (richace_copy(ace3++, ace2))
+						goto fail;
 				}
 			} else {
 				/*
@@ -179,19 +185,26 @@ static int modify_richacl(struct richacl **acl2, struct richacl *acl, int what_a
 				 */
 				ace2--;
 				richacl_for_each_entry_continue(ace2, *acl2)
-					richace_copy(ace3++, ace2);
+					if (richace_copy(ace3++, ace2))
+						goto fail;
 			}
-			richace_copy(ace3++, ace);
+			if (richace_copy(ace3++, ace))
+				goto fail;
 			ace2--;
 			richacl_for_each_entry_continue(ace2, *acl2)
-				richace_copy(ace3++, ace2);
+				if (richace_copy(ace3++, ace2))
+					goto fail;
 		}
 
 		richacl_free(*acl2);
 		*acl2 = acl3;
 
 	next_change:
-		/* gcc is unhappy without a statement behind the label ... */ ;
+		continue;
+
+	fail:
+		richacl_free(acl3);
+		return -1;
 	}
 
 	if (what_acl_contains & RICHACL_TEXT_FLAGS)
@@ -299,6 +312,8 @@ static int auto_inherit(const char *dirname, struct richacl *dir_acl)
 			new_acl = richacl_auto_inherit(old_acl,
 					isdir ? dir_inheritable :
 						file_inheritable);
+			if (!new_acl)
+				goto fail2;
 			richacl_compute_max_masks(new_acl, st.st_uid);
 			equal = !richacl_compare(old_acl, new_acl);
 			if (equal && !opt_repropagate)

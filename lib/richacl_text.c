@@ -63,6 +63,7 @@ static struct {
 	FLAGS_BIT('i', INHERIT_ONLY_ACE, "inherit_only"),
 	FLAGS_BIT('g', IDENTIFIER_GROUP, "identifier_group"),
 	FLAGS_BIT('a', INHERITED_ACE, "inherited"),
+	FLAGS_BIT('u', UNMAPPED_WHO, "unmapped"),
 };
 
 #undef FLAGS_BIT
@@ -334,6 +335,8 @@ static void write_identifier(struct string_buffer *buffer,
 			*c = tolower(*c);
 
 		buffer_sprintf(buffer, "%*s", align, dup);
+	} else if (ace->e_flags & RICHACE_UNMAPPED_WHO) {
+		buffer_sprintf(buffer, "%*s", align, ace->e_who);
 	} else if (ace->e_flags & RICHACE_IDENTIFIER_GROUP) {
 		struct group *group = NULL;
 
@@ -373,6 +376,8 @@ char *richacl_to_text(const struct richacl *acl, int fmt)
 				a = 6;
 			else if (richace_is_everyone(ace))
 				a = 9;
+			else if (ace->e_flags & RICHACE_UNMAPPED_WHO)
+				a = strlen(ace->e_who);
 			else if (ace->e_flags & RICHACE_IDENTIFIER_GROUP) {
 				struct group *group = NULL;
 
@@ -527,6 +532,13 @@ static int identifier_from_text(const char *str, struct richace *ace,
 	char *c;
 	unsigned long l;
 
+	if (ace->e_flags & RICHACE_UNMAPPED_WHO) {
+		int ret = richace_set_unmapped_who(ace, str, ace->e_flags);
+		if (ret)
+			error("%s", strerror(errno));
+		return ret;
+	}
+
 	c = strchr(str, '@');
 	if (c) {
 		char *dup;
@@ -542,17 +554,19 @@ static int identifier_from_text(const char *str, struct richace *ace,
 		for (c = dup; *c; c++)
 			*c = toupper(*c);
 
-		if (richace_set_who(ace, dup)) {
+		if (richace_set_special_who(ace, dup)) {
 			error("Special user `%s' not supported\n", str);
 			goto fail;
 		}
 		return 0;
 	}
+
 	l = strtoul(str, &c, 0);
 	if (*c == 0) {
 		ace->e_id = l;
 		return 0;
 	}
+
 	if (ace->e_flags & RICHACE_IDENTIFIER_GROUP) {
 		struct group *group = getgrnam(str);
 
@@ -572,6 +586,7 @@ static int identifier_from_text(const char *str, struct richace *ace,
 		ace->e_id = passwd->pw_uid;
 		return 0;
 	}
+
 fail:
 	return -1;
 }

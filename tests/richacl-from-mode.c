@@ -56,7 +56,7 @@ int main(int argc, char *argv[])
 			ace->e_mask = S_ISDIR(mode) ?
 				RICHACE_POSIX_MODE_ALL :
 				(RICHACE_POSIX_MODE_ALL & ~RICHACE_DELETE_CHILD);
-			richace_set_who(ace, "EVERYONE@");
+			richace_set_special_who(ace, "EVERYONE@");
 			richacl_chmod(acl, mode);
 			if (richacl_apply_masks(&acl, getuid())) {
 				perror(argv[optind]);

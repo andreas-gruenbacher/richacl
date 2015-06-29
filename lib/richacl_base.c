@@ -35,11 +35,16 @@ const char *richace_owner_who	 = "OWNER@";
 const char *richace_group_who	 = "GROUP@";
 const char *richace_everyone_who = "EVERYONE@";
 
-bool richace_is_same_identifier(const struct richace *a, const struct richace *b)
+bool richace_is_same_identifier(const struct richace *ace1,
+				const struct richace *ace2)
 {
-	return !((a->e_flags ^ b->e_flags) &
-		 (RICHACE_SPECIAL_WHO | RICHACE_IDENTIFIER_GROUP)) &&
-	       a->e_id == b->e_id;
+	return !((ace1->e_flags ^ ace2->e_flags) &
+		 (RICHACE_SPECIAL_WHO |
+		  RICHACE_IDENTIFIER_GROUP |
+		  RICHACE_UNMAPPED_WHO)) &&
+	       ((ace1->e_flags & RICHACE_UNMAPPED_WHO) ?
+	        !strcmp(ace1->e_who, ace2->e_who) :
+		ace1->e_id == ace2->e_id);
 }
 
 bool richace_is_owner(const struct richace *ace)
@@ -60,7 +65,7 @@ bool richace_is_everyone(const struct richace *ace)
 		ace->e_id == RICHACE_EVERYONE_SPECIAL_ID;
 }
 
-struct richacl *richacl_alloc(size_t count)
+struct richacl *richacl_alloc(unsigned int count)
 {
 	size_t size = sizeof(struct richacl) + count * sizeof(struct richace);
 	struct richacl *acl = malloc(size);
@@ -76,6 +81,7 @@ struct richacl *richacl_clone(const struct richacl *acl)
 {
 	size_t size;
 	struct richacl *acl2;
+	struct richace *ace2;
 
 	if (!acl)
 		return NULL;
@@ -83,19 +89,41 @@ struct richacl *richacl_clone(const struct richacl *acl)
 	acl2 = malloc(size);
 	if (acl2)
 		memcpy(acl2, acl, size);
+	richacl_for_each_entry(ace2, acl2) {
+		if (ace2->e_flags & RICHACE_UNMAPPED_WHO) {
+			ace2->e_who = strdup(ace2->e_who);
+			if (!ace2->e_who) {
+				while (ace2 != acl->a_entries) {
+					ace2--;
+					if (ace2->e_flags & RICHACE_UNMAPPED_WHO)
+						free(ace2->e_who);
+				}
+				free(acl2);
+				return NULL;
+			}
+		}
+	}
 	return acl2;
 }
 
 void richacl_free(struct richacl *acl)
 {
-	free(acl);
+	if (acl) {
+		struct richace *ace;
+
+		richacl_for_each_entry(ace, acl) {
+			if (ace->e_flags & RICHACE_UNMAPPED_WHO)
+				free(ace->e_who);
+		}
+		free(acl);
+	}
 }
 
 /**
  * richacl_allowed_to_who  -  mask flags allowed to a specific who value
  *
  * Computes the mask values allowed to a specific who value, taking
- * EVERYONE@ entries into account.
+ * everyone@ entries into account.
  */
 static unsigned int richacl_allowed_to_who(struct richacl *acl,
 					   struct richace *who)
@@ -168,7 +196,7 @@ void richacl_compute_max_masks(struct richacl *acl, uid_t owner)
 	 * allowed.  We use it to avoid adding permissions to the group mask
 	 * from everyone@ allow aces which the group class is always denied
 	 * through other aces.  For example, the following acl would otherwise
-	 * result in a group mask or rw:
+	 * result in a group mask of rw:
 	 *
 	 * 	group@:w::deny
 	 * 	everyone@:rw::allow
@@ -218,7 +246,7 @@ restart:
 	acl->a_flags &= ~RICHACL_MASKED;
 }
 
-int richace_set_who(struct richace *ace, const char *who)
+int richace_set_special_who(struct richace *ace, const char *who)
 {
 	int id;
 	if (!strcmp(who, richace_owner_who))
@@ -236,26 +264,75 @@ int richace_set_who(struct richace *ace, const char *who)
 	 * Also clear the RICHACE_IDENTIFIER_GROUP flag for ACEs with a special
 	 * who value: richace_is_same_identifier() relies on that.
 	 */
-	ace->e_flags &= ~RICHACE_IDENTIFIER_GROUP;
+	ace->e_flags &= ~(RICHACE_IDENTIFIER_GROUP |
+			  RICHACE_UNMAPPED_WHO);
 	return 0;
 }
 
 void richace_set_uid(struct richace *ace, uid_t uid)
 {
+	if (ace->e_flags & RICHACE_UNMAPPED_WHO)
+		free(ace->e_who);
 	ace->e_id = uid;
-	ace->e_flags &= ~(RICHACE_SPECIAL_WHO | RICHACE_IDENTIFIER_GROUP);
+	ace->e_flags &= ~(RICHACE_SPECIAL_WHO |
+			  RICHACE_IDENTIFIER_GROUP |
+			  RICHACE_UNMAPPED_WHO);
 }
 
 void richace_set_gid(struct richace *ace, gid_t gid)
 {
+	if (ace->e_flags & RICHACE_UNMAPPED_WHO)
+		free(ace->e_who);
 	ace->e_id = gid;
+	ace->e_flags &= ~(RICHACE_SPECIAL_WHO |
+			  RICHACE_UNMAPPED_WHO);
 	ace->e_flags |= RICHACE_IDENTIFIER_GROUP;
-	ace->e_flags &= ~RICHACE_SPECIAL_WHO;
 }
 
-void richace_copy(struct richace *dst, const struct richace *src)
+int richace_set_unmapped_who(struct richace *ace, const char *who, unsigned int who_flags)
 {
+	unsigned short flags = ace->e_flags & ~RICHACE_UNMAPPED_WHO;
+	char *who_dup = NULL;
+
+	if (who) {
+		who_dup = strdup(who);
+		if (!who_dup)
+			return -1;
+		flags |= RICHACE_UNMAPPED_WHO;
+		flags &= ~RICHACE_IDENTIFIER_GROUP;
+		if (who_flags & RICHACE_IDENTIFIER_GROUP)
+			flags |= RICHACE_IDENTIFIER_GROUP;
+	}
+	if (ace->e_flags & RICHACE_UNMAPPED_WHO)
+		free(ace->e_who);
+	ace->e_flags = flags;
+	ace->e_who = who_dup;
+	return 0;
+}
+
+int richace_copy(struct richace *dst, const struct richace *src)
+{
+	char *who = src->e_who;
+
+	if (src->e_flags & RICHACE_UNMAPPED_WHO) {
+		who = strdup(who);
+		if (!who)
+			return -1;
+	}
+	if (dst->e_flags & RICHACE_UNMAPPED_WHO)
+		free(dst->e_who);
 	memcpy(dst, src, sizeof(struct richace));
+	dst->e_who = who;
+	return 0;
+}
+
+void richace_free(struct richace *ace)
+{
+	if (ace->e_flags & RICHACE_UNMAPPED_WHO) {
+		free(ace->e_who);
+		ace->e_flags &= ~RICHACE_UNMAPPED_WHO;
+		ace->e_id = 0;
+	}
 }
 
 /**
@@ -703,7 +780,8 @@ richacl_inherit(const struct richacl *dir_acl, int isdir)
 		richacl_for_each_entry(dir_ace, dir_acl) {
 			if (!richace_is_inheritable(dir_ace))
 				continue;
-			memcpy(ace, dir_ace, sizeof(struct richace));
+			if (richace_copy(ace, dir_ace))
+				goto fail;
 			if (dir_ace->e_flags & RICHACE_NO_PROPAGATE_INHERIT_ACE)
 				richace_clear_inheritance_flags(ace);
 			if ((dir_ace->e_flags & RICHACE_FILE_INHERIT_ACE) &&
@@ -724,7 +802,8 @@ richacl_inherit(const struct richacl *dir_acl, int isdir)
 		richacl_for_each_entry(dir_ace, dir_acl) {
 			if (!(dir_ace->e_flags & RICHACE_FILE_INHERIT_ACE))
 				continue;
-			memcpy(ace, dir_ace, sizeof(struct richace));
+			if (richace_copy(ace, dir_ace))
+				goto fail;
 			richace_clear_inheritance_flags(ace);
 			/*
 			 * RICHACE_DELETE_CHILD is meaningless for
@@ -742,6 +821,10 @@ richacl_inherit(const struct richacl *dir_acl, int isdir)
 	}
 
 	return acl;
+
+fail:
+	richacl_free(acl);
+	return NULL;
 }
 
 /**

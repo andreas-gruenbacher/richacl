@@ -51,6 +51,7 @@
 #define RICHACE_IDENTIFIER_GROUP		0x0040
 #define RICHACE_INHERITED_ACE			0x0080
 /* richacl specific acl entry flag */
+#define RICHACE_UNMAPPED_WHO			0x2000
 #define RICHACE_SPECIAL_WHO			0x4000
 
 #define RICHACE_VALID_FLAGS (				\
@@ -60,6 +61,7 @@
 	RICHACE_INHERIT_ONLY_ACE |			\
 	RICHACE_IDENTIFIER_GROUP |			\
 	RICHACE_INHERITED_ACE  |			\
+	RICHACE_UNMAPPED_WHO |				\
 	RICHACE_SPECIAL_WHO)
 
 /* e_mask bitflags */
@@ -142,7 +144,10 @@ struct richace {
 	unsigned short	e_type;
 	unsigned short	e_flags;
 	unsigned int	e_mask;
-	id_t		e_id;
+	union {
+		id_t		e_id;
+		char *		e_who;
+	};
 };
 
 struct richacl {
@@ -216,12 +221,13 @@ static inline int richace_is_inherited(const struct richace *ace)
 	return ace->e_flags & RICHACE_INHERITED_ACE;
 }
 
-extern int richace_set_who(struct richace *, const char *);
 extern void richace_set_uid(struct richace *, uid_t);
 extern void richace_set_gid(struct richace *, gid_t);
+extern int richace_set_special_who(struct richace *, const char *);
+extern int richace_set_unmapped_who(struct richace *, const char *, unsigned int);
 extern bool richace_is_same_identifier(const struct richace *,
 				       const struct richace *);
-extern void richace_copy(struct richace *, const struct richace *);
+extern int richace_copy(struct richace *, const struct richace *);
 
 extern struct richacl *richacl_get_file(const char *);
 extern struct richacl *richacl_get_fd(int);
@@ -232,7 +238,7 @@ extern char *richacl_to_text(const struct richacl *, int);
 extern struct richacl *richacl_from_text(const char *, int *,
 					 void (*)(const char *, ...));
 
-extern struct richacl *richacl_alloc(size_t);
+extern struct richacl *richacl_alloc(unsigned int);
 extern struct richacl *richacl_clone(const struct richacl *);
 extern void richacl_free(struct richacl *);
 

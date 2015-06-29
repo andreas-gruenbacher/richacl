@@ -34,7 +34,7 @@ struct richace_xattr {
 struct richacl_xattr {
 	unsigned char	a_version;
 	unsigned char	a_flags;
-	uint16_t	a_unused;
+	uint16_t	a_count;
 	uint32_t	a_owner_mask;
 	uint32_t	a_group_mask;
 	uint32_t	a_other_mask;
