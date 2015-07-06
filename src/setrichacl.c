@@ -229,13 +229,11 @@ static int auto_inherit(const char *dirname, struct richacl *dir_acl)
 		goto fail;
 	sprintf(path, "%s/", dirname);
 
-	errno = 0;
 	file_inheritable = richacl_inherit(dir_acl, 0);
-	if (!file_inheritable && errno != 0)
+	if (!file_inheritable)
 		goto fail;
-	errno = 0;
 	dir_inheritable = richacl_inherit(dir_acl, 1);
-	if (!dir_inheritable && errno != 0)
+	if (!dir_inheritable)
 		goto fail;
 
 	while ((errno = 0, dirent = readdir(dir))) {

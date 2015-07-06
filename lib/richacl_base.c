@@ -680,7 +680,7 @@ richacl_masks_to_mode(const struct richacl *acl)
  *
  * A directory can have acl entries which files and/or directories created
  * inside the directory will inherit.  This function computes the acl for such
- * a new file.  If there is no inheritable acl, it will return %NULL.
+ * a new file.  If there is no inheritable acl, it will return an empty acl.
  */
 struct richacl *
 richacl_inherit(const struct richacl *dir_acl, int isdir)
@@ -696,8 +696,6 @@ richacl_inherit(const struct richacl *dir_acl, int isdir)
 				continue;
 			count++;
 		}
-		if (!count)
-			return NULL;
 		acl = richacl_alloc(count);
 		if (!acl)
 			return NULL;
@@ -719,8 +717,6 @@ richacl_inherit(const struct richacl *dir_acl, int isdir)
 				continue;
 			count++;
 		}
-		if (!count)
-			return NULL;
 		acl = richacl_alloc(count);
 		if (!acl)
 			return NULL;
