@@ -160,6 +160,8 @@ struct richacl *richacl_get_file(const char *path)
 	if (!value)
 		return NULL;
 	retval = getxattr(path, SYSTEM_RICHACL, value, retval);
+	if (retval < 0)
+		return NULL;
 	acl = richacl_from_xattr(value, retval);
 
 	return acl;
@@ -179,6 +181,8 @@ struct richacl *richacl_get_fd(int fd)
 	if (!value)
 		return NULL;
 	retval = fgetxattr(fd, SYSTEM_RICHACL, value, retval);
+	if (retval < 0)
+		return NULL;
 	acl = richacl_from_xattr(value, retval);
 
 	return acl;
