@@ -35,7 +35,7 @@ struct richacl *get_richacl(const char *file, mode_t mode)
 
 	acl = richacl_get_file(file);
 	if (!acl) {
-		if (errno != ENOSYS && has_posix_acl(file, mode)) {
+		if (errno != ENOSYS && errno != ENODATA && has_posix_acl(file, mode)) {
 			errno = 0;
 			return NULL;
 		} else if (errno == ENODATA || errno == ENOTSUP || errno == ENOSYS)
