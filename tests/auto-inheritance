@@ -1,0 +1,191 @@
+#! /bin/sh
+
+. $srcdir/tests/test-lib.sh
+
+require_richacls
+use_tmpdir
+
+umask 022
+
+ncheck "mkdir d1"
+ncheck "setrichacl --modify 101:rw:fd:deny d1"
+ncheck "setrichacl --modify 102:rw:f:deny d1"
+ncheck "setrichacl --modify 103:rw:d:deny d1"
+ncheck "setrichacl --modify 101:rw:fdig:deny d1"
+
+ncheck "setrichacl --modify flags:a d1"
+
+check "getrichacl --numeric --raw d1" <<EOF
+d1:
+     flags:a
+     owner:rwpxd-----------::mask
+     group:r--x------------::mask
+     other:r--x------------::mask
+       101:rw--------------:fd:deny
+       102:rw--------------:f:deny
+       103:rw--------------:d:deny
+       101:rw--------------:fdig:deny
+    owner@:rwpxd-----------::allow
+ everyone@:r--x------------::allow
+EOF
+
+ncheck "mkdir d1/d2"
+ncheck "touch d1/d3"
+
+# Mode bits derived from inherited ACEs
+check "getrichacl --numeric --raw d1/d2" <<EOF
+d1/d2:
+ flags:map
+ owner:----------------::mask
+ group:----------------::mask
+ other:----------------::mask
+   101:rw--------------:fda:deny
+   102:rw--------------:fia:deny
+   103:rw--------------:da:deny
+   101:rw--------------:fdiga:deny
+EOF
+
+check "getrichacl --numeric --raw d1/d3" <<EOF
+d1/d3:
+ flags:map
+ owner:----------------::mask
+ group:----------------::mask
+ other:----------------::mask
+   101:rw--------------:a:deny
+   102:rw--------------:a:deny
+   101:rw--------------:ga:deny
+EOF
+
+ncheck "mkdir d1/d2/d4"
+ncheck "touch d1/d2/d4/d5"
+
+# Protected files
+ncheck "mkdir d1/d6"
+ncheck "touch d1/d7"
+
+check "getrichacl --numeric --raw d1/d2/d4" <<EOF
+d1/d2/d4:
+ flags:map
+ owner:----------------::mask
+ group:----------------::mask
+ other:----------------::mask
+   101:rw--------------:fda:deny
+   102:rw--------------:fia:deny
+   103:rw--------------:da:deny
+   101:rw--------------:fdiga:deny
+EOF
+
+check "getrichacl --numeric --raw d1/d2/d4/d5" <<EOF
+d1/d2/d4/d5:
+ flags:map
+ owner:----------------::mask
+ group:----------------::mask
+ other:----------------::mask
+   101:rw--------------:a:deny
+   102:rw--------------:a:deny
+   101:rw--------------:ga:deny
+EOF
+
+# Clear protected flag from all the ACLs
+ncheck "setrichacl --modify flags:a d1/d2"
+ncheck "setrichacl --modify flags:a d1/d3"
+ncheck "setrichacl --modify flags:a d1/d2/d4"
+ncheck "setrichacl --modify flags:a d1/d2/d4/d5"
+
+ncheck "getrichacl --numeric d1 | sed -e 's/:fd:deny/:fd:allow/' > acl.txt"
+check "cat acl.txt" <<EOF
+d1:
+     flags:a
+       101:rw-----------:fd:allow
+       102:rw-----------:f:deny
+       103:rw-----------:d:deny
+       101:rw-----------:fdig:deny
+    owner@:rwpxd--------::allow
+ everyone@:r--x---------::allow
+EOF
+
+ncheck "setrichacl --set-file acl.txt d1"
+
+check "getrichacl --numeric --raw d1" <<EOF
+d1:
+     flags:a
+     owner:rwpxd-----------::mask
+     group:rw-x------------::mask
+     other:r--x------------::mask
+       101:rw--------------:fd:allow
+       102:rw--------------:f:deny
+       103:rw--------------:d:deny
+       101:rw--------------:fdig:deny
+    owner@:rwpxd-----------::allow
+ everyone@:r--x------------::allow
+EOF
+
+check "getrichacl --numeric --raw d1/d2" <<EOF
+d1/d2:
+ flags:a
+ owner:rw--------------::mask
+ group:rw--------------::mask
+ other:----------------::mask
+   101:rw--------------:fda:allow
+   102:rw--------------:fia:deny
+   103:rw--------------:da:deny
+   101:rw--------------:fdiga:deny
+EOF
+
+check "getrichacl --numeric --raw d1/d3" <<EOF
+d1/d3:
+ flags:a
+ owner:rw--------------::mask
+ group:rw--------------::mask
+ other:----------------::mask
+   101:rw--------------:a:allow
+   102:rw--------------:a:deny
+   101:rw--------------:ga:deny
+EOF
+
+check "getrichacl --numeric --raw d1/d2/d4" <<EOF
+d1/d2/d4:
+ flags:a
+ owner:rw--------------::mask
+ group:rw--------------::mask
+ other:----------------::mask
+   101:rw--------------:fda:allow
+   102:rw--------------:fia:deny
+   103:rw--------------:da:deny
+   101:rw--------------:fdiga:deny
+EOF
+
+check "getrichacl --numeric --raw d1/d2/d4/d5" <<EOF
+d1/d2/d4/d5:
+ flags:a
+ owner:rw--------------::mask
+ group:rw--------------::mask
+ other:----------------::mask
+   101:rw--------------:a:allow
+   102:rw--------------:a:deny
+   101:rw--------------:ga:deny
+EOF
+
+# No automatic inheritance for protected files
+check "getrichacl --numeric --raw d1/d6" <<EOF
+d1/d6:
+ flags:map
+ owner:----------------::mask
+ group:----------------::mask
+ other:----------------::mask
+   101:rw--------------:fda:deny
+   102:rw--------------:fia:deny
+   103:rw--------------:da:deny
+   101:rw--------------:fdiga:deny
+EOF
+
+check "getrichacl --numeric --raw d1/d7" <<EOF
+d1/d7:
+ flags:map
+ owner:----------------::mask
+ group:----------------::mask
+ other:----------------::mask
+   101:rw--------------:a:deny
+   102:rw--------------:a:deny
+   101:rw--------------:ga:deny
+EOF
