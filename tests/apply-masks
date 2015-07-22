@@ -50,3 +50,7 @@ group@:rwp::allow
 1234:rwp::allow
 everyone@:r::allow
 EOF
+
+check 'richacl-apply-masks -d -m 700 owner@:rwpxd:fd:allow' <<EOF
+owner@:rwpxd:fd:allow
+EOF

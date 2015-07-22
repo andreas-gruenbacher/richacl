@@ -629,12 +629,12 @@ richacl_set_owner_permissions(struct richacl_alloc *alloc)
 	unsigned int denied = 0;
 	struct richace *ace;
 
-	if (!owner_mask)
-		return 0;
-
 	richacl_for_each_entry(ace, alloc->acl) {
 		if (richace_is_owner(ace)) {
-			if (!richace_is_inherit_only(ace))
+			if (richace_is_allow(ace) && !(owner_mask & denied)) {
+				richace_change_mask(alloc, &ace, owner_mask);
+				owner_mask = 0;
+			} else
 				richace_change_mask(alloc, &ace, 0);
 		} else {
 			if (richace_is_deny(ace))
