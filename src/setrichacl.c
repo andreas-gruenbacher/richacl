@@ -65,34 +65,23 @@ static void compute_masks(struct richacl *acl, int what_acl_contains, uid_t owne
 	unsigned int owner_mask = acl->a_owner_mask;
 	unsigned int group_mask = acl->a_group_mask;
 	unsigned int other_mask = acl->a_other_mask;
+	unsigned char flags = acl->a_flags;
 
 	if ((what_acl_contains & RICHACL_TEXT_OWNER_MASK) &&
 	    (what_acl_contains & RICHACL_TEXT_GROUP_MASK) &&
-	    (what_acl_contains & RICHACL_TEXT_OTHER_MASK) &&
-	    (what_acl_contains & RICHACL_TEXT_FLAGS))
+	    (what_acl_contains & RICHACL_TEXT_OTHER_MASK))
 		return;
 
-	if (!(what_acl_contains & RICHACL_TEXT_FLAGS))
-		acl->a_flags &= ~RICHACL_MASKED;
 	richacl_compute_max_masks(acl, owner);
-	if (what_acl_contains & RICHACL_TEXT_OWNER_MASK) {
-		if (!(what_acl_contains & RICHACL_TEXT_FLAGS) &&
-		    (acl->a_owner_mask & ~owner_mask))
-			acl->a_flags |= RICHACL_MASKED;
+
+	if (what_acl_contains & RICHACL_TEXT_FLAGS)
+		acl->a_flags = flags;
+	if (what_acl_contains & RICHACL_TEXT_OWNER_MASK)
 		acl->a_owner_mask = owner_mask;
-	}
-	if (what_acl_contains & RICHACL_TEXT_GROUP_MASK) {
-		if (!(what_acl_contains & RICHACL_TEXT_FLAGS) &&
-		    (acl->a_group_mask & ~group_mask))
-			acl->a_flags |= RICHACL_MASKED;
+	if (what_acl_contains & RICHACL_TEXT_GROUP_MASK)
 		acl->a_group_mask = group_mask;
-	}
-	if (what_acl_contains & RICHACL_TEXT_OTHER_MASK) {
-		if (!(what_acl_contains & RICHACL_TEXT_FLAGS) &&
-		    (acl->a_other_mask & ~other_mask))
-			acl->a_flags |= RICHACL_MASKED;
+	if (what_acl_contains & RICHACL_TEXT_OTHER_MASK)
 		acl->a_other_mask = other_mask;
-	}
 }
 
 static int modify_richacl(struct richacl **acl2, struct richacl *acl, int what_acl_contains, uid_t owner)

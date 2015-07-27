@@ -243,7 +243,7 @@ restart:
 		}
 	}
 
-	acl->a_flags &= ~RICHACL_MASKED;
+	acl->a_flags &= ~(RICHACL_WRITE_THROUGH | RICHACL_MASKED);
 }
 
 int richace_set_special_who(struct richace *ace, const char *who)
@@ -362,7 +362,7 @@ void richacl_chmod(struct richacl *acl, mode_t mode)
 {
 	unsigned int x = S_ISDIR(mode) ? 0 : RICHACE_DELETE_CHILD;
 
-	acl->a_flags |= RICHACL_MASKED;
+	acl->a_flags |= (RICHACL_WRITE_THROUGH | RICHACL_MASKED);
 	acl->a_owner_mask = richacl_mode_to_mask(mode >> 6) & ~x;
 	acl->a_group_mask = richacl_mode_to_mask(mode >> 3) & ~x;
 	acl->a_other_mask = richacl_mode_to_mask(mode)      & ~x;
@@ -542,7 +542,7 @@ int richacl_access(const char *file, const struct stat *st, uid_t user,
 	 */
 
 	if (acl->a_flags & RICHACL_MASKED) {
-		if (user == st->st_uid)
+		if ((acl->a_flags & RICHACL_WRITE_THROUGH) && user == st->st_uid)
 			return acl->a_owner_mask;
 	} else {
 		/*
@@ -560,6 +560,7 @@ int richacl_access(const char *file, const struct stat *st, uid_t user,
 		if (richace_is_owner(ace)) {
 			if (user != st->st_uid)
 				continue;
+			goto entry_matches_owner;
 		} else if (richace_is_group(ace)) {
 			if (!in_owning_group)
 				continue;
@@ -572,6 +573,24 @@ int richacl_access(const char *file, const struct stat *st, uid_t user,
 		} else
 			goto entry_matches_everyone;
 
+		/*
+		 * Apply the group file mask to entries other than owner@ and
+		 * everyone@ or user entries matching the owner.  This ensures
+		 * that we grant the same permissions as the acl computed by
+		 * richacl_apply_masks().
+		 *
+		 * Without this restriction, the following richacl would grant
+		 * rw access to processes which are both the owner and in the
+		 * owning group, but not to other users in the owning group,
+		 * which could not be represented without masks:
+		 *
+		 *  owner:rw::mask
+		 *  group@:rw::allow
+		 */
+		if ((acl->a_flags & RICHACL_MASKED) && richace_is_allow(ace))
+			ace_mask &= acl->a_group_mask;
+
+entry_matches_owner:
 		/* The process is in the owner or group file class. */
 		in_owner_or_group_class = 1;
 
@@ -588,10 +607,16 @@ entry_matches_everyone:
 		/*
 		 * Figure out which file mask applies.
 		 */
-		if (in_owner_or_group_class)
+		if (user == st->st_uid)
+			allowed &= acl->a_owner_mask;
+		else if (in_owner_or_group_class)
 			allowed &= acl->a_group_mask;
-		else
-			allowed = acl->a_other_mask;
+		else {
+			if (acl->a_flags & RICHACL_WRITE_THROUGH)
+				allowed = acl->a_other_mask;
+			else
+				allowed &= acl->a_other_mask;
+		}
 	}
 
 	/* RICHACE_DELETE_CHILD is meaningless for non-directories. */
@@ -636,7 +661,7 @@ bool richacl_permission(struct richacl *acl, uid_t owner, gid_t owning_group,
 	 */
 
 	if (acl->a_flags & RICHACL_MASKED) {
-		if (user == owner)
+		if ((acl->a_flags & RICHACL_WRITE_THROUGH) && user == owner)
 			return !(requested & ~acl->a_owner_mask);
 	} else {
 		/*
@@ -658,6 +683,7 @@ bool richacl_permission(struct richacl *acl, uid_t owner, gid_t owning_group,
 		if (richace_is_owner(ace)) {
 			if (user != owner)
 				continue;
+			goto entry_matches_owner;
 		} else if (richace_is_group(ace)) {
 			if (!in_owning_group)
 				continue;
@@ -670,6 +696,24 @@ bool richacl_permission(struct richacl *acl, uid_t owner, gid_t owning_group,
 		} else
 			goto entry_matches_everyone;
 
+		/*
+		 * Apply the group file mask to entries other than owner@ and
+		 * everyone@ or user entries matching the owner.  This ensures
+		 * that we grant the same permissions as the acl computed by
+		 * richacl_apply_masks().
+		 *
+		 * Without this restriction, the following richacl would grant
+		 * rw access to processes which are both the owner and in the
+		 * owning group, but not to other users in the owning group,
+		 * which could not be represented without masks:
+		 *
+		 *  owner:rw::mask
+		 *  group@:rw::allow
+		 */
+		if ((acl->a_flags & RICHACL_MASKED) && richace_is_allow(ace))
+			ace_mask &= acl->a_group_mask;
+
+entry_matches_owner:
 		/* The process is in the owner or group file class. */
 		in_owner_or_group_class = 1;
 
@@ -693,11 +737,18 @@ entry_matches_everyone:
 		 * applies.  Check if that file mask also grants the requested
 		 * access.
 		 */
-		if (in_owner_or_group_class) {
+		if (user == owner) {
+			if (requested & ~acl->a_owner_mask)
+				return false;
+		} else if (in_owner_or_group_class) {
 			if (requested & ~acl->a_group_mask)
 				return false;
-		} else
-			return !(requested & ~acl->a_other_mask);
+		} else {
+			if (acl->a_flags & RICHACL_WRITE_THROUGH)
+				return !(requested & ~acl->a_other_mask);
+			else if (requested & ~acl->a_other_mask)
+				return false;
+		}
 	}
 
 	return !mask;
@@ -861,7 +912,7 @@ richacl_equiv_mode(const struct richacl *acl, mode_t *mode_p)
 	};
 	const struct richace *ace;
 
-	if (acl->a_flags & ~RICHACL_MASKED)
+	if (acl->a_flags & ~(RICHACL_WRITE_THROUGH | RICHACL_MASKED))
 		return -1;
 
 	richacl_for_each_entry(ace, acl) {
@@ -904,9 +955,14 @@ richacl_equiv_mode(const struct richacl *acl, mode_t *mode_p)
 		return -1;
 
 	if (acl->a_flags & RICHACL_MASKED) {
-		owner.allowed = acl->a_owner_mask;
+		if (acl->a_flags & RICHACL_WRITE_THROUGH) {
+			owner.allowed = acl->a_owner_mask;
+			everyone.allowed = acl->a_other_mask;
+		} else {
+			owner.allowed &= acl->a_owner_mask;
+			everyone.allowed &= acl->a_other_mask;
+		}
 		group.allowed &= acl->a_group_mask;
-		everyone.allowed = acl->a_other_mask;
 	}
 
 	mode = (mode & ~S_IRWXUGO) |

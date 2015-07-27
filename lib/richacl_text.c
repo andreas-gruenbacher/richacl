@@ -36,6 +36,7 @@ static struct {
 	const char	*a_name;
 } acl_flag_bits[] = {
 	{ 'm', RICHACL_MASKED, "masked" },
+	{ 'w', RICHACL_WRITE_THROUGH, "write_through" },
 	{ 'a', RICHACL_AUTO_INHERIT, "auto_inherit" },
 	{ 'p', RICHACL_PROTECTED, "protected" },
 	{ 'd', RICHACL_DEFAULTED, "defaulted" },

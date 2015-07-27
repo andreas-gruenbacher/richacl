@@ -30,6 +30,7 @@
 #define RICHACL_PROTECTED		0x02
 #define RICHACL_DEFAULTED		0x04
 /* richacl specific acl flag */
+#define RICHACL_WRITE_THROUGH		0x40
 #define RICHACL_MASKED			0x80
 
 
@@ -37,6 +38,7 @@
 	RICHACL_AUTO_INHERIT |	\
 	RICHACL_PROTECTED |	\
 	RICHACL_DEFAULTED |	\
+	RICHACL_WRITE_THROUGH | \
 	RICHACL_MASKED)
 
 /* e_type values */
