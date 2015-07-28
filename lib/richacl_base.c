@@ -573,8 +573,10 @@ int richacl_access(const char *file, const struct stat *st, uid_t user,
 		} else if (richace_is_unix_group(ace)) {
 			if (!in_groups(ace->e_id, groups, n_groups))
 				continue;
-		} else
+		} else if (richace_is_everyone(ace))
 			goto entry_matches_everyone;
+		else
+			continue;
 
 		/*
 		 * Apply the group file mask to entries other than owner@ and
@@ -696,8 +698,10 @@ bool richacl_permission(struct richacl *acl, uid_t owner, gid_t owning_group,
 		} else if (richace_is_unix_group(ace)) {
 			if (!in_groups(ace->e_id, groups, n_groups))
 				continue;
-		} else
+		} else if (richace_is_everyone(ace))
 			goto entry_matches_everyone;
+		else
+			continue;
 
 		/*
 		 * Apply the group file mask to entries other than owner@ and
