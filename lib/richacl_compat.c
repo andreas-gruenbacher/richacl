@@ -409,6 +409,7 @@ richacl_propagate_everyone(struct richacl_alloc *alloc)
 				   current entry. */
 				if (__richacl_propagate_everyone(alloc, ace, group_allow))
 					return -1;
+				acl = alloc->acl;
 			}
 		}
 	}
