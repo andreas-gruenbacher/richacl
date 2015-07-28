@@ -366,6 +366,9 @@ void richacl_chmod(struct richacl *acl, mode_t mode)
 	acl->a_owner_mask = richacl_mode_to_mask(mode >> 6) & ~x;
 	acl->a_group_mask = richacl_mode_to_mask(mode >> 3) & ~x;
 	acl->a_other_mask = richacl_mode_to_mask(mode)      & ~x;
+
+	if (richacl_is_auto_inherit(acl))
+		acl->a_flags |= RICHACL_PROTECTED;
 }
 
 /**
