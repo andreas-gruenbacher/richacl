@@ -1,0 +1,4 @@
+dist_man_MANS += \
+	man/getrichacl.1 \
+	man/setrichacl.1 \
+	man/richacl.7

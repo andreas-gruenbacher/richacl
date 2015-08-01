@@ -30,8 +30,10 @@ bin_PROGRAMS =
 lib_LTLIBRARIES =
 noinst_HEADERS =
 check_PROGRAMS =
+dist_man_MANS =
 
 include include/Makemodule.am
 include lib/Makemodule.am
 include src/Makemodule.am
+include man/Makemodule.am
 include tests/Makemodule.am
