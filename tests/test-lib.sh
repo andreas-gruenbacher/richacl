@@ -23,11 +23,13 @@ require_richacls() {
 
 _SU=
 su() {
+    _start_test -1 su "$*"
     if [ $# = 0 ]; then
 	_SU=
     else
 	_SU="$abs_top_builddir/tests/su $*"
     fi
+    echo "ok"
 }
 
 if diff -u -L expected -L got /dev/null /dev/null 2> /dev/null; then
@@ -44,8 +46,9 @@ else
 fi
 
 _check() {
-    _start_test "$@"
+    local frame=$1
     shift
+    _start_test "$frame" "$*"
     expected=`cat`
     if got=`set +x; eval "$_SU $*" 3>&2 </dev/null 2>&1` && \
             test "$expected" = "$got" ; then
@@ -102,22 +105,22 @@ if test -z "`echo -n`"; then
     if eval 'test -n "${BASH_LINENO[0]}" 2>/dev/null'; then
 	eval '
 	    _start_test() {
-		local n=$1
+		local frame=$1
 		shift
-		echo -n "[${BASH_LINENO[2+n]}] $* -- "
+		printf "[${BASH_LINENO[2+frame]}] $* -- "
 	    }'
     else
 	eval '
 	    _start_test() {
 		shift
-		echo -n "* $* -- "
+		printf "* $* -- "
 	    }'
     fi
 else
     eval '
 	_start_test() {
 	    shift
-	    echo "* $*"
+	    printf "* $*\\n"
 	}'
 fi
 
