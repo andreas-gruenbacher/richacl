@@ -18,12 +18,12 @@
 	"\twrite_retention (e), write_retention_hold (E)\n" \
 	"\n" \
 	"ACL entry <flags> values are:\n" \
-	"\tfile_inherit (f), dir_inherit (d),\n" \
-	"\tno_propagate (n), inherit_only (i),\n" \
-	"\tidentifier_group (g), inherited (a)\n" \
+	"\tfile_inherit (f), dir_inherit (d), no_propagate (n), inherit_only (i),\n" \
+	"\tidentifier_group (g), inherited (a), unmapped (u)\n" \
 	"\n" \
 	"ACL flag values are:\n" \
-	"\tmasked (m), auto_inherit (a), protected (p), defaulted (d)\n"
+	"\tmasked (m), write_through (w), auto_inherit (a), protected (p),\n" \
+	"\tdefaulted (d)\n"
 
 bool has_posix_acl(const char *, mode_t mode);
 struct richacl *get_richacl(const char *, mode_t);
