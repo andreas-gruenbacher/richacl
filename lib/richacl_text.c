@@ -510,6 +510,8 @@ static int acl_flags_from_text(const char *str, struct richacl *acl,
 
 		/* Recognize single-character flags */
 		for (c = dup; *c; c++) {
+			if (*c == '-')
+				continue;
 			for (i = 0; i < ARRAY_SIZE(acl_flag_bits); i++) {
 				if (*c == acl_flag_bits[i].a_char) {
 					acl->a_flags |= acl_flag_bits[i].a_flag;
@@ -656,6 +658,8 @@ static int ace_flags_from_text(const char *str, struct richace *ace,
 
 		/* Recognize single-character flags */
 		for (c = dup; *c; c++) {
+			if (*c == '-')
+				continue;
 			for (i = 0; i < ARRAY_SIZE(ace_flag_bits); i++) {
 				if (*c == ace_flag_bits[i].e_char) {
 					ace->e_flags |= ace_flag_bits[i].e_flag;
