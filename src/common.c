@@ -24,6 +24,7 @@ has_posix_acl(const char *path, mode_t mode)
 			goto out;
 	}
 	fprintf(stderr, "%s: File has a posix acl\n", path);
+	ret = true;
 out:
 	errno = saved_errno;
 	return ret;
