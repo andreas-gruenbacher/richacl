@@ -102,7 +102,6 @@ static void synopsis(int help)
 "Options:\n"
 "  --long, -l  Display access masks and flags in their long form.\n"
 "  --full      Also show permissions which are always implicitly allowed.\n"
-"              Always allow those permissions when setting/modifying acls.\n"
 "  --raw       Show acls as stored on the file system including the file masks.\n"
 "              Implies --full.\n"
 "  --unaligned\n"
