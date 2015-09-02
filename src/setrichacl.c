@@ -72,7 +72,7 @@ static void compute_masks(struct richacl *acl, int what_acl_contains, uid_t owne
 	    (what_acl_contains & RICHACL_TEXT_OTHER_MASK))
 		return;
 
-	richacl_compute_max_masks(acl, owner);
+	richacl_compute_max_masks(acl);
 
 	if (what_acl_contains & RICHACL_TEXT_FLAGS)
 		acl->a_flags = flags;
@@ -303,7 +303,7 @@ static int auto_inherit(const char *dirname, struct richacl *dir_acl)
 						file_inheritable);
 			if (!new_acl)
 				goto fail2;
-			richacl_compute_max_masks(new_acl, st.st_uid);
+			richacl_compute_max_masks(new_acl);
 			equal = !richacl_compare(old_acl, new_acl);
 			if (equal && !opt_repropagate)
 				goto next;

@@ -245,7 +245,7 @@ extern struct richacl *richacl_clone(const struct richacl *);
 extern void richacl_free(struct richacl *);
 
 extern int richacl_apply_masks(struct richacl **, uid_t);
-extern void richacl_compute_max_masks(struct richacl *, uid_t);
+extern void richacl_compute_max_masks(struct richacl *);
 extern void richacl_chmod(struct richacl *, mode_t);
 extern struct richacl *richacl_from_mode(mode_t);
 extern int richacl_masks_to_mode(const struct richacl *);

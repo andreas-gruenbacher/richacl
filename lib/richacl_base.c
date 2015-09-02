@@ -186,7 +186,7 @@ static unsigned int richacl_group_class_allowed(struct richacl *acl)
  * the mask flags allowed by the acl are disabled (for any choice of the
  * file owner or group membership).
  */
-void richacl_compute_max_masks(struct richacl *acl, uid_t owner)
+void richacl_compute_max_masks(struct richacl *acl)
 {
 	unsigned int gmask = ~0;
 	struct richace *ace;
@@ -215,8 +215,7 @@ restart:
 		if (richace_is_inherit_only(ace))
 			continue;
 
-		if (richace_is_owner(ace) ||
-		    (richace_is_unix_user(ace) && ace->e_id == owner)) {
+		if (richace_is_owner(ace)) {
 			if (richace_is_allow(ace))
 				acl->a_owner_mask |= ace->e_mask;
 			else if (richace_is_deny(ace))
