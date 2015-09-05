@@ -178,20 +178,20 @@ file masks:
 .RS 4
 .HP 4
 .B read_data
-.RB ( r ),
+/
 .B list_directory
 .RB ( r ):
 Read the data of a file.
 List the contents of a directory.
 .HP
 .B write_data
-.RB ( w ),
+/
 .B add_file
 .RB ( w ):
 Modify the data of a file. Add a new file in a directory.
 .HP
 .B append_data
-.RB ( p ),
+/
 .B add_subdirectory
 .RB ( p ):
 Open a file in append mode. Create a subdirectory in a directory.
@@ -629,11 +629,11 @@ Please send your bug reports, suggested features and comments to the above addre
 .SH CONFORMING TO
 Rich Access Control Lists are Linux-specific.
 .SH SEE ALSO
-.BR acl (7),
 .BR chmod (1),
 .BR getrichacl (1),
 .BR ls (1),
 .BR setrichacl (1)
 .BR stat (2),
-.BR umask (2)
+.BR umask (2),
+.BR acl (7)
 .\" librichacl
