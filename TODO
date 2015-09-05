@@ -1,6 +1,5 @@
-* Write man pages
-
 * Internationalize
+- include po (gettext stuff) in packages and build process
 
 * How does Windows handle Deny ACEs: for example, a Deny Write ACE would imply
   Deny Read ACL and Deny Synchronize; does Windows *really* deny those
@@ -10,4 +9,4 @@
 * Look into Windows OWNER RIGHTS
   http://windowsitpro.com/article/security/acl-enhancements-in-windows-vista-and-windows-server-2008-102871
 
-* Review write-through semantics ...
+* Use the kernel headers from /usr/include/linux/ where available.
