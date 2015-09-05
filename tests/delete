@@ -67,10 +67,8 @@ check "rm d6/f s6/f || :" <<EOF
 rm: cannot remove 's6/f': Operation not permitted
 EOF
 
-# "Delete" access on the child is sufficient for non-sticky directories,
-# but it does not override the sticky check
+# "Delete" access on the child is sufficient, even in sticky directories.
 check "rm d7/f s7/f || :" <<EOF
-rm: cannot remove 's7/f': Operation not permitted
 EOF
 
 # A chmod turns off the "delete permission
