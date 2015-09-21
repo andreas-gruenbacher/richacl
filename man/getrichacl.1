@@ -35,9 +35,10 @@ getrichacl \- Get Rich Access Control Lists
 For each file, getrichacl displays the file name and Rich Access Control List
 (richacl).
 
-By default, richacl displays the effective permissions remaining after applying
-the file masks to the ACL, and does not display the file masks. When the file
-masks and underlying NFSv4 ACL are relevant, the \-\-raw option should be used.
+By default, getrichacl displays the effective permissions remaining after
+applying the file masks to the ACL, and does not display the file masks. When
+the file masks and underlying NFSv4 ACL are relevant, the \-\-raw option should
+be used.
 
 The output format of getrichacl is as follows:
 .fam C
@@ -84,8 +85,8 @@ permissions.
 
 When getrichacl is used on a file that does not have a richacl or on a
 filesystem that does not support richacls, getrichacl displays the access
-permissions defined by the traditional file permission bits. When getrichacl is
-used on a file that has a POSIX ACL, it prints an error message.
+permissions defined by the traditional file permission bits as a richacl. When
+getrichacl is used on a file that has a POSIX ACL, it prints an error message.
 
 .SH OPTIONS
 .TP

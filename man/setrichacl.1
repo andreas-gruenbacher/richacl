@@ -32,8 +32,8 @@ setrichacl \- Set Rich Access Control Lists
 .RI [ OPTION "]... [" FILE ]...
 
 .SH DESCRIPTION
-The setrichacl utility sets Rich Access Control Lists (richacls) of files and
-directories.
+The setrichacl utility sets or modifies Rich Access Control Lists (richacls) of
+files and directories.
 
 The
 .B \-m
@@ -63,10 +63,13 @@ entries for improved interoperability with Windows where possible.
 
 When the file masks are not specified, they are computed automatically.
 
-When setrichacl is used on a file system that does not support richacls,
-setrichacl operates on the file permission bits. When the file permission bit
-cannot exactly represent the permissions the ACL grants, setrichacl reports an
-error and fails.
+When the ACL to be set is simple enough that the traditional file permission
+bits can express the same permissions, setrichacl instead only sets the file
+permission bits. Minor differences that do not have an influence on the
+permissions granted by the acl are not preserved.  When setrichacl's
+counterpart utility, getrichacl, is used on a file or directory that does not
+have a richacl, it displays the access permissions defined by the file
+permission bits as a richacl.
 
 .SS Permissions
 
