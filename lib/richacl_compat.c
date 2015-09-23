@@ -488,37 +488,34 @@ richacl_max_allowed(struct richacl *acl)
 static int
 richacl_isolate_owner_class(struct richacl_alloc *alloc)
 {
-	struct richace *ace;
-	unsigned int allowed = 0;
+	struct richacl *acl = alloc->acl;
+	unsigned int deny = richacl_max_allowed(acl) & ~acl->a_owner_mask;
 
-	allowed = richacl_max_allowed(alloc->acl);
-	if (allowed & ~alloc->acl->a_owner_mask) {
-		/* Figure out if we can update an existig owner@ deny entry. */
-		richacl_for_each_entry(ace, alloc->acl) {
+	if (deny) {
+		struct richace *ace;
+
+		/*
+		 * Figure out if we can update an existig OWNER@ DENY entry.
+		 */
+		richacl_for_each_entry(ace, acl) {
 			if (richace_is_inherit_only(ace))
 				continue;
-			if (richace_is_deny(ace)) {
-				if (richace_is_owner(ace))
-					break;
-			} else if (richace_is_allow(ace)) {
-				ace = alloc->acl->a_entries + alloc->acl->a_count;
+			if (richace_is_allow(ace))
 				break;
+			if (richace_is_owner(ace)) {
+				return richace_change_mask(alloc, &ace,
+							   ace->e_mask | deny);
 			}
 		}
-		if (ace != alloc->acl->a_entries + alloc->acl->a_count) {
-			if (richace_change_mask(alloc, &ace, ace->e_mask |
-					(allowed & ~alloc->acl->a_owner_mask)))
-				return -1;
-		} else {
-			/* Insert an owner@ deny entry at the front. */
-			ace = alloc->acl->a_entries;
-			if (richacl_insert_entry(alloc, &ace))
-				return -1;
-			ace->e_type = RICHACE_ACCESS_DENIED_ACE_TYPE;
-			ace->e_flags = RICHACE_SPECIAL_WHO;
-			ace->e_mask = allowed & ~alloc->acl->a_owner_mask;
-			ace->e_id = RICHACE_OWNER_SPECIAL_ID;
-		}
+
+		/* Insert an owner@ deny entry at the front. */
+		ace = acl->a_entries;
+		if (richacl_insert_entry(alloc, &ace))
+			return -1;
+		ace->e_type = RICHACE_ACCESS_DENIED_ACE_TYPE;
+		ace->e_flags = RICHACE_SPECIAL_WHO;
+		ace->e_mask = deny;
+		ace->e_id = RICHACE_OWNER_SPECIAL_ID;
 	}
 	return 0;
 }
