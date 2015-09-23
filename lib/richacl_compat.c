@@ -533,7 +533,7 @@ __richacl_isolate_who(struct richacl_alloc *alloc, struct richace *who,
 		      unsigned int deny)
 {
 	struct richacl *acl = alloc->acl;
-	struct richace *ace;
+	struct richace *ace, who_copy = { };
 	int n;
 
 	/*
@@ -560,36 +560,29 @@ __richacl_isolate_who(struct richacl_alloc *alloc, struct richace *who,
 			continue;
 		if (richace_is_deny(ace)) {
 			if (richace_is_same_identifier(ace, who))
-				break;
+				return richace_change_mask(alloc, &ace,
+							   ace->e_mask | deny);
 		} else if (richace_is_allow(ace) &&
-			   (ace->e_mask & deny)) {
-			n = -1;
+			   (ace->e_mask & deny))
 			break;
-		}
 	}
-	if (n != -1) {
-		if (richace_change_mask(alloc, &ace, ace->e_mask | deny))
-			return -1;
-	} else {
-		/*
-		 * Insert a new entry before the trailing everyone@ deny entry.
-		 */
-		struct richace who_copy = {};
 
-		ace = acl->a_entries + acl->a_count - 1;
-		if (richace_copy(&who_copy, who))
-			return -1;
-		if (richacl_insert_entry(alloc, &ace))
-			return -1;
-		if (richace_copy(ace, &who_copy)) {
-			richace_free(&who_copy);
-			return -1;
-		}
+	/*
+	 * Insert a new entry before the trailing everyone@ deny entry.
+	 */
+	if (richace_copy(&who_copy, who))
+		return -1;
+	ace = acl->a_entries + acl->a_count - 1;
+	if (richacl_insert_entry(alloc, &ace))
+		return -1;
+	if (richace_copy(ace, &who_copy)) {
 		richace_free(&who_copy);
-		ace->e_type = RICHACE_ACCESS_DENIED_ACE_TYPE;
-		richace_clear_inheritance_flags(ace);
-		ace->e_mask = deny;
+		return -1;
 	}
+	richace_free(&who_copy);
+	ace->e_type = RICHACE_ACCESS_DENIED_ACE_TYPE;
+	richace_clear_inheritance_flags(ace);
+	ace->e_mask = deny;
 	return 0;
 }
 
