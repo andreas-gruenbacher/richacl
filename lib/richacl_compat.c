@@ -646,8 +646,7 @@ richacl_set_owner_permissions(struct richacl_alloc *alloc)
 	unsigned int denied = 0;
 	struct richace *ace;
 
-	if (!((alloc->acl->a_flags & RICHACL_WRITE_THROUGH) &&
-	      (alloc->acl->a_flags & RICHACL_MASKED)))
+	if (!((alloc->acl->a_flags & RICHACL_WRITE_THROUGH)))
 		return 0;
 
 	richacl_for_each_entry(ace, alloc->acl) {
@@ -689,8 +688,7 @@ richacl_set_other_permissions(struct richacl_alloc *alloc)
 	struct richace *ace = acl->a_entries + acl->a_count - 1;
 
 	if (!(other_mask &&
-	      (alloc->acl->a_flags & RICHACL_WRITE_THROUGH) &&
-	      (alloc->acl->a_flags & RICHACL_MASKED)))
+	      (alloc->acl->a_flags & RICHACL_WRITE_THROUGH)))
 		return 0;
 
 	if (acl->a_count == 0 ||
