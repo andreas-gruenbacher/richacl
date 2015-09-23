@@ -20,14 +20,19 @@ int main(int argc, char *argv[])
 {
 	uid_t owner = getuid();
 	mode_t mode = 0;
-	bool do_chmod = false;
+	bool do_chmod = false, do_create = false;
 	int opt;
 
-	while ((opt = getopt(argc, argv, "m:d")) != -1) {
+	while ((opt = getopt(argc, argv, "m:c:d")) != -1) {
 		switch(opt) {
 		case 'm':
 			mode = (mode & ~0777) | strtoul(optarg, NULL, 8);
 			do_chmod = true;
+			break;
+
+		case 'c':
+			mode = (mode & ~0777) | strtoul(optarg, NULL, 8);
+			do_create = true;
 			break;
 
 		case 'd':
@@ -50,8 +55,11 @@ int main(int argc, char *argv[])
 			perror(argv[optind]);
 			return 1;
 		}
-		if (do_chmod)
+		if (do_chmod || do_create) {
 			richacl_chmod(acl, mode);
+			if (do_create)
+				acl->a_flags &= ~RICHACL_WRITE_THROUGH;
+		}
 		richacl_apply_masks(&acl, owner);
 		text = richacl_to_text(acl, RICHACL_TEXT_NUMERIC_IDS);
 		printf("%s\n", text);
