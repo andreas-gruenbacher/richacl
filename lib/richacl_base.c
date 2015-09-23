@@ -841,8 +841,7 @@ richacl_inherit(const struct richacl *dir_acl, int isdir)
 				goto fail;
 			if (dir_ace->e_flags & RICHACE_NO_PROPAGATE_INHERIT_ACE)
 				richace_clear_inheritance_flags(ace);
-			if ((dir_ace->e_flags & RICHACE_FILE_INHERIT_ACE) &&
-			    !(dir_ace->e_flags & RICHACE_DIRECTORY_INHERIT_ACE))
+			else if (!(dir_ace->e_flags & RICHACE_DIRECTORY_INHERIT_ACE))
 				ace->e_flags |= RICHACE_INHERIT_ONLY_ACE;
 			ace++;
 		}

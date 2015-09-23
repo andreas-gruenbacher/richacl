@@ -280,11 +280,11 @@ __richacl_propagate_everyone(struct richacl_alloc *alloc, struct richace *who,
 
 	/*
 	 * If for group class entries, all the remaining permissions will
-	 * remain granted by the trailing everyone@ ace, no additional entry is
-	 * needed.
+	 * remain granted by the trailing everyone@ allow ace, no additional
+	 * entry is needed.
 	 */
 	if (!richace_is_owner(who) &&
-	    richace_is_everyone(ace) && richace_is_allow(ace) &&
+	    richace_is_everyone(ace) &&
 	    !(allow & ~(ace->e_mask & acl->a_other_mask)))
 		allow = 0;
 
@@ -295,7 +295,6 @@ __richacl_propagate_everyone(struct richacl_alloc *alloc, struct richace *who,
 		else {
 			struct richace who_copy = {};
 
-			ace = acl->a_entries + acl->a_count - 1;
 			if (richace_copy(&who_copy, who))
 				return -1;
 			if (richacl_insert_entry(alloc, &ace))
@@ -360,24 +359,26 @@ richacl_propagate_everyone(struct richacl_alloc *alloc)
 	struct richace *ace;
 	unsigned int owner_allow, group_allow;
 
-	/*
-	 * If the owner mask contains permissions which are not in the group mask,
-	 * the group mask contains permissions which are not in the other mask,
-	 * or the owner class contains permissions which are not in the other mask,
-	 * we may need to propagate permissions up from the everyone@ allow ace.
-	 * The third condition is implied by the first two.
-	 */
-	if (!((acl->a_owner_mask & ~acl->a_group_mask) ||
-	      (acl->a_group_mask & ~acl->a_other_mask)))
-		return 0;
 	if (!acl->a_count)
 		return 0;
 	ace = acl->a_entries + acl->a_count - 1;
 	if (richace_is_inherit_only(ace) || !richace_is_everyone(ace))
 		return 0;
+
+	/*
+	 * Permissions the owner and group class are granted through the
+	 * trailing everyone@ allow ace.
+	 */
 	owner_allow = ace->e_mask & acl->a_owner_mask;
 	group_allow = ace->e_mask & acl->a_group_mask;
 
+	/*
+	 * If the group or other masks hide permissions which the owner should
+	 * be allowed, we need to propagate those permissions up.  Otherwise,
+	 * those permissions may be lost when applying the other mask to the
+	 * trailing everyone@ allow ace, or when isolating the group class from
+	 * the other class through additional deny aces.
+	 */
 	if (owner_allow & ~(acl->a_group_mask & acl->a_other_mask)) {
 		/* Propagate everyone@ permissions through to owner@. */
 		who.e_id = RICHACE_OWNER_SPECIAL_ID;
@@ -386,6 +387,11 @@ richacl_propagate_everyone(struct richacl_alloc *alloc)
 		acl = alloc->acl;
 	}
 
+	/*
+	 * If the other mask hides permissions which the group class should be
+	 * allowed, we need to propagate those permissions up to the owning
+	 * group and to all other members in the group class.
+	 */
 	if (group_allow & ~acl->a_other_mask) {
 		int n;
 
@@ -404,13 +410,14 @@ richacl_propagate_everyone(struct richacl_alloc *alloc)
 			    richace_is_owner(ace) ||
 			    richace_is_group(ace))
 				continue;
-			if (richace_is_allow(ace) || richace_is_deny(ace)) {
-				/* Any inserted entry will end up below the
-				   current entry. */
-				if (__richacl_propagate_everyone(alloc, ace, group_allow))
-					return -1;
-				acl = alloc->acl;
-			}
+
+			/*
+			 * Any inserted entry will end up below the current
+			 * entry.
+			 */
+			if (__richacl_propagate_everyone(alloc, ace, group_allow))
+				return -1;
+			acl = alloc->acl;
 		}
 	}
 	return 0;
