@@ -617,13 +617,16 @@ richacl_isolate_group_class(struct richacl_alloc *alloc)
 		if (__richacl_isolate_who(alloc, &who, deny))
 			return -1;
 
+		/*
+		 * Start from the entry before the trailing everyone@ allow
+		 * entry.  We will not hit everyone@ entries in the loop.
+		 */
 		for (n = alloc->acl->a_count - 2; n != -1; n--) {
 			ace = alloc->acl->a_entries + n;
 
 			if (richace_is_inherit_only(ace) ||
 			    richace_is_owner(ace) ||
-			    richace_is_group(ace) ||
-			    richace_is_everyone(ace))
+			    richace_is_group(ace))
 				continue;
 			if (__richacl_isolate_who(alloc, ace, deny))
 				return -1;
