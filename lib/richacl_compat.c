@@ -148,7 +148,8 @@ richace_change_mask(struct richacl_alloc *alloc, struct richace **ace,
 				return -1;
 			(*ace)->e_flags |= RICHACE_INHERIT_ONLY_ACE;
 			(*ace)++;
-			richace_clear_inheritance_flags(*ace);
+			(*ace)->e_flags &= ~RICHACE_INHERITANCE_FLAGS |
+					   RICHACE_INHERITED_ACE;
 		}
 		(*ace)->e_mask = mask;
 	} else {
@@ -305,7 +306,7 @@ __richacl_propagate_everyone(struct richacl_alloc *alloc, struct richace *who,
 			}
 			richace_free(&who_copy);
 			ace->e_type = RICHACE_ACCESS_ALLOWED_ACE_TYPE;
-			richace_clear_inheritance_flags(ace);
+			ace->e_flags &= ~RICHACE_INHERITANCE_FLAGS;
 			ace->e_mask = allow;
 		}
 	}
@@ -581,7 +582,7 @@ __richacl_isolate_who(struct richacl_alloc *alloc, struct richace *who,
 	}
 	richace_free(&who_copy);
 	ace->e_type = RICHACE_ACCESS_DENIED_ACE_TYPE;
-	richace_clear_inheritance_flags(ace);
+	ace->e_flags &= ~RICHACE_INHERITANCE_FLAGS;
 	ace->e_mask = deny;
 	return 0;
 }

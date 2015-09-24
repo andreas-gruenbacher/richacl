@@ -842,7 +842,7 @@ richacl_inherit(const struct richacl *dir_acl, int isdir)
 			if (richace_copy(ace, dir_ace))
 				goto fail;
 			if (dir_ace->e_flags & RICHACE_NO_PROPAGATE_INHERIT_ACE)
-				richace_clear_inheritance_flags(ace);
+				ace->e_flags &= ~RICHACE_INHERITANCE_FLAGS;
 			else if (!(dir_ace->e_flags & RICHACE_DIRECTORY_INHERIT_ACE))
 				ace->e_flags |= RICHACE_INHERIT_ONLY_ACE;
 			ace++;
@@ -862,7 +862,7 @@ richacl_inherit(const struct richacl *dir_acl, int isdir)
 				continue;
 			if (richace_copy(ace, dir_ace))
 				goto fail;
-			richace_clear_inheritance_flags(ace);
+			ace->e_flags &= ~RICHACE_INHERITANCE_FLAGS;
 			/*
 			 * RICHACE_DELETE_CHILD is meaningless for
 			 * non-directories, so clear it.

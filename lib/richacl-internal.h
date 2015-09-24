@@ -24,16 +24,6 @@
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 #define ALIGN(x,a) (((x)+(a)-1)&~((a)-1))
 
-static inline void
-richace_clear_inheritance_flags(struct richace *ace)
-{
-	ace->e_flags &= ~(RICHACE_FILE_INHERIT_ACE |
-			  RICHACE_DIRECTORY_INHERIT_ACE |
-			  RICHACE_NO_PROPAGATE_INHERIT_ACE |
-			  RICHACE_INHERIT_ONLY_ACE |
-			  RICHACE_INHERITED_ACE);
-}
-
 extern const char *richace_owner_who;
 extern const char *richace_group_who;
 extern const char *richace_everyone_who;
