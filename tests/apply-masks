@@ -54,3 +54,31 @@ EOF
 check 'richacl-apply-masks -d -m 700 owner@:rwpxd:fd:allow' <<EOF
 owner@:rwpxd:fd:allow
 EOF
+
+check 'richacl-apply-masks -m 406 everyone@:rwpx::allow' <<EOF
+owner@:wp::deny
+owner@:r::allow
+group@:rwp::deny
+everyone@:rwp::allow
+EOF
+
+check 'richacl-apply-masks -m 406 everyone@:rwx::allow' <<EOF
+owner@:wp::deny
+owner@:r::allow
+group@:rwp::deny
+everyone@:rwp::allow
+EOF
+
+check 'richacl-apply-masks -c 406 everyone@:rwpx::allow' <<EOF
+owner@:wp::deny
+owner@:r::allow
+group@:rwp::deny
+everyone@:rwp::allow
+EOF
+
+check 'richacl-apply-masks -c 406 everyone@:rwx::allow' <<EOF
+owner@:w::deny
+owner@:r::allow
+group@:rw::deny
+everyone@:rw::allow
+EOF
