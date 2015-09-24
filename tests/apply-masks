@@ -40,6 +40,15 @@ $owner:rwp::allow
 group@:r::allow
 EOF
 
+check "richacl-apply-masks -m 600 $owner:rwpx::allow" <<EOF
+owner@:rwp::allow
+$owner:rwp::allow
+EOF
+
+check "richacl-apply-masks -c 600 $owner:rwpx::allow" <<EOF
+$owner:rwp::allow
+EOF
+
 check 'richacl-apply-masks -m 0 everyone@:rwpx::allow' <<EOF
 EOF
 

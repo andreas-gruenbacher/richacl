@@ -569,6 +569,7 @@ int richacl_access(const char *file, const struct stat *st, uid_t user,
 		} else if (richace_is_unix_user(ace)) {
 			if (user != ace->e_id)
 				continue;
+			goto entry_matches_owner;
 		} else if (richace_is_unix_group(ace)) {
 			if (!in_groups(ace->e_id, groups, n_groups))
 				continue;
@@ -694,6 +695,7 @@ bool richacl_permission(struct richacl *acl, uid_t owner, gid_t owning_group,
 		} else if (richace_is_unix_user(ace)) {
 			if (user != ace->e_id)
 				continue;
+			goto entry_matches_owner;
 		} else if (richace_is_unix_group(ace)) {
 			if (!in_groups(ace->e_id, groups, n_groups))
 				continue;
