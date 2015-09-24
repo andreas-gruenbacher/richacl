@@ -595,21 +595,20 @@ __richacl_isolate_who(struct richacl_alloc *alloc, struct richace *who,
  * class entries where necessary.
  */
 static int
-richacl_isolate_group_class(struct richacl_alloc *alloc)
+richacl_isolate_group_class(struct richacl_alloc *alloc, unsigned int deny)
 {
 	struct richace who = {
 		.e_flags = RICHACE_SPECIAL_WHO,
 		.e_id = RICHACE_GROUP_SPECIAL_ID,
 	};
 	struct richace *ace;
-	unsigned int deny;
 
 	if (!alloc->acl->a_count)
 		return 0;
 	ace = alloc->acl->a_entries + alloc->acl->a_count - 1;
 	if (richace_is_inherit_only(ace) || !richace_is_everyone(ace))
 		return 0;
-	deny = ace->e_mask & ~alloc->acl->a_group_mask;
+	deny |= ace->e_mask & ~alloc->acl->a_group_mask;
 
 	if (deny) {
 		unsigned int n;
@@ -680,17 +679,19 @@ richacl_set_owner_permissions(struct richacl_alloc *alloc)
  * richacl_set_other_permissions  -  set the other permissions to the other mask
  */
 static int
-richacl_set_other_permissions(struct richacl_alloc *alloc)
+richacl_set_other_permissions(struct richacl_alloc *alloc, unsigned int *added)
 {
 	struct richacl *acl = alloc->acl;
 	unsigned int x = RICHACE_POSIX_ALWAYS_ALLOWED;
 	unsigned int other_mask = acl->a_other_mask & ~x;
-	struct richace *ace = acl->a_entries + acl->a_count - 1;
+	struct richace *ace;
 
 	if (!(other_mask &&
 	      (alloc->acl->a_flags & RICHACL_WRITE_THROUGH)))
 		return 0;
 
+	*added = other_mask;
+	ace = acl->a_entries + acl->a_count - 1;
 	if (acl->a_count == 0 ||
 	    !richace_is_everyone(ace) ||
 	    richace_is_inherit_only(ace)) {
@@ -701,8 +702,10 @@ richacl_set_other_permissions(struct richacl_alloc *alloc)
 		ace->e_flags = RICHACE_SPECIAL_WHO;
 		ace->e_mask = other_mask;
 		ace->e_id = RICHACE_EVERYONE_SPECIAL_ID;
-	} else
+	} else {
+		*added &= ~ace->e_mask;
 		richace_change_mask(alloc, &ace, other_mask);
+	}
 	return 0;
 }
 
@@ -726,13 +729,15 @@ richacl_apply_masks(struct richacl **acl, uid_t owner)
 			.acl = *acl,
 			.count = (*acl)->a_count,
 		};
+		unsigned int added = 0;
+
 		if (richacl_move_everyone_aces_down(&alloc) ||
 		    richacl_propagate_everyone(&alloc) ||
 		    __richacl_apply_masks(&alloc, owner) ||
+		    richacl_set_other_permissions(&alloc, &added) ||
+		    richacl_isolate_group_class(&alloc, added) ||
 		    richacl_set_owner_permissions(&alloc) ||
-		    richacl_set_other_permissions(&alloc) ||
-		    richacl_isolate_owner_class(&alloc) ||
-		    richacl_isolate_group_class(&alloc))
+		    richacl_isolate_owner_class(&alloc))
 				retval = -1;
 
 		alloc.acl->a_flags &= ~(RICHACL_WRITE_THROUGH | RICHACL_MASKED);

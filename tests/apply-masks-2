@@ -57,6 +57,7 @@ check "getrichacl x" <<EOF
 x:
     owner@:rwp----------::allow
         77:rwp----------::allow
+    group@:r------------::deny
  everyone@:r------------::allow
 EOF
 
@@ -65,6 +66,7 @@ check "getrichacl --numeric-ids x" <<EOF
 x:
     owner@:rwp----------::allow
         77:r------------::allow
+    group@:r------------::deny
  everyone@:r------------::allow
 EOF
 
@@ -73,6 +75,7 @@ check "getrichacl x" <<EOF
 x:
     owner@:rwp----------::allow
         77:rwp----------::allow
+    group@:r------------::deny
  everyone@:r------------::allow
 EOF
 

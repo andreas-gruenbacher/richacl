@@ -91,3 +91,17 @@ owner@:r::allow
 group@:rw::deny
 everyone@:rw::allow
 EOF
+
+check 'richacl-apply-masks -m 777 group@:r--::allow' <<EOF
+owner@:rwpx::allow
+group@:r::allow
+group@:wpx::deny
+everyone@:rwpx::allow
+EOF
+
+check 'richacl-apply-masks -m 077 group@:r--::allow' <<EOF
+owner@:rwpx::deny
+group@:r::allow
+group@:wpx::deny
+everyone@:rwpx::allow
+EOF
