@@ -538,13 +538,12 @@ __richacl_isolate_who(struct richacl_alloc *alloc, struct richace *who,
 	int n;
 
 	/*
-	 * Compute the permissions already denied to @who.
+	 * Remove the permissions already defined for @who.
 	 */
 	richacl_for_each_entry(ace, acl) {
 		if (richace_is_inherit_only(ace))
 			continue;
-		if (richace_is_same_identifier(ace, who) &&
-		    richace_is_deny(ace))
+		if (richace_is_same_identifier(ace, who))
 			deny &= ~ace->e_mask;
 	}
 	if (!deny)
