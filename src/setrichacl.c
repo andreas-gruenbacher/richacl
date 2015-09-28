@@ -324,7 +324,6 @@ static int auto_inherit(const char *dirname, struct richacl *dir_acl)
 		perror(path);
 		free(old_acl);
 		free(new_acl);
-		free(path);
 		status = -1;
 	}
 	if (errno != 0) {
