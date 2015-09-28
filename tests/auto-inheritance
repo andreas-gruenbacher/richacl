@@ -2,6 +2,7 @@
 
 . $srcdir/tests/test-lib.sh
 
+require_su
 require_richacls
 use_tmpdir
 
