@@ -33,14 +33,17 @@ x:
  everyone@:r------------::allow
 EOF
 
+# Note that unlike how the test cases look at first sight, we do *not* require
+# a richacl-enabled version of ls here ...
+
 ncheck "mkdir sub"
 ncheck "setrichacl --set 'everyone@:rwpxd:fd:allow' sub"
-check "ls -dl sub | sed -e 's/[. ].*//'" <<EOF
+check "ls -dl sub | sed -e 's/[.+ ].*/+/'" <<EOF
 drwxrwxrwx+
 EOF
 
 ncheck "chmod 775 sub"
-check "ls -dl sub | sed -e 's/[. ].*//'" <<EOF
+check "ls -dl sub | sed -e 's/[.+ ].*/+/'" <<EOF
 drwxrwxr-x+
 EOF
 
@@ -63,7 +66,7 @@ sub/f:
 EOF
 
 ncheck "mkdir sub/sub2"
-check "ls -dl sub/sub2 | sed -e 's/[. ].*//'" <<EOF
+check "ls -dl sub/sub2 | sed -e 's/[.+ ].*/+/'" <<EOF
 drwxrwxrwx+
 EOF
 
