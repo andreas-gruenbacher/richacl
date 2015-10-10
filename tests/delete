@@ -35,44 +35,44 @@ ncheck "chmod 664 s7/g"
 
 su 99 99
 
-# Cannot delete files with no or only with write permissions
-check "rm d1/f d1/g || :" <<EOF
+# Cannot delete files with no or only with write permissions on the directory
+check "rm -f d1/f d1/g || :" <<EOF
 rm: cannot remove 'd1/f': Permission denied
 rm: cannot remove 'd1/g': Permission denied
 EOF
 
 # Can delete files in directories we own
-ncheck "rm d2/f s2/f"
+ncheck "rm -f d2/f s2/f"
 
 # Can delete files in non-sticky directories we have write access to
-check "rm d3/f s3/f || :" <<EOF
+check "rm -f d3/f s3/f || :" <<EOF
 rm: cannot remove 's3/f': Operation not permitted
 EOF
 
 # "Write_data/execute" access does not include delete_child access, so deleting
 # is not allowed:
-check "rm d4/f s4/f || :" <<EOF
+check "rm -f d4/f s4/f || :" <<EOF
 rm: cannot remove 'd4/f': Permission denied
 rm: cannot remove 's4/f': Permission denied
 EOF
 
 # "Delete_child" access alone also is not sufficient
-check "rm d5/f s5/f || :" <<EOF
+check "rm -f d5/f s5/f || :" <<EOF
 rm: cannot remove 'd5/f': Permission denied
 rm: cannot remove 's5/f': Permission denied
 EOF
 
 # "Execute/delete_child" access is sufficient for non-sticky directories
-check "rm d6/f s6/f || :" <<EOF
+check "rm -f d6/f s6/f || :" <<EOF
 rm: cannot remove 's6/f': Operation not permitted
 EOF
 
 # "Delete" access on the child is sufficient, even in sticky directories.
-check "rm d7/f s7/f || :" <<EOF
+check "rm -f d7/f s7/f || :" <<EOF
 EOF
 
-# A chmod turns off the "delete permission
-check "rm d7/g s7/g || :" <<EOF
+# A chmod turns off the "delete" permission
+check "rm -f d7/g s7/g || :" <<EOF
 rm: cannot remove 'd7/g': Permission denied
 rm: cannot remove 's7/g': Permission denied
 EOF
