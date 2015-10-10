@@ -74,3 +74,15 @@ check "getrichacl sub/sub2" <<EOF
 sub/sub2:
  everyone@:rwpxd--------:fd:allow
 EOF
+
+ncheck "mkdir -m 750 sub/sub3"
+check "ls -dl sub/sub3 | sed -e 's/[.+ ].*/+/'" <<EOF
+drwxr-x---+
+EOF
+
+check "getrichacl sub/sub3" <<EOF
+sub/sub3:
+    owner@:rwpxd--------::allow
+    group@:r--x---------::allow
+ everyone@:rwpxd--------:fdi:allow
+EOF
