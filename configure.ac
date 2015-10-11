@@ -4,7 +4,7 @@ AC_INIT([richacl],
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_HEADER([include/config.h])
-AC_PREFIX_DEFAULT(/usr)
+#AC_PREFIX_DEFAULT(/usr)
 
 AM_INIT_AUTOMAKE([-Wall foreign 1.11 dist-xz subdir-objects])
 AM_SILENT_RULES([yes])
