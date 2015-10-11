@@ -2,106 +2,162 @@
 
 . $srcdir/tests/test-lib.sh
 
-check 'richacl-apply-masks everyone@:rwpx::allow' <<EOF
-everyone@:rwpx::allow
+require_richacls
+use_tmpdir
+
+ncheck "touch x"
+ncheck "setrichacl --set 'owner@:rwp::allow group@:rwp::allow everyone@:r::allow' x"
+check "getrichacl x" <<EOF
+x:
+    owner@:rwp----------::allow
+    group@:rwp----------::allow
+ everyone@:r------------::allow
 EOF
 
-check 'richacl-apply-masks -m 644 everyone@:rwpx::allow' <<EOF
-owner@:rwp::allow
-everyone@:r::allow
+ncheck "setrichacl --set 'everyone@:wp::allow owner@:r::allow group@:r::allow' x"
+ncheck "chmod 664 x"
+check "getrichacl x" <<EOF
+x:
+    owner@:rwp----------::allow
+    group@:rwp----------::allow
+ everyone@:r------------::allow
 EOF
 
-check 'richacl-apply-masks -d -m 755 everyone@:rwpxd::allow' <<EOF
-owner@:rwpxd::allow
-everyone@:rx::allow
+ncheck "setrichacl --set 'everyone@:wp::deny owner@:rwp::allow group@:rwp::allow' x"
+ncheck "chmod 664 x"
+check "getrichacl x" <<EOF
+x:
+    owner@:rwp----------::allow
+    group@:rwp----------::allow
+ everyone@:r------------::allow
 EOF
 
-check 'richacl-apply-masks -m 640 everyone@:rwpx::allow' <<EOF
-owner@:rwp::allow
-group@:r::allow
+ncheck "setrichacl --set 'owner@:rwCo::allow' x"
+check "getrichacl x" <<EOF
+x:
+ owner@:rw-------Co--::allow
 EOF
 
-check 'richacl-apply-masks -m 644 group@:wp::deny,everyone@:rwpx::allow' <<EOF
-owner@:rwp::allow
-group@:wp::deny
-everyone@:r::allow
+ncheck "setrichacl --set 'owner@:rwpCo::allow' x"
+check "getrichacl x" <<EOF
+x:
+ owner@:rwp----------::allow
 EOF
 
-check 'richacl-apply-masks -m 640 group@:wp::deny,everyone@:rwpx::allow' <<EOF
-owner@:rwp::allow
-group@:wp::deny
-group@:r::allow
+ncheck "chmod 644 x"
+check "getrichacl x" <<EOF
+x:
+    owner@:rwp----------::allow
+ everyone@:r------------::allow
 EOF
 
-owner=`id -u`
-check "richacl-apply-masks -m 640 owner@:rwp::allow,$owner:rwpx::allow,group@:rwpx::allow" <<EOF
-owner@:rwp::allow
-$owner:rwp::allow
-group@:r::allow
+ncheck "setrichacl --set '77:rwp::allow' x"
+ncheck "chmod 664 x"
+check "getrichacl x" <<EOF
+x:
+    owner@:rwp----------::allow
+        77:rwp----------::allow
+    group@:r------------::deny
+ everyone@:r------------::allow
 EOF
 
-check "richacl-apply-masks -m 600 $owner:rwpx::allow" <<EOF
-owner@:rwp::allow
-$owner:rwp::allow
+ncheck "chmod 644 x"
+check "getrichacl --numeric-ids x" <<EOF
+x:
+    owner@:rwp----------::allow
+        77:r------------::allow
+    group@:r------------::deny
+ everyone@:r------------::allow
 EOF
 
-check "richacl-apply-masks -c 600 $owner:rwpx::allow" <<EOF
-$owner:rwp::allow
+ncheck "chmod 664 x"
+check "getrichacl x" <<EOF
+x:
+    owner@:rwp----------::allow
+        77:rwp----------::allow
+    group@:r------------::deny
+ everyone@:r------------::allow
 EOF
 
-check 'richacl-apply-masks -m 0 everyone@:rwpx::allow' <<EOF
+ncheck "setrichacl --set '77:rwp::allow everyone@:r::allow' x"
+ncheck "chmod 664 x"
+check "getrichacl x" <<EOF
+x:
+    owner@:rwp----------::allow
+        77:rwp----------::allow
+ everyone@:r------------::allow
 EOF
 
-check 'richacl-apply-masks -m 664 1234:x::deny,everyone@:rwpx::allow' <<EOF
-1234:x::deny
-owner@:rwp::allow
-group@:rwp::allow
-1234:rwp::allow
-everyone@:r::allow
+ncheck "setrichacl --set '77:r::allow everyone@:rwp::allow' x"
+ncheck "chmod 664 x"
+check "getrichacl x" <<EOF
+x:
+        77:rwp----------::allow
+    owner@:rwp----------::allow
+    group@:rwp----------::allow
+ everyone@:r------------::allow
 EOF
 
-check 'richacl-apply-masks -d -m 700 owner@:rwpxd:fd:allow' <<EOF
-owner@:rwpxd:fd:allow
+ncheck "setrichacl --set '77:wp::deny everyone@:rwp::allow' x"
+ncheck "chmod 664 x"
+check "getrichacl x" <<EOF
+x:
+    owner@:rwp----------::allow
+        77:-wp----------::deny
+    group@:rwp----------::allow
+ everyone@:r------------::allow
 EOF
 
-check 'richacl-apply-masks -m 406 everyone@:rwpx::allow' <<EOF
-owner@:wp::deny
-owner@:r::allow
-group@:rwp::deny
-everyone@:rwp::allow
+ncheck "setrichacl --set '77:rwp::allow 77:wp::deny everyone@:rwp::allow' x"
+ncheck "chmod 664 x"
+check "getrichacl x" <<EOF
+x:
+    owner@:rwp----------::allow
+        77:rwp----------::allow
+        77:-wp----------::deny
+    group@:rwp----------::allow
+ everyone@:r------------::allow
 EOF
 
-check 'richacl-apply-masks -m 406 everyone@:rwx::allow' <<EOF
-owner@:wp::deny
-owner@:r::allow
-group@:rwp::deny
-everyone@:rwp::allow
+ncheck "setrichacl --set 'everyone@:rwp::allow' x"
+ncheck "chmod 066 x"
+check "getrichacl x" <<EOF
+x:
+    owner@:rwp----------::deny
+ everyone@:rwp----------::allow
 EOF
 
-check 'richacl-apply-masks -c 406 everyone@:rwpx::allow' <<EOF
-owner@:wp::deny
-owner@:r::allow
-group@:rwp::deny
-everyone@:rwp::allow
+ncheck "chmod 006 x"
+check "getrichacl x" <<EOF
+x:
+    owner@:rwp----------::deny
+    group@:rwp----------::deny
+ everyone@:rwp----------::allow
 EOF
 
-check 'richacl-apply-masks -c 406 everyone@:rwx::allow' <<EOF
-owner@:w::deny
-owner@:r::allow
-group@:rw::deny
-everyone@:rw::allow
+ncheck "chmod 606 x"
+check "getrichacl x" <<EOF
+x:
+    owner@:rwp----------::allow
+    group@:rwp----------::deny
+ everyone@:rwp----------::allow
 EOF
 
-check 'richacl-apply-masks -m 777 group@:r--::allow' <<EOF
-owner@:rwpx::allow
-group@:r::allow
-group@:wpx::deny
-everyone@:rwpx::allow
+ncheck "setrichacl --set '77:rwp::allow everyone@:rwp::allow' x"
+ncheck "chmod 606 x"
+check "getrichacl x" <<EOF
+x:
+    owner@:rwp----------::allow
+    group@:rwp----------::deny
+ everyone@:rwp----------::allow
 EOF
 
-check 'richacl-apply-masks -m 077 group@:r--::allow' <<EOF
-owner@:rwpx::deny
-group@:r::allow
-group@:wpx::deny
-everyone@:rwpx::allow
+ncheck "chmod 646 x"
+check "getrichacl x" <<EOF
+x:
+        77:r------------::allow
+    owner@:rwp----------::allow
+    group@:-wp----------::deny
+        77:-wp----------::deny
+ everyone@:rwp----------::allow
 EOF

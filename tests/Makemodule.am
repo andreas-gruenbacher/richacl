@@ -1,8 +1,8 @@
 TESTS = \
-	tests/equiv-mode \
-	tests/from-mode \
+	tests/lib-equiv-mode \
+	tests/lib-from-mode \
+	tests/lib-apply-masks \
 	tests/apply-masks \
-	tests/apply-masks-2 \
 	tests/basic \
 	tests/chmod \
 	tests/chown \

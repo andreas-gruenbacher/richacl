@@ -1,0 +1,107 @@
+#! /bin/sh
+
+. $srcdir/tests/test-lib.sh
+
+check 'richacl-apply-masks everyone@:rwpx::allow' <<EOF
+everyone@:rwpx::allow
+EOF
+
+check 'richacl-apply-masks -m 644 everyone@:rwpx::allow' <<EOF
+owner@:rwp::allow
+everyone@:r::allow
+EOF
+
+check 'richacl-apply-masks -d -m 755 everyone@:rwpxd::allow' <<EOF
+owner@:rwpxd::allow
+everyone@:rx::allow
+EOF
+
+check 'richacl-apply-masks -m 640 everyone@:rwpx::allow' <<EOF
+owner@:rwp::allow
+group@:r::allow
+EOF
+
+check 'richacl-apply-masks -m 644 group@:wp::deny,everyone@:rwpx::allow' <<EOF
+owner@:rwp::allow
+group@:wp::deny
+everyone@:r::allow
+EOF
+
+check 'richacl-apply-masks -m 640 group@:wp::deny,everyone@:rwpx::allow' <<EOF
+owner@:rwp::allow
+group@:wp::deny
+group@:r::allow
+EOF
+
+owner=`id -u`
+check "richacl-apply-masks -m 640 owner@:rwp::allow,$owner:rwpx::allow,group@:rwpx::allow" <<EOF
+owner@:rwp::allow
+$owner:rwp::allow
+group@:r::allow
+EOF
+
+check "richacl-apply-masks -m 600 $owner:rwpx::allow" <<EOF
+owner@:rwp::allow
+$owner:rwp::allow
+EOF
+
+check "richacl-apply-masks -c 600 $owner:rwpx::allow" <<EOF
+$owner:rwp::allow
+EOF
+
+check 'richacl-apply-masks -m 0 everyone@:rwpx::allow' <<EOF
+EOF
+
+check 'richacl-apply-masks -m 664 1234:x::deny,everyone@:rwpx::allow' <<EOF
+1234:x::deny
+owner@:rwp::allow
+group@:rwp::allow
+1234:rwp::allow
+everyone@:r::allow
+EOF
+
+check 'richacl-apply-masks -d -m 700 owner@:rwpxd:fd:allow' <<EOF
+owner@:rwpxd:fd:allow
+EOF
+
+check 'richacl-apply-masks -m 406 everyone@:rwpx::allow' <<EOF
+owner@:wp::deny
+owner@:r::allow
+group@:rwp::deny
+everyone@:rwp::allow
+EOF
+
+check 'richacl-apply-masks -m 406 everyone@:rwx::allow' <<EOF
+owner@:wp::deny
+owner@:r::allow
+group@:rwp::deny
+everyone@:rwp::allow
+EOF
+
+check 'richacl-apply-masks -c 406 everyone@:rwpx::allow' <<EOF
+owner@:wp::deny
+owner@:r::allow
+group@:rwp::deny
+everyone@:rwp::allow
+EOF
+
+check 'richacl-apply-masks -c 406 everyone@:rwx::allow' <<EOF
+owner@:w::deny
+owner@:r::allow
+group@:rw::deny
+everyone@:rw::allow
+EOF
+
+check 'richacl-apply-masks -m 777 group@:r--::allow' <<EOF
+owner@:rwpx::allow
+group@:r::allow
+group@:wpx::deny
+everyone@:rwpx::allow
+EOF
+
+check 'richacl-apply-masks -m 077 group@:r--::allow' <<EOF
+owner@:rwpx::deny
+group@:r::allow
+group@:wpx::deny
+everyone@:rwpx::allow
+EOF
