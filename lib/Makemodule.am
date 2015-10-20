@@ -1,4 +1,5 @@
-lib_LTLIBRARIES += librichacl.la
+lib_LTLIBRARIES += lib/librichacl.la
+pkgconf_DATA += lib/librichacl.pc
 
 LT_CURRENT = 2
 # The configure script will set this for us automatically.
@@ -18,8 +19,8 @@ HFILES = \
 	lib/richacl-internal.h \
 	lib/richacl_xattr.h
 
-librichacl_la_DEPENDENCIES = exports
-librichacl_la_SOURCES = $(CFILES) $(HFILES)
-librichacl_la_LDFLAGS = \
+lib_librichacl_la_DEPENDENCIES = exports
+lib_librichacl_la_SOURCES = $(CFILES) $(HFILES)
+lib_librichacl_la_LDFLAGS = \
 	-Wl,--version-script,$(top_srcdir)/exports \
 	-version-info $(LTVERSION)

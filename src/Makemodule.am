@@ -4,6 +4,6 @@ src_SOURCES = src/common.h src/common.c src/user_group.c src/user_group.h
 src_getrichacl_SOURCES = src/getrichacl.c $(src_SOURCES)
 src_setrichacl_SOURCES = src/setrichacl.c $(src_SOURCES)
 
-src_LDADD = librichacl.la lib/string_buffer.o
+src_LDADD = lib/librichacl.la lib/string_buffer.o
 src_getrichacl_LDADD = $(src_LDADD)
 src_setrichacl_LDADD = $(src_LDADD)

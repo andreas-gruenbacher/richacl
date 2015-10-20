@@ -34,7 +34,7 @@ LT_REVISION=$(echo "${PACKAGE_VERSION}" | sed -e 's:\..*::' -e 's:-dirty$::')
 AC_SUBST(LT_REVISION)
 
 AC_CONFIG_FILES([
-	librichacl.pc
+	lib/librichacl.pc
 	Makefile
 ])
 AC_OUTPUT

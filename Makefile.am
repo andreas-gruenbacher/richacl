@@ -24,7 +24,7 @@ AM_CPPFLAGS = \
 pkgconfdir = $(libdir)/pkgconfig
 sysincludedir = $(includedir)/sys
 
-pkgconf_DATA = librichacl.pc
+pkgconf_DATA =
 sysinclude_HEADERS =
 bin_PROGRAMS =
 lib_LTLIBRARIES =

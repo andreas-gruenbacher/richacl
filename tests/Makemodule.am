@@ -24,9 +24,9 @@ check_PROGRAMS += \
 	tests/require-richacls \
 	tests/su
 
-tests_richacl_equiv_mode_LDADD = librichacl.la
-tests_richacl_from_mode_LDADD = librichacl.la
-tests_richacl_apply_masks_LDADD = librichacl.la
+tests_richacl_equiv_mode_LDADD = lib/librichacl.la
+tests_richacl_from_mode_LDADD = lib/librichacl.la
+tests_richacl_apply_masks_LDADD = lib/librichacl.la
 
 TESTS_ENVIRONMENT = \
 	abs_top_builddir=$(abs_top_builddir); \
