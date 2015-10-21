@@ -20,6 +20,9 @@ LT_INIT
 AC_CHECK_HEADER([sys/xattr.h],,
   [AC_MSG_ERROR([cannot find header <sys/xattr.h>])])
 
+AC_CHECK_HEADER([linux/richacl.h])
+AM_CONDITIONAL([NEED_UAPI], [test "$ac_cv_header_linux_richacl_h" != yes])
+
 #AM_GNU_GETTEXT_VERSION([0.18.2])
 #AM_GNU_GETTEXT([external])
 

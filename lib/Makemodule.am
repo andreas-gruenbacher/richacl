@@ -16,8 +16,7 @@ CFILES = \
 
 HFILES = \
 	lib/byteorder.h \
-	lib/richacl-internal.h \
-	lib/richacl_xattr.h
+	lib/richacl-internal.h
 
 lib_librichacl_la_DEPENDENCIES = exports
 lib_librichacl_la_SOURCES = $(CFILES) $(HFILES)

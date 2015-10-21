@@ -1,0 +1,11 @@
+#! /bin/sh
+
+awk '
+/^[ 	]*#[ 	]*ifndef/ && !symbol { symbol=$2; nest++; next }
+/^[ 	]*#[ 	]*(if|ifdef|ifndef)[ 	]/ && symbol { nest++ }
+/^[ 	]*#[ 	]*define/ && $2 == symbol { next }
+/^[ 	]*#[ 	]*endif/ && symbol { nest--; if (!nest) symbol = "" }
+
+/^[     ]*$/ { if (was_nonempty) blank = blank $0 "\n"; next }
+symbol { print blank $0; blank = ""; was_nonempty = 1 }
+' "$@"

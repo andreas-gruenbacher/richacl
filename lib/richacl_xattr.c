@@ -24,8 +24,10 @@
 #include <errno.h>
 #include <sys/xattr.h>
 
+#include <linux/xattr.h>
+#include <linux/richacl_xattr.h>
+
 #include "sys/richacl.h"
-#include "richacl_xattr.h"
 #include "richacl-internal.h"
 #include "byteorder.h"
 
@@ -153,14 +155,14 @@ struct richacl *richacl_get_file(const char *path)
 	ssize_t retval;
 	struct richacl *acl;
 
-	retval = getxattr(path, SYSTEM_RICHACL, NULL, 0);
+	retval = getxattr(path, XATTR_NAME_RICHACL, NULL, 0);
 	if (retval <= 0)
 		return NULL;
 
 	value = alloca(retval);
 	if (!value)
 		return NULL;
-	retval = getxattr(path, SYSTEM_RICHACL, value, retval);
+	retval = getxattr(path, XATTR_NAME_RICHACL, value, retval);
 	if (retval < 0)
 		return NULL;
 	acl = richacl_from_xattr(value, retval);
@@ -174,14 +176,14 @@ struct richacl *richacl_get_fd(int fd)
 	ssize_t retval;
 	struct richacl *acl;
 
-	retval = fgetxattr(fd, SYSTEM_RICHACL, NULL, 0);
+	retval = fgetxattr(fd, XATTR_NAME_RICHACL, NULL, 0);
 	if (retval <= 0)
 		return NULL;
 
 	value = alloca(retval);
 	if (!value)
 		return NULL;
-	retval = fgetxattr(fd, SYSTEM_RICHACL, value, retval);
+	retval = fgetxattr(fd, XATTR_NAME_RICHACL, value, retval);
 	if (retval < 0)
 		return NULL;
 	acl = richacl_from_xattr(value, retval);
@@ -195,7 +197,7 @@ int richacl_set_file(const char *path, const struct richacl *acl)
 	void *value = alloca(size);
 
 	richacl_to_xattr(acl, value);
-	return setxattr(path, SYSTEM_RICHACL, value, size, 0);
+	return setxattr(path, XATTR_NAME_RICHACL, value, size, 0);
 }
 
 int richacl_set_fd(int fd, const struct richacl *acl)
@@ -204,5 +206,5 @@ int richacl_set_fd(int fd, const struct richacl *acl)
 	void *value = alloca(size);
 
 	richacl_to_xattr(acl, value);
-	return fsetxattr(fd, SYSTEM_RICHACL, value, size, 0);
+	return fsetxattr(fd, XATTR_NAME_RICHACL, value, size, 0);
 }

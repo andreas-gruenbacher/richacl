@@ -1,11 +1,34 @@
-sysinclude_HEADERS += \
-	include/sys/richacl.h
-
 noinst_HEADERS += \
-	include/string_buffer.h
+	include/string_buffer.h \
+	include/sys/richacl.h
 
 noinst_HEADERS += \
 	include/uapi/linux/libc-compat.h \
 	include/uapi/linux/richacl.h \
 	include/uapi/linux/richacl_xattr.h \
 	include/uapi/linux/xattr.h
+
+MOSTLYCLEANFILES = richacl.h
+
+if NEED_UAPI
+richacl.h: include/sys/richacl.h include/uapi/linux/richacl.h
+	@awk '/^#include <linux\/richacl.h>$$/ \
+	  { \
+	    system("$(top_srcdir)/build-aux/unifdef \
+		      $(top_srcdir)/include/uapi/linux/richacl.h"); \
+	    next \
+	  } \
+	  { print }' < $< > $@.tmp
+	@mv $@.tmp $@
+else
+richacl.h: include/sys/richacl.h
+	@cp $< $@
+endif
+
+install-data-local: richacl.h
+	@$(NORMAL_INSTALL)
+	$(MKDIR_P) "$(DESTDIR)$(sysincludedir)"
+	$(INSTALL_HEADER) $< "$(DESTDIR)$(sysincludedir)"
+
+uninstall-local:
+	rm -f "$(DESTDIR)$(sysincludedir)/richacl.h"
