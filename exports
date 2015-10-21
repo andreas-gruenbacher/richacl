@@ -16,6 +16,7 @@ RICHACL_1.0 {
 
 	# acl funcs
 	richacl_access;
+	richacl_permission;
 	richacl_alloc;
 	richacl_apply_masks;
 	richacl_auto_inherit;

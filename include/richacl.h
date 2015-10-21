@@ -263,8 +263,8 @@ extern int richacl_compare(const struct richacl *, const struct richacl *);
 struct stat;
 extern int richacl_access(const char *, const struct stat *, uid_t,
 			  const gid_t *, int);
-bool richacl_permission(struct richacl *, uid_t, gid_t, uid_t, const gid_t *,
-			int, unsigned int);
+extern bool richacl_permission(struct richacl *, uid_t, gid_t, uid_t, const gid_t *,
+			       int, unsigned int);
 
 extern char *richacl_mask_to_text(unsigned int, int);
 
