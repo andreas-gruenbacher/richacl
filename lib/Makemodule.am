@@ -8,10 +8,50 @@ LT_AGE = 1
 LTVERSION = $(LT_CURRENT):$(LT_REVISION):$(LT_AGE)
 
 CFILES = \
-	lib/richacl_base.c \
-	lib/richacl_compat.c \
+	lib/in_groups.c \
+	lib/richace_copy.c \
+	lib/richace_free.c \
+	lib/richace_is_everyone.c \
+	lib/richace_is_group.c \
+	lib/richace_is_owner.c \
+	lib/richace_is_same_identifier.c \
+	lib/richace_is_unix_group.c \
+	lib/richace_is_unix_user.c \
+	lib/richace_set_gid.c \
+	lib/richace_set_special_who.c \
+	lib/richace_set_uid.c \
+	lib/richace_set_unmapped_who.c \
+	lib/richacl_access.c \
+	lib/richacl_alloc.c \
+	lib/richacl_append_entry.c \
+	lib/richacl_apply_masks.c \
+	lib/richacl_auto_inherit.c \
+	lib/richacl_change_mask.c \
+	lib/richacl_chmod.c \
+	lib/richacl_clone.c \
+	lib/richacl_compare.c \
+	lib/richacl_compute_max_masks.c \
+	lib/richacl_delete_entry.c \
+	lib/richacl_equiv_mode.c \
+	lib/richacl_free.c \
+	lib/richacl_from_mode.c \
+	lib/richacl_from_text.c \
+	lib/richacl_from_xattr.c \
+	lib/richacl_get_fd.c \
+	lib/richacl_get_file.c \
+	lib/richacl_inherit.c \
+	lib/richacl_insert_entry.c \
+	lib/richacl_mask_to_mode.c \
+	lib/richacl_mask_to_text.c \
+	lib/richacl_masks_to_mode.c \
+	lib/richacl_mode_to_mask.c \
+	lib/richacl_permission.c \
+	lib/richacl_set_fd.c \
+	lib/richacl_set_file.c \
 	lib/richacl_text.c \
-	lib/richacl_xattr.c \
+	lib/richacl_to_text.c \
+	lib/richacl_to_xattr.c \
+	lib/richacl_xattr_size.c \
 	lib/string_buffer.c
 
 HFILES = \

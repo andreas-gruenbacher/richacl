@@ -22,7 +22,6 @@
 #define __RICHACL_H
 
 #include <sys/types.h>
-#include <string.h>
 #include <stdbool.h>
 
 #include <linux/richacl.h>

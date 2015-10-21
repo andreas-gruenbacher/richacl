@@ -21,7 +21,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
-
 #include "string_buffer.h"
 
 struct string_buffer *alloc_string_buffer(size_t size)
