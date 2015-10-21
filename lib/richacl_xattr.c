@@ -23,7 +23,8 @@
 #include <alloca.h>
 #include <errno.h>
 #include <sys/xattr.h>
-#include "richacl.h"
+
+#include "sys/richacl.h"
 #include "richacl_xattr.h"
 #include "richacl-internal.h"
 #include "byteorder.h"

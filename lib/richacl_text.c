@@ -26,9 +26,10 @@
 #include <errno.h>
 #include <pwd.h>
 #include <grp.h>
-#include "string_buffer.h"
-#include "richacl.h"
+
+#include "sys/richacl.h"
 #include "richacl-internal.h"
+#include "string_buffer.h"
 
 static struct {
 	char		a_char;

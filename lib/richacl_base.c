@@ -24,7 +24,8 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <errno.h>
-#include "richacl.h"
+
+#include "sys/richacl.h"
 #include "richacl-internal.h"
 
 #ifndef S_IRWXUGO

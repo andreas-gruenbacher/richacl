@@ -1,5 +1,5 @@
 sysinclude_HEADERS += \
-	include/richacl.h
+	include/sys/richacl.h
 
 noinst_HEADERS += \
 	include/string_buffer.h

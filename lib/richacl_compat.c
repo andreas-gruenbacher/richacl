@@ -19,7 +19,8 @@
 */
 
 #include <stdlib.h>
-#include "richacl.h"
+
+#include "sys/richacl.h"
 #include "richacl-internal.h"
 
 /**

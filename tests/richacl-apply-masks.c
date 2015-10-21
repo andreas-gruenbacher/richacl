@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
-#include "richacl.h"
+#include "sys/richacl.h"
 
 void print_error(const char *fmt, ...)
 {

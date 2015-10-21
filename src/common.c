@@ -5,7 +5,7 @@
 #include <errno.h>
 #include <stdbool.h>
 
-#include "richacl.h"
+#include "sys/richacl.h"
 #include "common.h"
 
 bool

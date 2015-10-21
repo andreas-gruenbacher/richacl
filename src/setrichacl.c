@@ -39,7 +39,7 @@
 #include <pwd.h>
 #include <grp.h>
 
-#include "richacl.h"
+#include "sys/richacl.h"
 #include "string_buffer.h"
 #include "common.h"
 
