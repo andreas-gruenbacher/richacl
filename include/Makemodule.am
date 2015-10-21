@@ -3,3 +3,9 @@ sysinclude_HEADERS += \
 
 noinst_HEADERS += \
 	include/string_buffer.h
+
+noinst_HEADERS += \
+	include/uapi/linux/libc-compat.h \
+	include/uapi/linux/richacl.h \
+	include/uapi/linux/richacl_xattr.h \
+	include/uapi/linux/xattr.h
