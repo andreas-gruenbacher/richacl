@@ -3,7 +3,16 @@ dist_man_MANS += \
 	man/setrichacl.1 \
 	man/richacl.7
 
-%.txt: %
-	mkdir -p $$(dirname $@)
-	man $< | col -b > $@.tmp
-	mv $@.tmp $@
+MAN_TO_TEXT = \
+    @echo "$< -> $@"; \
+    export COLUMNS=80; \
+    mkdir -p $$(dirname $@) && \
+    man $< | col -b > $@.tmp && \
+    mv $@.tmp $@
+
+man/getrichacl.1.txt: man/getrichacl.1
+	$(MAN_TO_TEXT)
+man/setrichacl.1.txt: man/setrichacl.1
+	$(MAN_TO_TEXT)
+man/richacl.7.txt: man/richacl.7
+	$(MAN_TO_TEXT)
