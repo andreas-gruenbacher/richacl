@@ -270,4 +270,7 @@ extern char *richacl_mask_to_text(unsigned int, int);
 
 extern struct richacl *richacl_auto_inherit(const struct richacl *, const struct richacl *);
 
+extern size_t richacl_xattr_size(const struct richacl *acl);
+extern struct richacl *richacl_from_xattr(const void *value, size_t size);
+extern void richacl_to_xattr(const struct richacl *acl, void *buffer);
 #endif  /* __RICHACL_H */
