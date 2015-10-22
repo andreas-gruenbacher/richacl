@@ -150,4 +150,6 @@ extern struct richacl *richacl_auto_inherit(const struct richacl *, const struct
 extern size_t richacl_xattr_size(const struct richacl *acl);
 extern struct richacl *richacl_from_xattr(const void *value, size_t size);
 extern void richacl_to_xattr(const struct richacl *acl, void *buffer);
+extern int richacl_valid(struct richacl *);
+
 #endif  /* __RICHACL_H */

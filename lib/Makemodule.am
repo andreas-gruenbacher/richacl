@@ -51,6 +51,7 @@ CFILES = \
 	lib/richacl_text.c \
 	lib/richacl_to_text.c \
 	lib/richacl_to_xattr.c \
+	lib/richacl_valid.c \
 	lib/richacl_xattr_size.c \
 	lib/string_buffer.c
 
