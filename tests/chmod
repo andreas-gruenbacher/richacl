@@ -2,7 +2,7 @@
 
 . $srcdir/tests/test-lib.sh
 
-require_su
+require_runas
 require_richacls
 use_tmpdir
 
@@ -12,7 +12,7 @@ export LC_ALL=C
 ncheck "touch a"
 
 # We cannot set the acl as another user
-su 99 99
+runas -u 99 -g 99
 check "setrichacl --set '99:rwc::allow' a || echo status: \$?" <<EOF
 a: Operation not permitted
 status: 1
@@ -25,11 +25,11 @@ status: 1
 EOF
 
 # Give user 99 the write_acl permission
-su
+runas
 ncheck "setrichacl --set '99:rwpC::allow' a"
 
 # Now user 99 can setrichacl and chmod ...
-su 99 99
+runas -u 99 -g 99
 ncheck "setrichacl --set '99:rwpC::allow' a"
 ncheck "chmod 666 a"
 

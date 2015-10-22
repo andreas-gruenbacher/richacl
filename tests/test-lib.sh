@@ -10,8 +10,8 @@ use_tmpdir() {
     mkdir "$tmpdir" && cd "$tmpdir" || exit 2
 }
 
-require_su() {
-    if ! $abs_top_builddir/tests/su 99 99 true ; then
+require_runas() {
+    if ! $abs_top_builddir/tests/runas -u 99 -g 99 true ; then
 	echo "This test must be run as root" >&2
 	exit 77
     fi
@@ -21,13 +21,13 @@ require_richacls() {
     $abs_top_builddir/tests/require-richacls || exit $?
 }
 
-_SU=
-su() {
-    _start_test -1 su "$*"
+_RUNAS=
+runas() {
+    _start_test -1 runas "$*"
     if [ $# = 0 ]; then
-	_SU=
+	_RUNAS=
     else
-	_SU="$abs_top_builddir/tests/su $*"
+	_RUNAS="$abs_top_builddir/tests/runas $* --"
     fi
     echo "ok"
 }
@@ -50,7 +50,7 @@ _check() {
     shift
     _start_test "$frame" "$*"
     expected=`cat`
-    if got=`set +x; eval "$_SU $*" 3>&2 </dev/null 2>&1` && \
+    if got=`set +x; eval "$_RUNAS $*" 3>&2 </dev/null 2>&1` && \
             test "$expected" = "$got" ; then
 	echo "ok"
 	checks_succeeded="$checks_succeeded + 1"

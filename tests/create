@@ -2,7 +2,7 @@
 
 . $srcdir/tests/test-lib.sh
 
-require_su
+require_runas
 require_richacls
 use_tmpdir
 
@@ -13,7 +13,7 @@ ncheck "mkdir d1 d2 d3"
 ncheck "setrichacl --set '99:wx::allow' d2"
 ncheck "setrichacl --set '99:px::allow' d3"
 
-su 99 99
+runas -u 99 -g 99
 
 # Cannot create files or directories without permissions
 check "touch d1/f || :" <<EOF

@@ -2,13 +2,10 @@
 
 . $srcdir/tests/test-lib.sh
 
-#require_su
 require_richacls
 use_tmpdir
 
 umask 022
-#ncheck 'chown 99:99 .'
-#su 99 99
 
 ncheck "touch x"
 ncheck "setrichacl --set 'everyone@:rwp::allow' x"

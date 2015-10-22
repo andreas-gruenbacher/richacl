@@ -22,7 +22,7 @@ check_PROGRAMS += \
 	tests/richacl-from-mode \
 	tests/richacl-apply-masks \
 	tests/require-richacls \
-	tests/su
+	tests/runas
 
 tests_richacl_equiv_mode_LDADD = lib/librichacl.la
 tests_richacl_from_mode_LDADD = lib/librichacl.la

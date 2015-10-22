@@ -2,7 +2,7 @@
 
 . $srcdir/tests/test-lib.sh
 
-require_su
+require_runas
 require_richacls
 use_tmpdir
 
@@ -16,7 +16,7 @@ ncheck "setrichacl --set 'owner@:rwp::allow 99:wp::allow' d"
 ncheck "setrichacl --set '99:a::deny owner@:rwp::allow 99:w::allow' e"
 ncheck "setrichacl --set '99:w::deny owner@:rwp::allow 99:p::allow' f"
 
-su 99 99
+runas -u 99 -g 99
 check "sh -c 'echo a > a' || :" <<EOF
 sh: a: Permission denied
 EOF
@@ -43,7 +43,7 @@ sh: e: Permission denied
 EOF
 ncheck "sh -c 'echo F >> f' || :"
 
-su
+runas
 check "cat a b c d e f" <<EOF
 b
 C

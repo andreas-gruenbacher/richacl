@@ -2,7 +2,7 @@
 
 . $srcdir/tests/test-lib.sh
 
-require_su
+require_runas
 require_richacls
 use_tmpdir
 
@@ -33,7 +33,7 @@ ncheck "setrichacl --set '99:xd::allow' s6"
 ncheck "setrichacl --set '99:D::allow' s7/f s7/g"
 ncheck "chmod 664 s7/g"
 
-su 99 99
+runas -u 99 -g 99
 
 # Cannot delete files with no or only with write permissions on the directory
 check "rm -f d1/f d1/g || :" <<EOF

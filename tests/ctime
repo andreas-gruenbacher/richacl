@@ -2,7 +2,7 @@
 
 . $srcdir/tests/test-lib.sh
 
-require_su
+require_runas
 require_richacls
 use_tmpdir
 
@@ -11,25 +11,25 @@ export LC_ALL=C
 ncheck "touch a"
 
 # Without write access, the ctime cannot be changed
-su 99 99
+runas -u 99 -g 99
 check "touch a || :" <<EOF
 touch: cannot touch 'a': Permission denied
 EOF
 
-su
+runas
 ncheck "setrichacl --set '99:rw::allow' a"
 
 # With write access, the ctime can be set to the current time, but not to
 # any other time
-su 99 99
+runas -u 99 -g 99
 ncheck "touch a"
 check "touch -d '1 hour ago' a || :" <<EOF
 touch: setting times of 'a': Operation not permitted
 EOF
 
-su
+runas
 ncheck "setrichacl --set '99:rwA::allow' a"
 
 # With set_attributes access, the ctime can be set to an arbitrary time
-su 99 99
+runas -u 99 -g 99
 ncheck "touch -d '1 hour ago' a"

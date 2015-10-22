@@ -41,4 +41,4 @@ stamp-h1
 /tests/richacl-equiv-mode
 /tests/richacl-from-mode
 /tests/richacl-apply-masks
-/tests/su
+/tests/runas

@@ -2,7 +2,7 @@
 
 . $srcdir/tests/test-lib.sh
 
-require_su
+require_runas
 require_richacls
 use_tmpdir
 
@@ -12,7 +12,7 @@ export LC_ALL=C
 ncheck "touch a"
 
 # Chown and chgrp with no take ownership permission fails
-su 99 99
+runas -u 99 -g 99
 check "chown 99 a || echo status: \$?" <<EOF
 chown: changing ownership of 'a': Operation not permitted
 status: 1
@@ -23,11 +23,11 @@ status: 1
 EOF
 
 # Add the take_ownership permission
-su
+runas
 ncheck "setrichacl --set '99:rwpo::allow' a"
 
 # Chown and chgrp to a user or group the process is not in fails
-su 99 99
+runas -u 99 -g 99
 check "chown 100 a || echo status: \$?" <<EOF
 chown: changing ownership of 'a': Operation not permitted
 status: 1
