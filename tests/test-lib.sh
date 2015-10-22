@@ -129,7 +129,7 @@ if ! type cat > /dev/null 2> /dev/null; then
     exit 77
 fi
 
-export PATH=$abs_top_builddir/tests:$abs_top_builddir/src:$PATH
+export PATH=$abs_top_builddir/src:$PATH:$abs_top_builddir/tests
 
 checks_succeeded=0
 checks_failed=0
