@@ -21,6 +21,13 @@ require_richacls() {
     $abs_top_builddir/tests/require-richacls || exit $?
 }
 
+require_getfattr() {
+    if ! type getfattr > /dev/null ; then
+	echo "This test requires the getfattr utility" >&2
+	exit 77
+    fi
+}
+
 _RUNAS=
 runas() {
     _start_test -1 runas "$*"

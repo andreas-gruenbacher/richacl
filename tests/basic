@@ -3,6 +3,7 @@
 . $srcdir/tests/test-lib.sh
 
 require_richacls
+require_getfattr
 use_tmpdir
 
 umask 022
@@ -39,9 +40,20 @@ check "ls -dl sub | sed -e 's/[.+ ].*/+/'" <<EOF
 drwxrwxrwx+
 EOF
 
+#check 'getfattr sub | grep -e system\.richacl' <<EOF
+check 'getfattr -m system\.richacl sub' <<EOF
+# file: sub
+system.richacl
+EOF
+
 ncheck "chmod 775 sub"
 check "ls -dl sub | sed -e 's/[.+ ].*/+/'" <<EOF
 drwxrwxr-x+
+EOF
+
+check 'getfattr -m system\.richacl sub' <<EOF
+# file: sub
+system.richacl
 EOF
 
 check "getrichacl sub" <<EOF
