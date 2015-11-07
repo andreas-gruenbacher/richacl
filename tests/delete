@@ -9,8 +9,9 @@ use_tmpdir
 umask 022
 export LC_ALL=C
 
+ncheck "chmod go+w ."
 ncheck "mkdir d1 d2 d3 d4 d5 d6 d7"
-ncheck "touch d1/f d1/g d2/f d3/f d4/f d5/f d6/f d7/f d7/g"
+ncheck "touch d1/f d1/g d2/f d3/f d4/f d5/f d6/f d7/f d7/g d7/h"
 ncheck "chmod o+w d1/g"
 ncheck "chown 99 d2"
 ncheck "chgrp 99 d3"
@@ -18,19 +19,19 @@ ncheck "chmod g+w d3"
 ncheck "setrichacl --set '99:wx::allow' d4"
 ncheck "setrichacl --set '99:d::allow' d5"
 ncheck "setrichacl --set '99:xd::allow' d6"
-ncheck "setrichacl --set '99:D::allow' d7/f d7/g"
+ncheck "setrichacl --set '99:D::allow' d7/f d7/g d7/h"
 ncheck "chmod 664 d7/g"
 
 ncheck "mkdir s2 s3 s4 s5 s6 s7"
 ncheck "chmod +t s2 s3 s4 s5 s6 s7"
-ncheck "touch s2/f s3/f s4/f s5/f s6/f s7/f s7/g"
+ncheck "touch s2/f s3/f s4/f s5/f s6/f s7/f s7/g s7/h"
 ncheck "chown 99 s2"
 ncheck "chgrp 99 s3"
 ncheck "chmod g+w s3"
 ncheck "setrichacl --set '99:wx::allow' s4"
 ncheck "setrichacl --set '99:d::allow' s5"
 ncheck "setrichacl --set '99:xd::allow' s6"
-ncheck "setrichacl --set '99:D::allow' s7/f s7/g"
+ncheck "setrichacl --set '99:D::allow' s7/f s7/g s7/h"
 ncheck "chmod 664 s7/g"
 
 runas -u 99 -g 99
@@ -69,6 +70,16 @@ EOF
 
 # "Delete" access on the child is sufficient, even in sticky directories.
 check "rm -f d7/f s7/f || :" <<EOF
+EOF
+
+# Regression: Delete access must not override add_file / add_subdirectory
+# access.
+ncheck "touch h"
+check "mv h d7/h || :" <<EOF
+mv: cannot move 'h' to 'd7/h': Permission denied
+EOF
+check "mv h s7/h || :" <<EOF
+mv: cannot move 'h' to 's7/h': Permission denied
 EOF
 
 # A chmod turns off the "delete" permission
