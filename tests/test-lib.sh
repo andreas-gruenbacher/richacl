@@ -19,10 +19,14 @@ require_runas() {
 
 require_richacls() {
     $abs_top_builddir/src/require-richacls || exit $?
+    if ! type -f getrichacl setrichacl > /dev/null; then
+	echo "This test requires the getrichacl and setrichacl utilities" >&2
+	exit 77
+    fi
 }
 
 require_getfattr() {
-    if ! type getfattr > /dev/null ; then
+    if ! type -f getfattr > /dev/null ; then
 	echo "This test requires the getfattr utility" >&2
 	exit 77
     fi
