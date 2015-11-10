@@ -17,17 +17,6 @@ EXTRA_DIST += \
 	$(TESTS) \
 	tests/test-lib.sh
 
-check_PROGRAMS += \
-	tests/richacl-equiv-mode \
-	tests/richacl-from-mode \
-	tests/richacl-apply-masks \
-	tests/require-richacls \
-	tests/runas
-
-tests_richacl_equiv_mode_LDADD = lib/librichacl.la
-tests_richacl_from_mode_LDADD = lib/librichacl.la
-tests_richacl_apply_masks_LDADD = lib/librichacl.la
-
 TESTS_ENVIRONMENT = \
 	abs_top_builddir=$(abs_top_builddir); \
 	export abs_top_builddir;

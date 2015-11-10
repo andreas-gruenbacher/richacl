@@ -11,14 +11,14 @@ use_tmpdir() {
 }
 
 require_runas() {
-    if ! $abs_top_builddir/tests/runas -u 99 -g 99 true ; then
+    if ! $abs_top_builddir/src/runas -u 99 -g 99 true ; then
 	echo "This test must be run as root" >&2
 	exit 77
     fi
 }
 
 require_richacls() {
-    $abs_top_builddir/tests/require-richacls || exit $?
+    $abs_top_builddir/src/require-richacls || exit $?
 }
 
 require_getfattr() {
@@ -34,7 +34,7 @@ runas() {
     if [ $# = 0 ]; then
 	_RUNAS=
     else
-	_RUNAS="$abs_top_builddir/tests/runas $* --"
+	_RUNAS="$abs_top_builddir/src/runas $* --"
     fi
     echo "ok"
 }
@@ -136,7 +136,7 @@ if ! type cat > /dev/null 2> /dev/null; then
     exit 77
 fi
 
-export PATH=$abs_top_builddir/src:$PATH:$abs_top_builddir/tests
+export PATH=$abs_top_builddir/src:$PATH
 
 checks_succeeded=0
 checks_failed=0

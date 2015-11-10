@@ -7,3 +7,16 @@ src_setrichacl_SOURCES = src/setrichacl.c $(src_SOURCES)
 src_LDADD = lib/librichacl.la lib/string_buffer.o
 src_getrichacl_LDADD = $(src_LDADD)
 src_setrichacl_LDADD = $(src_LDADD)
+
+check_LDADD = lib/librichacl.la
+src_richacl_equiv_mode_LDADD = $(check_LDADD)
+src_richacl_from_mode_LDADD = $(check_LDADD)
+src_richacl_apply_masks_LDADD = $(check_LDADD)
+src_require_richacls_LDADD = $(check_LDADD)
+
+check_PROGRAMS += \
+	src/richacl-equiv-mode \
+	src/richacl-from-mode \
+	src/richacl-apply-masks \
+	src/require-richacls \
+	src/runas
