@@ -3,33 +3,31 @@
 #endif
 #include <sys/types.h>
 #include <sys/xattr.h>
+#include <limits.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <unistd.h>
+#include <string.h>
 #include <errno.h>
 #include <libgen.h>
 
 int main(int argc, char *argv[])
 {
-	const char *abs_top_builddir;
-	char *path;
 	int ret;
 
-	abs_top_builddir = getenv("abs_top_builddir");
-	if (!abs_top_builddir)
-		abs_top_builddir = ".";
-	ret = asprintf(&path, "%s/tests", abs_top_builddir);
-	if (ret < 0) {
-		fprintf(stderr, "%s: Out of memory\n", basename(argv[0]));
-		return 1;
-	}
-
-	ret = getxattr(path, "system.richacl", NULL, 0);
+	ret = getxattr(".", "system.richacl", NULL, 0);
 	if (ret < 0 && errno != ENODATA) {
+		char cwd[PATH_MAX];
+
+		if (!getcwd(cwd, sizeof(cwd)))
+			strcpy(cwd, ".");
 		if (errno == ENOTSUP) {
-			printf("This test requires a file system with richacl support\n");
+			printf("This test requires a filesystem with richacl "
+			       "support at %s\n",
+			       cwd);
 			return 77;
 		} else {
-			perror(path);
+			perror(cwd);
 			return 1;
 		}
 	}
