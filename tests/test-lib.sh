@@ -142,6 +142,8 @@ fi
 
 export PATH=$abs_top_builddir/src:$PATH
 
+[ -z "$TEST_DIR" ] || cd "$TEST_DIR"
+
 checks_succeeded=0
 checks_failed=0
 trap cleanup 0
