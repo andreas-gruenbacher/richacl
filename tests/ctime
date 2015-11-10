@@ -1,6 +1,6 @@
 #! /bin/sh
 
-. $srcdir/tests/test-lib.sh
+. ${0%/*}/test-lib.sh
 
 require_runas
 require_richacls
