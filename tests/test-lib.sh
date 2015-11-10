@@ -11,14 +11,14 @@ use_tmpdir() {
 }
 
 require_runas() {
-    if ! $abs_top_builddir/src/runas -u 99 -g 99 true ; then
+    if ! $here/src/runas -u 99 -g 99 true ; then
 	echo "This test must be run as root" >&2
 	exit 77
     fi
 }
 
 require_richacls() {
-    $abs_top_builddir/src/require-richacls || exit $?
+    $here/src/require-richacls || exit $?
     if ! type -f getrichacl setrichacl > /dev/null; then
 	echo "This test requires the getrichacl and setrichacl utilities" >&2
 	exit 77
@@ -38,7 +38,7 @@ runas() {
     if [ $# = 0 ]; then
 	_RUNAS=
     else
-	_RUNAS="$abs_top_builddir/src/runas $* --"
+	_RUNAS="$here/src/runas $* --"
     fi
     echo "ok"
 }
@@ -140,7 +140,7 @@ if ! type cat > /dev/null 2> /dev/null; then
     exit 77
 fi
 
-export PATH=$abs_top_builddir/src:$PATH
+export PATH=$here/src:$PATH
 
 [ -z "$TEST_DIR" ] || cd "$TEST_DIR"
 
