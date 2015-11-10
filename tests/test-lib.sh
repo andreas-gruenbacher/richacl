@@ -6,7 +6,7 @@
 # notice and this notice are preserved.
 
 use_tmpdir() {
-    tmpdir=$abs_top_builddir/tests/tmp.$$
+    tmpdir=$PWD/tmp.$$
     mkdir "$tmpdir" && cd "$tmpdir" || exit 2
 }
 
