@@ -107,6 +107,7 @@ static int identifier_from_text(const char *str, struct richace *ace,
 
 		if (c[1]) {
 			error("Domain name not supported in `%s'\n", str);
+			errno = ENOENT;
 			goto fail;
 		}
 
@@ -118,6 +119,7 @@ static int identifier_from_text(const char *str, struct richace *ace,
 
 		if (richace_set_special_who(ace, dup)) {
 			error("Special user `%s' not supported\n", str);
+			errno = ENOENT;
 			goto fail;
 		}
 		return 0;
@@ -130,19 +132,27 @@ static int identifier_from_text(const char *str, struct richace *ace,
 	}
 
 	if (ace->e_flags & RICHACE_IDENTIFIER_GROUP) {
-		struct group *group = getgrnam(str);
+		struct group *group;
 
+		errno = 0;
+		group = getgrnam(str);
 		if (!group) {
 			error("Group `%s' does not exist\n", str);
+			if (!errno)
+				errno = ENOENT;
 			goto fail;
 		}
 		ace->e_id = group->gr_gid;
 		return 0;
 	} else {
-		struct passwd *passwd = getpwnam(str);
+		struct passwd *passwd;
 
+		errno = 0;
+		passwd = getpwnam(str);
 		if (!passwd) {
 			error("User `%s' does not exist\n", str);
+			if (!errno)
+				errno = ENOENT;
 			goto fail;
 		}
 		ace->e_id = passwd->pw_uid;
@@ -405,7 +415,7 @@ struct richacl *richacl_from_text(const char *str, int *pflags,
 			if (ace_flags_from_text(flags_str, ace, error))
 				goto fail_einval;
 			if (identifier_from_text(who_str, ace, error))
-				goto fail_einval;
+				goto fail;
 			if (type_from_text(type_str, ace, error))
 				goto fail_einval;
 		}
