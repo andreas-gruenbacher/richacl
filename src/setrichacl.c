@@ -407,7 +407,7 @@ static void synopsis(int help)
 	fprintf(file, "SYNOPSIS: %s {options} file ...\n",
 		basename(progname));
 	if (!help) {
-		fprintf(file, "Try `%s --help' for more information.\n",
+		fprintf(file, "Try '%s --help' for more information.\n",
 			basename(progname));
 		exit(1);
 	}
@@ -424,7 +424,7 @@ static void synopsis(int help)
 "  --modify-file acl_entries_file, -M acl_entries_file\n"
 "  --set-file acl_entries_file, -S acl_entries_file\n"
 "              Identical to --modify / --set, but read the acl from a file\n"
-"              instead. If the file is `-', read from standard input.\n"
+"              instead. If the file is '-', read from standard input.\n"
 "  --remove, -b\n"
 "              Remove all extended permissions and revert to the file mode.\n"
 "  --version, -v\n"

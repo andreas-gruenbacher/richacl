@@ -93,7 +93,7 @@ static void synopsis(int help)
 	fprintf(file, "SYNOPSIS: %s [options] file ...\n",
 		basename(progname));
 	if (!help) {
-		fprintf(file, "Try `%s --help' for more information.\n",
+		fprintf(file, "Try '%s --help' for more information.\n",
 			basename(progname));
 		exit(1);
 	}

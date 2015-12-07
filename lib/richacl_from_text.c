@@ -80,7 +80,7 @@ static int acl_flags_from_text(const char *str, struct richacl *acl,
 			if (i != acl_flag_bits_size)
 				continue;
 
-			error("Invalid acl flag `%s'\n", c);
+			error("Invalid acl flag '%s'\n", c);
 			return -1;
 		}
 	}
@@ -106,7 +106,7 @@ static int identifier_from_text(const char *str, struct richace *ace,
 		char *dup;
 
 		if (c[1]) {
-			error("Domain name not supported in `%s'\n", str);
+			error("Domain name not supported in '%s'\n", str);
 			errno = ENOENT;
 			goto fail;
 		}
@@ -118,7 +118,7 @@ static int identifier_from_text(const char *str, struct richace *ace,
 			*c = toupper(*c);
 
 		if (richace_set_special_who(ace, dup)) {
-			error("Special user `%s' not supported\n", str);
+			error("Special user '%s' not supported\n", str);
 			errno = ENOENT;
 			goto fail;
 		}
@@ -137,7 +137,7 @@ static int identifier_from_text(const char *str, struct richace *ace,
 		errno = 0;
 		group = getgrnam(str);
 		if (!group) {
-			error("Group `%s' does not exist\n", str);
+			error("Group '%s' does not exist\n", str);
 			if (!errno)
 				errno = ENOENT;
 			goto fail;
@@ -150,7 +150,7 @@ static int identifier_from_text(const char *str, struct richace *ace,
 		errno = 0;
 		passwd = getpwnam(str);
 		if (!passwd) {
-			error("User `%s' does not exist\n", str);
+			error("User '%s' does not exist\n", str);
 			if (!errno)
 				errno = ENOENT;
 			goto fail;
@@ -183,7 +183,7 @@ static int type_from_text(const char *str, struct richace *ace,
 			return 0;
 		}
 	}
-	error("Invalid entry type `%s'\n", str);
+	error("Invalid entry type '%s'\n", str);
 	return -1;
 }
 
@@ -238,7 +238,7 @@ static int ace_flags_from_text(const char *str, struct richace *ace,
 			if (i != ace_flag_bits_size)
 				continue;
 
-			error("Invalid entry flag `%s'\n", c);
+			error("Invalid entry flag '%s'\n", c);
 			return -1;
 		}
 	}
@@ -297,7 +297,7 @@ static int mask_from_text(const char *str, unsigned int *mask,
 			if (i != mask_flags_size)
 				continue;
 
-			error("Invalid access mask `%s'\n", dup);
+			error("Invalid access mask '%s'\n", dup);
 			return -1;
 		}
 	}
@@ -395,7 +395,7 @@ struct richacl *richacl_from_text(const char *str, int *pflags,
 				acl->a_other_mask = mask;
 				flags |= RICHACL_TEXT_OTHER_MASK;
 			} else {
-				error("Invalid file mask `%s'\n",
+				error("Invalid file mask '%s'\n",
 				      who_str);
 				goto fail_einval;
 			}
@@ -434,7 +434,7 @@ struct richacl *richacl_from_text(const char *str, int *pflags,
 	fail_syntax:
 		for (c = entry; *c && !(isspace(*c) || *c == ','); c++)
 			;
-		error("Invalid entry `%.*s'\n", c - entry, entry);
+		error("Invalid entry '%.*s'\n", c - entry, entry);
 		goto fail_einval;
 	}
 
