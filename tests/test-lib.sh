@@ -5,9 +5,14 @@
 # in any medium, are permitted without royalty provided the copyright
 # notice and this notice are preserved.
 
-use_tmpdir() {
-    tmpdir=$PWD/tmp.$$
-    mkdir "$tmpdir" && cd "$tmpdir" || exit 2
+use_testdir() {
+    testdir=$PWD/testdir.`basename $0`
+    if [ -e "$testdir" ]; then
+	chmod -R u+rwx "$testdir" 2>/dev/null
+	rm -rf "$testdir" || exit 2
+    fi
+    mkdir "$testdir" || exit 2
+    cd "$testdir"
 }
 
 require_runas() {
@@ -105,9 +110,9 @@ cleanup() {
 	echo "$checks_total tests ($checks_succeeded passed," \
 	     "$checks_failed failed)"
     fi
-    if test -n "$tmpdir" ; then
-	chmod -R u+rwx "$tmpdir" 2>/dev/null
-	cd / && rm -rf "$tmpdir"
+    if test $status = 0 -a -n "$testdir"; then
+	chmod -R u+rwx "$testdir" 2>/dev/null
+	cd / && rm -rf "$testdir"
     fi
     exit $status
 }

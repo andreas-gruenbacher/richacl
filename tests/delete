@@ -4,7 +4,7 @@
 
 require_runas
 require_richacls
-use_tmpdir
+use_testdir
 
 umask 022
 export LC_ALL=C

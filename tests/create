@@ -4,7 +4,7 @@
 
 require_runas
 require_richacls
-use_tmpdir
+use_testdir
 
 export LC_ALL=C
 

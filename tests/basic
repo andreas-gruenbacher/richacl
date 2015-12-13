@@ -4,7 +4,7 @@
 
 require_richacls
 require_getfattr
-use_tmpdir
+use_testdir
 
 umask 022
 

@@ -3,7 +3,7 @@
 . ${0%/*}/test-lib.sh
 
 require_richacls
-use_tmpdir
+use_testdir
 
 umask 022
 

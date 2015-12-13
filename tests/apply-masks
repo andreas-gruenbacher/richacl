@@ -3,7 +3,7 @@
 . ${0%/*}/test-lib.sh
 
 require_richacls
-use_tmpdir
+use_testdir
 
 ncheck "touch x"
 ncheck "setrichacl --set 'owner@:rwp::allow group@:rwp::allow everyone@:r::allow' x"

@@ -42,3 +42,4 @@ stamp-h1
 /tests/richacl-from-mode
 /tests/richacl-apply-masks
 /tests/runas
+/testdir.*/
