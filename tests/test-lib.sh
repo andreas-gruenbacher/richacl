@@ -23,7 +23,9 @@ require_runas() {
 }
 
 require_richacls() {
-    $here/src/require-richacls || exit $?
+    if [ -e $here/src/require-richacls ]; then
+	$here/src/require-richacls || exit $?
+    fi
     if ! type -f getrichacl setrichacl > /dev/null; then
 	echo "This test requires the getrichacl and setrichacl utilities" >&2
 	exit 77
@@ -146,8 +148,6 @@ if ! type cat > /dev/null 2> /dev/null; then
 fi
 
 export PATH=$here/src:$PATH
-
-[ -z "$TEST_DIR" ] || cd "$TEST_DIR"
 
 checks_succeeded=0
 checks_failed=0
