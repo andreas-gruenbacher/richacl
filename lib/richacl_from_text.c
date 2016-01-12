@@ -195,7 +195,6 @@ static int ace_flags_from_text(const char *str, struct richace *ace,
 	end = alloca(strlen(str) + 1);
 	strcpy(end, str);
 
-	ace->e_flags = 0;
 	while ((dup = end)) {
 		char *c;
 		unsigned long l;
@@ -322,11 +321,35 @@ struct richacl *richacl_from_text(const char *str, int *pflags,
 		struct richace *ace;
 		unsigned int mask;
 		const char *entry, *c;
+		int colons = 0;
+		const char *who_prefix = NULL;
+		unsigned short ace_flags = 0;
 
 		while (isspace(*str) || *str == ',')
 			str++;
 		if (!*str)
 			break;
+
+		for (c = str; *c && *c != ',' && *c != ' '; c++) {
+			if (*c == ':')
+				colons++;
+		}
+
+		if (colons == 4) {
+			who_prefix = str;
+			if (strncasecmp(str, "USER:", 5) == 0) {
+				str += 5;
+			} else if (strncasecmp(str, "U:", 2) == 0) {
+				str += 2;
+			} else if (strncasecmp(str, "GROUP:", 6) == 0) {
+				ace_flags |= RICHACE_IDENTIFIER_GROUP;
+				str += 6;
+			} else if (strncasecmp(str, "G:", 2) == 0) {
+				ace_flags |= RICHACE_IDENTIFIER_GROUP;
+				str += 2;
+			} else
+				who_prefix = NULL;
+		}
 
 		entry = str;
 		c = strchr(str, ':');
@@ -337,24 +360,19 @@ struct richacl *richacl_from_text(const char *str, int *pflags,
 			goto fail;
 		str = c + 1;
 
-		if (!strcasecmp(who_str, "FLAGS")) {
+		if (!who_prefix && !strcasecmp(who_str, "FLAGS")) {
 			for (c = str; *c; c++) {
-				if (*c == ':' || *c == ',' || isspace(*c))
+				if (*c == ',' || isspace(*c))
 					break;
 			}
 			mask_str = strndup(str, c - str);
 			if (!mask_str)
 				goto fail;
-			if (*c != ':') {
-				if (acl_flags_from_text(mask_str, acl, error))
-					goto fail_einval;
-				flags |= RICHACL_TEXT_FLAGS;
-				str = c;
-				goto free_mask_str;
-			} else {
-				free(mask_str);
-				mask_str = NULL;
-			}
+			if (acl_flags_from_text(mask_str, acl, error))
+				goto fail_einval;
+			flags |= RICHACL_TEXT_FLAGS;
+			str = c;
+			goto free_mask_str;
 		}
 
 		c = strchr(str, ':');
@@ -385,6 +403,10 @@ struct richacl *richacl_from_text(const char *str, int *pflags,
 		if (mask_from_text(mask_str, &mask, error))
 			goto fail_einval;
 		if (!strcasecmp(type_str, "MASK")) {
+			/* No user: or group: prefix allowed. */
+			if (who_prefix)
+				goto fail_syntax;
+
 			if (!strcasecmp(who_str, "OWNER")) {
 				acl->a_owner_mask = mask;
 				flags |= RICHACL_TEXT_OWNER_MASK;
@@ -412,12 +434,17 @@ struct richacl *richacl_from_text(const char *str, int *pflags,
 
 			ace = acl->a_entries + acl->a_count - 1;
 			ace->e_mask = mask;
+			ace->e_flags = ace_flags;
 			if (ace_flags_from_text(flags_str, ace, error))
 				goto fail_einval;
 			if (identifier_from_text(who_str, ace, error))
 				goto fail;
 			if (type_from_text(type_str, ace, error))
 				goto fail_einval;
+
+			/* No user: or group: prefix allowed for special identifiers. */
+			if (!who_prefix == !(ace->e_flags & RICHACE_SPECIAL_WHO))
+				goto fail_syntax;
 		}
 
 		free(type_str);

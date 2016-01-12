@@ -36,9 +36,8 @@ For each file, getrichacl displays the file name and Rich Access Control List
 (richacl).
 
 By default, getrichacl displays the effective permissions remaining after
-applying the file masks to the ACL, and does not display the file masks. When
-the file masks and underlying NFSv4 ACL are relevant, the \-\-raw option should
-be used.
+applying the file masks to the ACL.  The file masks and underlying NFSv4 ACL
+can be displayed with the \-\-raw option.
 
 The output format of getrichacl is as follows:
 .fam C
@@ -50,9 +49,9 @@ The output format of getrichacl is as follows:
  4:      group:r-p-------------::mask
  5:      other:r---------------::mask
  6:     owner@:rwp-------------::allow
- 7:        foo:r-p-------------::allow
+ 7:   user:foo:r-p-------------::allow
  8:     group@:r-p-------------::allow
- 9:        bar:r-p-------------:g:allow
+ 9:  group:bar:r-p-------------::allow
 10:  everyone@:r---------------::allow
 11:
 .fi
@@ -70,10 +69,10 @@ Lines 6--10 indicate different ACL entries for the file owner
 .RB ( owner@ ),
 user foo, the owning group
 .RB ( group@ ),
-for group bar, and for everyone
+group bar, and for everyone
 .RB ( everyone@ ).
 
-At the end, a blank line is displayed.
+A blank line follows at the end.
 
 By default, getrichacl displays the the single-letter forms of flags and
 permissions, the identifiers of ACL entryies are right justified, the

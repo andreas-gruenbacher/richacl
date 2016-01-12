@@ -24,7 +24,7 @@ EOF
 
 # Add the take_ownership permission
 runas
-ncheck "setrichacl --set '99:rwpo::allow' a"
+ncheck "setrichacl --set 'u:99:rwpo::allow' a"
 
 # Chown and chgrp to a user or group the process is not in fails
 runas -u 99 -g 99

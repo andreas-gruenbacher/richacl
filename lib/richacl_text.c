@@ -52,7 +52,6 @@ const struct richace_flag_bit ace_flag_bits[] = {
 	FLAGS_BIT('d', DIRECTORY_INHERIT_ACE, "dir_inherit"),
 	FLAGS_BIT('n', NO_PROPAGATE_INHERIT_ACE, "no_propagate"),
 	FLAGS_BIT('i', INHERIT_ONLY_ACE, "inherit_only"),
-	FLAGS_BIT('g', IDENTIFIER_GROUP, "identifier_group"),
 	FLAGS_BIT('a', INHERITED_ACE, "inherited"),
 	FLAGS_BIT('u', UNMAPPED_WHO, "unmapped"),
 };

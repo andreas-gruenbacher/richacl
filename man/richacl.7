@@ -45,12 +45,13 @@ A richacl can always be translated into an equivalent NFSv4 ACL which grants
 the same permissions.
 
 Richacls can be enabled on supported filesystems. This disables POSIX Access
-Control Lists; the two ACL models do not coexist.
+Control Lists; the two ACL models will not coexist on the same filesystem.
 
 When used on a filesystem that does not support richacls, the getrichacl and
 setrichacl utilities will operate on the file permission bits instead:
-getrichacl will display the file permission bits as a richacl; setrichacl will
-set the file permission bits when they can exactly represent the richacl.
+getrichacl will display the file permission bits as a richacl; when a richacl
+is set with setrichacl which can be represented exactly by the file permission
+bits, setrichacl will set the file permission bits instead.
 
 .SH STRUCTURE OF RICHACLS
 
@@ -59,7 +60,15 @@ Each of the ACL entries allows or denies some permissions to a particular user,
 group, or special entity. Each acl entry consists of:
 
 .IP \(bu 4
-The user, group, or special identifier the entry applies to. Special
+The user (with prefix
+.B user:
+or
+.BR u: ),
+group (with prefix
+.B group:
+or
+.BR g: ),
+or special identifier the entry applies to. Special
 identifiers can be the file owner
 .RB ( owner@ ),
 the owning group
@@ -69,9 +78,8 @@ or everyone
 .IP \(bu
 A set of permissions the entry allows or denies.
 .IP \(bu
-A set of flags that indicate whether the entry refers to a user or group,
-whether the user or group identifier is mapped or unmapped, and whether the
-entry has been and can be inherited.
+A set of flags that indicate whether the user or group identifier is mapped or
+unmapped, and whether the entry has been and can be inherited.
 .IP \(bu 4
 A field indicating whether the entry allows or denies access.
 .PP
@@ -152,10 +160,6 @@ Inheritance stops at the next subdirectory level.
 .RB ( i ):
 The entry defines inheritable permissions only and is ignored for access
 checking.
-.HP
-.B identifier_group
-.RB ( g ):
-The entry refers to a group. By default, entries refer to users.
 .HP
 .B inherited
 .RB ( a ):
@@ -259,12 +263,20 @@ The file masks and their permissions.
 .TP
 \fIwho\fR\fB:\fR\fIperm\fR\fB:\fR\fIflags\fR\fB:allow\fR, \fIwho\fR\fB:\fR\fIperm\fR\fB:\fR\fIflags\fR\fB:deny\fR
 For each ACL entry, who the entry applies to, the permissions of the entry, the
-entry flags, and whether the entry allows or denies permissions.
+entry flags, and whether the entry allows or denies permissions.  The who field has
+no prefix for special identifiers, a
+.B user:
+or
+.B u:
+prefix for regular users, and a
+.B group:
+or
+.B g:
+prefix for regular groups.
 .PP
 The entries are comma, whitespace or newline separated.
 
-The flags and permissions have single-letter as well as long forms as listed
-under
+Flags and permissions have single-letter as well as long forms as listed under
 .IR "ACL Flags" ,
 .IR "ACL Entry Flags" ,
 and

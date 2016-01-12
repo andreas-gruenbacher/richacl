@@ -13,7 +13,7 @@ ncheck "touch a"
 
 # We cannot set the acl as another user
 runas -u 99 -g 99
-check "setrichacl --set '99:rwc::allow' a || echo status: \$?" <<EOF
+check "setrichacl --set 'u:99:rwc::allow' a || echo status: \$?" <<EOF
 a: Operation not permitted
 status: 1
 EOF
@@ -26,15 +26,15 @@ EOF
 
 # Give user 99 the write_acl permission
 runas
-ncheck "setrichacl --set '99:rwpC::allow' a"
+ncheck "setrichacl --set 'u:99:rwpC::allow' a"
 
 # Now user 99 can setrichacl and chmod ...
 runas -u 99 -g 99
-ncheck "setrichacl --set '99:rwpC::allow' a"
+ncheck "setrichacl --set 'u:99:rwpC::allow' a"
 ncheck "chmod 666 a"
 
 # ... but chmod disables the write_acl permission
-check "setrichacl --set '99:rwpC::allow' a || echo status: \$?" <<EOF
+check "setrichacl --set 'u:99:rwpC::allow' a || echo status: \$?" <<EOF
 a: Operation not permitted
 status: 1
 EOF

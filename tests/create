@@ -10,8 +10,8 @@ export LC_ALL=C
 
 # Create directories as root with different permissions
 ncheck "mkdir d1 d2 d3"
-ncheck "setrichacl --set '99:wx::allow' d2"
-ncheck "setrichacl --set '99:px::allow' d3"
+ncheck "setrichacl --set 'u:99:wx::allow' d2"
+ncheck "setrichacl --set 'u:99:px::allow' d3"
 
 runas -u 99 -g 99
 

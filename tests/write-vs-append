@@ -10,11 +10,11 @@ export LC_ALL=C
 
 ncheck "touch a b c d e f"
 ncheck "setrichacl --set 'owner@:rwp::allow' a"
-ncheck "setrichacl --set 'owner@:rwp::allow 99:w::allow' b"
-ncheck "setrichacl --set 'owner@:rwp::allow 99:p::allow' c"
-ncheck "setrichacl --set 'owner@:rwp::allow 99:wp::allow' d"
-ncheck "setrichacl --set '99:a::deny owner@:rwp::allow 99:w::allow' e"
-ncheck "setrichacl --set '99:w::deny owner@:rwp::allow 99:p::allow' f"
+ncheck "setrichacl --set 'owner@:rwp::allow u:99:w::allow' b"
+ncheck "setrichacl --set 'owner@:rwp::allow u:99:p::allow' c"
+ncheck "setrichacl --set 'owner@:rwp::allow u:99:wp::allow' d"
+ncheck "setrichacl --set 'u:99:a::deny owner@:rwp::allow u:99:w::allow' e"
+ncheck "setrichacl --set 'u:99:w::deny owner@:rwp::allow u:99:p::allow' f"
 
 runas -u 99 -g 99
 check "sh -c 'echo a > a' || :" <<EOF

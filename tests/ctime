@@ -17,7 +17,7 @@ touch: cannot touch 'a': Permission denied
 EOF
 
 runas
-ncheck "setrichacl --set '99:rw::allow' a"
+ncheck "setrichacl --set 'u:99:rw::allow' a"
 
 # With write access, the ctime can be set to the current time, but not to
 # any other time
@@ -28,7 +28,7 @@ touch: setting times of 'a': Operation not permitted
 EOF
 
 runas
-ncheck "setrichacl --set '99:rwA::allow' a"
+ncheck "setrichacl --set 'u:99:rwA::allow' a"
 
 # With set_attributes access, the ctime can be set to an arbitrary time
 runas -u 99 -g 99

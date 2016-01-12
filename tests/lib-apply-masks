@@ -34,29 +34,29 @@ group@:r::allow
 EOF
 
 owner=`id -u`
-check "richacl-apply-masks -m 640 owner@:rwp::allow,$owner:rwpx::allow,group@:rwpx::allow" <<EOF
+check "richacl-apply-masks -m 640 owner@:rwp::allow,user:$owner:rwpx::allow,group@:rwpx::allow" <<EOF
 owner@:rwp::allow
-$owner:rwp::allow
+user:$owner:rwp::allow
 group@:r::allow
 EOF
 
-check "richacl-apply-masks -m 600 $owner:rwpx::allow" <<EOF
+check "richacl-apply-masks -m 600 user:$owner:rwpx::allow" <<EOF
 owner@:rwp::allow
-$owner:rwp::allow
+user:$owner:rwp::allow
 EOF
 
-check "richacl-apply-masks -c 600 $owner:rwpx::allow" <<EOF
-$owner:rwp::allow
+check "richacl-apply-masks -c 600 user:$owner:rwpx::allow" <<EOF
+user:$owner:rwp::allow
 EOF
 
 check 'richacl-apply-masks -m 0 everyone@:rwpx::allow' <<EOF
 EOF
 
-check 'richacl-apply-masks -m 664 1234:x::deny,everyone@:rwpx::allow' <<EOF
-1234:x::deny
+check 'richacl-apply-masks -m 664 user:1234:x::deny,everyone@:rwpx::allow' <<EOF
+user:1234:x::deny
 owner@:rwp::allow
 group@:rwp::allow
-1234:rwp::allow
+user:1234:rwp::allow
 everyone@:r::allow
 EOF
 

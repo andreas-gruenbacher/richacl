@@ -76,7 +76,7 @@ static void write_ace_flags(struct string_buffer *buffer, unsigned short flags, 
 {
 	int cont = 0, i;
 
-	flags &= ~RICHACE_SPECIAL_WHO;
+	flags &= ~(RICHACE_IDENTIFIER_GROUP | RICHACE_SPECIAL_WHO);
 
 	for (i = 0; i < ace_flag_bits_size; i++) {
 		if (!(flags & ace_flag_bits[i].e_flag))
@@ -192,25 +192,46 @@ static void write_identifier(struct string_buffer *buffer,
 
 		buffer_sprintf(buffer, "%*s", align, dup);
 	} else if (ace->e_flags & RICHACE_UNMAPPED_WHO) {
-		buffer_sprintf(buffer, "%*s", align, ace->e_who);
+		const char *prefix = (ace->e_flags & RICHACE_IDENTIFIER_GROUP) ?
+			"group" : "user";
+		int a = align ? align - strlen(ace->e_who) - 1 : 0;
+
+		buffer_sprintf(buffer, "%*s:%s",
+			       a, prefix, ace->e_who);
 	} else if (ace->e_flags & RICHACE_IDENTIFIER_GROUP) {
 		struct group *group = NULL;
 
 		if (!(fmt & RICHACL_TEXT_NUMERIC_IDS))
 			group = getgrgid(ace->e_id);
-		if (group)
-			buffer_sprintf(buffer, "%*s", align, group->gr_name);
-		else
-			buffer_sprintf(buffer, "%*d", align, ace->e_id);
+		if (group) {
+			int a = align ? align - strlen(group->gr_name) - 1 : 0;
+
+			buffer_sprintf(buffer, "%*s:%s",
+				       a, "group", group->gr_name);
+		} else {
+			unsigned int len = snprintf(NULL, 0, "%d", ace->e_id);
+			int a = align ? align - len - 1 : 0;
+
+			buffer_sprintf(buffer, "%*s:%d",
+				       a, "group", ace->e_id);
+		}
 	} else {
 		struct passwd *passwd = NULL;
 
 		if (!(fmt & RICHACL_TEXT_NUMERIC_IDS))
 			passwd = getpwuid(ace->e_id);
-		if (passwd)
-			buffer_sprintf(buffer, "%*s", align, passwd->pw_name);
-		else
-			buffer_sprintf(buffer, "%*d", align, ace->e_id);
+		if (passwd) {
+			int a = align ? align - strlen(passwd->pw_name) - 1 : 0;
+
+			buffer_sprintf(buffer, "%*s:%s",
+				       a, "user", passwd->pw_name);
+		} else {
+			unsigned int len = snprintf(NULL, 0, "%d", ace->e_id);
+			int a = align ? align - len - 1 : 0;
+
+			buffer_sprintf(buffer, "%*s:%d",
+				       a, "user", ace->e_id);
+		}
 	}
 }
 
@@ -228,30 +249,36 @@ char *richacl_to_text(const struct richacl *acl, int fmt)
 			align = 6;
 		richacl_for_each_entry(ace, acl) {
 			int a;
-			if (richace_is_owner(ace) || richace_is_group(ace))
-				a = 6;
+			if (richace_is_owner(ace))
+				a = strlen("owner") + 1;
+			else if (richace_is_group(ace))
+				a = strlen("group") + 1;
 			else if (richace_is_everyone(ace))
-				a = 9;
-			else if (ace->e_flags & RICHACE_UNMAPPED_WHO)
-				a = strlen(ace->e_who);
-			else if (ace->e_flags & RICHACE_IDENTIFIER_GROUP) {
+				a = strlen("everyone") + 1;
+			else if (ace->e_flags & RICHACE_UNMAPPED_WHO) {
+				a = ((ace->e_flags & RICHACE_IDENTIFIER_GROUP) ?
+				    strlen("group") : strlen("user")) + 1;
+				a += strlen(ace->e_who);
+			} else if (ace->e_flags & RICHACE_IDENTIFIER_GROUP) {
 				struct group *group = NULL;
 
+				a = strlen("group") + 1;
 				if (!(fmt & RICHACL_TEXT_NUMERIC_IDS))
 					group = getgrgid(ace->e_id);
 				if (group)
-					a = strlen(group->gr_name);
+					a += strlen(group->gr_name);
 				else
-					a = snprintf(NULL, 0, "%d", ace->e_id);
+					a += snprintf(NULL, 0, "%d", ace->e_id);
 			} else {
 				struct passwd *passwd = NULL;
 
+				a = strlen("user") + 1;
 				if (!(fmt & RICHACL_TEXT_NUMERIC_IDS))
 					passwd = getpwuid(ace->e_id);
 				if (passwd)
-					a = strlen(passwd->pw_name);
+					a += strlen(passwd->pw_name);
 				else
-					a = snprintf(NULL, 0, "%d", ace->e_id);
+					a += snprintf(NULL, 0, "%d", ace->e_id);
 			}
 			if (a >= align)
 				align = a + 1;

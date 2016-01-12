@@ -8,50 +8,50 @@ use_testdir
 umask 022
 
 ncheck "touch f"
-ncheck "setrichacl --set 'flags:a 101:w::deny 101:rw::allow 101:w:a:deny 101:rw:a:allow' f"
-ncheck "setrichacl --modify '202:w::deny' f"
+ncheck "setrichacl --set 'flags:a u:101:w::deny u:101:rw::allow u:101:w:a:deny u:101:rw:a:allow' f"
+ncheck "setrichacl --modify 'u:202:w::deny' f"
 check "getrichacl --numeric f" <<EOF
 f:
- flags:a
-   101:-w-----------::deny
-   202:-w-----------::deny
-   101:rw-----------::allow
-   101:-w-----------:a:deny
-   101:rw-----------:a:allow
+    flags:a
+ user:101:-w-----------::deny
+ user:202:-w-----------::deny
+ user:101:rw-----------::allow
+ user:101:-w-----------:a:deny
+ user:101:rw-----------:a:allow
 EOF
 
-ncheck "setrichacl --set 'flags:a 101:w::deny 101:rw::allow 101:w:a:deny 101:rw:a:allow' f"
-ncheck "setrichacl --modify '202:rw::allow' f"
+ncheck "setrichacl --set 'flags:a u:101:w::deny u:101:rw::allow u:101:w:a:deny u:101:rw:a:allow' f"
+ncheck "setrichacl --modify 'u:202:rw::allow' f"
 check "getrichacl --numeric f" <<EOF
 f:
- flags:a
-   101:-w-----------::deny
-   101:rw-----------::allow
-   202:rw-----------::allow
-   101:-w-----------:a:deny
-   101:rw-----------:a:allow
+    flags:a
+ user:101:-w-----------::deny
+ user:101:rw-----------::allow
+ user:202:rw-----------::allow
+ user:101:-w-----------:a:deny
+ user:101:rw-----------:a:allow
 EOF
 
-ncheck "setrichacl --set 'flags:a 101:w::deny 101:rw::allow 101:w:a:deny 101:rw:a:allow' f"
-ncheck "setrichacl --modify '202:w:a:deny' f"
+ncheck "setrichacl --set 'flags:a u:101:w::deny u:101:rw::allow u:101:w:a:deny u:101:rw:a:allow' f"
+ncheck "setrichacl --modify 'u:202:w:a:deny' f"
 check "getrichacl --numeric f" <<EOF
 f:
- flags:a
-   101:-w-----------::deny
-   101:rw-----------::allow
-   101:-w-----------:a:deny
-   202:-w-----------:a:deny
-   101:rw-----------:a:allow
+    flags:a
+ user:101:-w-----------::deny
+ user:101:rw-----------::allow
+ user:101:-w-----------:a:deny
+ user:202:-w-----------:a:deny
+ user:101:rw-----------:a:allow
 EOF
 
-ncheck "setrichacl --set 'flags:a 101:w::deny 101:rw::allow 101:w:a:deny 101:rw:a:allow' f"
-ncheck "setrichacl --modify ' 202:rw:a:allow' f"
+ncheck "setrichacl --set 'flags:a u:101:w::deny u:101:rw::allow u:101:w:a:deny u:101:rw:a:allow' f"
+ncheck "setrichacl --modify 'u:202:rw:a:allow' f"
 check "getrichacl --numeric f" <<EOF
 f:
- flags:a
-   101:-w-----------::deny
-   101:rw-----------::allow
-   101:-w-----------:a:deny
-   101:rw-----------:a:allow
-   202:rw-----------:a:allow
+    flags:a
+ user:101:-w-----------::deny
+ user:101:rw-----------::allow
+ user:101:-w-----------:a:deny
+ user:101:rw-----------:a:allow
+ user:202:rw-----------:a:allow
 EOF

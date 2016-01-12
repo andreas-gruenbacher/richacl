@@ -51,12 +51,12 @@ x:
  everyone@:r------------::allow
 EOF
 
-ncheck "setrichacl --set '77:rwp::allow' x"
+ncheck "setrichacl --set 'u:77:rwp::allow' x"
 ncheck "chmod 664 x"
 check "getrichacl x" <<EOF
 x:
     owner@:rwp----------::allow
-        77:rwp----------::allow
+   user:77:rwp----------::allow
     group@:r------------::deny
  everyone@:r------------::allow
 EOF
@@ -65,7 +65,7 @@ ncheck "chmod 644 x"
 check "getrichacl --numeric-ids x" <<EOF
 x:
     owner@:rwp----------::allow
-        77:r------------::allow
+   user:77:r------------::allow
     group@:r------------::deny
  everyone@:r------------::allow
 EOF
@@ -74,47 +74,47 @@ ncheck "chmod 664 x"
 check "getrichacl x" <<EOF
 x:
     owner@:rwp----------::allow
-        77:rwp----------::allow
+   user:77:rwp----------::allow
     group@:r------------::deny
  everyone@:r------------::allow
 EOF
 
-ncheck "setrichacl --set '77:rwp::allow everyone@:r::allow' x"
+ncheck "setrichacl --set 'u:77:rwp::allow everyone@:r::allow' x"
 ncheck "chmod 664 x"
 check "getrichacl x" <<EOF
 x:
     owner@:rwp----------::allow
-        77:rwp----------::allow
+   user:77:rwp----------::allow
  everyone@:r------------::allow
 EOF
 
-ncheck "setrichacl --set '77:r::allow everyone@:rwp::allow' x"
+ncheck "setrichacl --set 'u:77:r::allow everyone@:rwp::allow' x"
 ncheck "chmod 664 x"
 check "getrichacl x" <<EOF
 x:
-        77:rwp----------::allow
+   user:77:rwp----------::allow
     owner@:rwp----------::allow
     group@:rwp----------::allow
  everyone@:r------------::allow
 EOF
 
-ncheck "setrichacl --set '77:wp::deny everyone@:rwp::allow' x"
+ncheck "setrichacl --set 'u:77:wp::deny everyone@:rwp::allow' x"
 ncheck "chmod 664 x"
 check "getrichacl x" <<EOF
 x:
     owner@:rwp----------::allow
-        77:-wp----------::deny
+   user:77:-wp----------::deny
     group@:rwp----------::allow
  everyone@:r------------::allow
 EOF
 
-ncheck "setrichacl --set '77:rwp::allow 77:wp::deny everyone@:rwp::allow' x"
+ncheck "setrichacl --set 'u:77:rwp::allow u:77:wp::deny everyone@:rwp::allow' x"
 ncheck "chmod 664 x"
 check "getrichacl x" <<EOF
 x:
     owner@:rwp----------::allow
-        77:rwp----------::allow
-        77:-wp----------::deny
+   user:77:rwp----------::allow
+   user:77:-wp----------::deny
     group@:rwp----------::allow
  everyone@:r------------::allow
 EOF
@@ -143,7 +143,7 @@ x:
  everyone@:rwp----------::allow
 EOF
 
-ncheck "setrichacl --set '77:rwp::allow everyone@:rwp::allow' x"
+ncheck "setrichacl --set 'u:77:rwp::allow everyone@:rwp::allow' x"
 ncheck "chmod 606 x"
 check "getrichacl x" <<EOF
 x:
@@ -155,9 +155,9 @@ EOF
 ncheck "chmod 646 x"
 check "getrichacl x" <<EOF
 x:
-        77:r------------::allow
+   user:77:r------------::allow
     owner@:rwp----------::allow
     group@:-wp----------::deny
-        77:-wp----------::deny
+   user:77:-wp----------::deny
  everyone@:rwp----------::allow
 EOF
