@@ -52,7 +52,7 @@ static int acl_flags_from_text(const char *str, struct richacl *acl,
 			break;
 
 		l = strtoul(str, &c, 0);
-		if (*c == 0) {
+		if (c != str && *c == 0) {
 			acl->a_flags |= l;
 			continue;
 		}
@@ -126,7 +126,7 @@ static int identifier_from_text(const char *str, struct richace *ace,
 	}
 
 	l = strtoul(str, &c, 0);
-	if (*c == 0) {
+	if (c != str && *c == 0) {
 		ace->e_id = l;
 		return 0;
 	}
@@ -171,7 +171,7 @@ static int type_from_text(const char *str, struct richace *ace,
 	unsigned long l;
 
 	l = strtoul(str, &c, 0);
-	if (*c == 0) {
+	if (c != str && *c == 0) {
 		ace->e_type = l;
 		return 0;
 	}
@@ -210,7 +210,7 @@ static int ace_flags_from_text(const char *str, struct richace *ace,
 			break;
 
 		l = strtoul(str, &c, 0);
-		if (*c == 0) {
+		if (c != str && *c == 0) {
 			ace->e_flags |= l;
 			continue;
 		}
@@ -269,7 +269,7 @@ static int mask_from_text(const char *str, unsigned int *mask,
 			break;
 
 		l = strtoul(dup, &c, 0);
-		if (*c == 0) {
+		if (c != dup && *c == 0) {
 			*mask |= l;
 			continue;
 		}
