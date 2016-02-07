@@ -1,7 +1,7 @@
 .\"
-.\" Richacl Manual Pages
+.\" RichACL Manual Pages
 .\"
-.\" Copyright (C) 2015  Red Hat, Inc.
+.\" Copyright (C) 2015,2016  Red Hat, Inc.
 .\" Written by Andreas Gruenbacher <agruenba@redhat.com>
 .\" This is free documentation; you can redistribute it and/or
 .\" modify it under the terms of the GNU General Public License as
@@ -34,7 +34,7 @@ setrichacl \- Set Rich Access Control Lists
 .SH DESCRIPTION
 The
 .B setrichacl
-utility sets or modifies Rich Access Control Lists (richacls) of files and
+utility sets or modifies Rich Access Control Lists (RichACLs) of files and
 directories.
 
 The
@@ -54,8 +54,8 @@ manual page. The single-letter or long forms of flags and permissions can be
 mixed arbitrarily. Multiple entries are separated by whitespace, newlines or
 commas.
 
-Note that the order of ACL entries matters, and that changing the order may
-grant different permissions.
+Note that the order of entries in a RichACL matters, and that reordering
+entries may change the permissions granted.
 
 The use of
 .B deny
@@ -70,13 +70,17 @@ When the file masks are not specified, they are computed automatically.
 When the ACL to be set is simple enough that the traditional file permission
 bits can express the same permissions,
 .B setrichacl
-instead only sets the file permission bits. Minor differences that do not have
-an influence on the permissions granted by the ACL are not preserved.  When
+sets the file permission bits and removes the ACL. When
 .BR setrichacl 's
 counterpart utility,
 .BR getrichacl (1),
-is used on a file or directory that does not have a richacl, it displays the
-access permissions defined by the file permission bits as a richacl.
+is used on a file or directory that does not have a RichACL, it displays the
+access permissions defined by the file permission bits as an ACL. This means
+that for simple ACLs,
+.B getrichacl
+may display a slightly different ACL which is equivalent to the one that was
+set with
+.BR setrichacl .
 
 .SS Permissions
 
