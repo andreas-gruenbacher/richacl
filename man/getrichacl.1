@@ -29,17 +29,22 @@ getrichacl \- Get Rich Access Control Lists
 
 .SH SYNOPSIS
 .B getrichacl
-.RI [ OPTION "]... [" FILE ]...
+.RI [ option "]... [" file ]...
 
 .SH DESCRIPTION
-For each file, getrichacl displays the file name and Rich Access Control List
-(richacl).
+For each file,
+.B getrichacl
+displays the file name and Rich Access Control List (richacl).
 
-By default, getrichacl displays the effective permissions remaining after
-applying the file masks to the ACL.  The file masks and underlying NFSv4 ACL
-can be displayed with the \-\-raw option.
+By default,
+.B getrichacl
+displays the effective permissions remaining after applying the file masks to
+the ACL.  The file masks and underlying NFSv4 ACL can be displayed with the
+\fB\-\-raw\fR option.
 
-The output format of getrichacl is as follows:
+The output format of
+.B getrichacl
+is as follows:
 .fam C
 .RS
 .nf
@@ -63,29 +68,38 @@ Line 1 contains the file name, followed by a colon.
 Line 2 contains the ACL flags. This line is omitted if no flags are set.
 
 Lines 3--5 indicate the owner, group, and other file masks, which are only
-shown if the \-\-raw option is specified.
+shown if the \fB\-\-raw\fR option is specified.
 
 Lines 6--10 indicate different ACL entries for the file owner
 .RB ( owner@ ),
-user foo, the owning group
+user \fIfoo\fR, the owning group
 .RB ( group@ ),
-group bar, and for everyone
+group \fIbar\fR, and for everyone
 .RB ( everyone@ ).
 
 A blank line follows at the end.
 
-By default, getrichacl displays the the single-letter forms of flags and
-permissions, the identifiers of ACL entryies are right justified, the
-permissions are vertically aligned, and permissions which are always
-granted
+By default,
+.B getrichacl
+displays the single-letter forms of flags and permissions, the identifiers of
+ACL entries are right justified, the permissions are vertically aligned, and
+permissions which are always granted
 .RB ( read_attributes ", " read_acl ", " synchronize )
-are omitted. See the richacl(7) manual page for the defined flags and
-permissions.
+are omitted. See the
+.BR richacl (7)
+manual page for the defined flags and permissions.
 
-When getrichacl is used on a file that does not have a richacl or on a
-filesystem that does not support richacls, getrichacl displays the access
-permissions defined by the traditional file permission bits as a richacl. When
-getrichacl is used on a file that has a POSIX ACL, it prints an error message.
+When
+.B getrichacl
+is used on a file that does not have a richacl or on a filesystem that does not
+support richacls,
+.B getrichacl
+displays the access permissions defined by the traditional file permission bits
+as a richacl. When
+.B getrichacl
+is used on a file that has a POSIX ACL (see
+.BR acl (5)),
+it prints an error message.
 
 .SH OPTIONS
 .TP
@@ -96,7 +110,7 @@ Display access masks and flags in their long form.
 Also show permissions which are always implicitly allowed.
 .TP
 \fB\-\-raw\fR
-Show acls as stored on the file system including the file masks. Implies
+Show ACLs as stored on the file system including the file masks. Implies
 \fB\-\-full\fR.
 .TP
 \fB\-\-unaligned\fR
@@ -106,12 +120,18 @@ Do not align ACL entries or pad missing permissions with '-'.
 Display numeric user and group IDs instead of names.
 .TP
 \fB\-\-access\fR [=\fIuser\fR[:\fIgroup\fR:...]}, \fB\-a\fR[\fIuser\fR[:\fIgroup\fR:...]}
-Instead of the ACL, show which permissions the caller or a specified user has
-for file(s).  When a list of groups is given, this overrides the groups the
-user is in.
+Instead of showing the ACL, show which permissions the user running the command
+has for the specified file(s).  When \fIuser\fR is specified, show which
+permissions the specified user has instead.  If \fIuser\fR is followed by a
+colon and a (possibly empty) list of groups, assume that \fIuser\fR is a member
+in the specified groups; otherwise,
+.BR getgrouplist (3)
+is used to determine the groups \fIuser\fR is a member in.
 .TP
 \fB\-\-version\fR, \fB\-v\fR
-Display the version of getrichacl and exit.
+Display the version of
+.B getrichacl
+and exit.
 .TP
 \fB\-\-help\fR, \fB\-h\fR
 Display command-line usage help text.
