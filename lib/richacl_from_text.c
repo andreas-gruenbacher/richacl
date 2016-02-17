@@ -330,7 +330,7 @@ struct richacl *richacl_from_text(const char *str, int *pflags,
 		if (!*str)
 			break;
 
-		for (c = str; *c && *c != ',' && *c != ' '; c++) {
+		for (c = str; *c && *c != ',' && !isspace(*c); c++) {
 			if (*c == ':')
 				colons++;
 		}
