@@ -37,9 +37,9 @@ stamp-h1
 /test-suite.log
 /tests/*.log
 /tests/*.trs
-/tests/require-richacls
-/tests/richacl-equiv-mode
-/tests/richacl-from-mode
-/tests/richacl-apply-masks
-/tests/runas
+/src/require-richacls
+/src/richacl-equiv-mode
+/src/richacl-from-mode
+/src/richacl-apply-masks
+/src/runas
 /testdir.*/
