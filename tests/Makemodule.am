@@ -2,6 +2,7 @@ TESTS = \
 	tests/lib-equiv-mode \
 	tests/lib-from-mode \
 	tests/lib-apply-masks \
+	tests/lib-inherit \
 	tests/apply-masks \
 	tests/basic \
 	tests/chmod \

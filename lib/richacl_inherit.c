@@ -21,6 +21,17 @@
 #include <stdlib.h>
 #include "sys/richacl.h"
 
+static inline bool
+ace_inherits_to_directory(const struct richace *ace)
+{
+	if (ace->e_flags & RICHACE_DIRECTORY_INHERIT_ACE)
+		return true;
+	if ((ace->e_flags & RICHACE_FILE_INHERIT_ACE) &&
+	    !(ace->e_flags & RICHACE_NO_PROPAGATE_INHERIT_ACE))
+		return true;
+	return false;
+}
+
 /**
  * richacl_inherit  -  compute the inheritable acl
  * @dir_acl:	acl of the containing direcory
@@ -40,8 +51,9 @@ richacl_inherit(const struct richacl *dir_acl, int isdir)
 
 	if (isdir) {
 		richacl_for_each_entry(dir_ace, dir_acl) {
-			if (!richace_is_inheritable(dir_ace))
+			if (!ace_inherits_to_directory(dir_ace))
 				continue;
+
 			count++;
 		}
 		acl = richacl_alloc(count);
@@ -49,13 +61,16 @@ richacl_inherit(const struct richacl *dir_acl, int isdir)
 			return NULL;
 		ace = acl->a_entries;
 		richacl_for_each_entry(dir_ace, dir_acl) {
-			if (!richace_is_inheritable(dir_ace))
+			if (!ace_inherits_to_directory(dir_ace))
 				continue;
+
 			if (richace_copy(ace, dir_ace))
 				goto fail;
 			if (dir_ace->e_flags & RICHACE_NO_PROPAGATE_INHERIT_ACE)
 				ace->e_flags &= ~RICHACE_INHERITANCE_FLAGS;
-			else if (!(dir_ace->e_flags & RICHACE_DIRECTORY_INHERIT_ACE))
+			else if (dir_ace->e_flags & RICHACE_DIRECTORY_INHERIT_ACE)
+				ace->e_flags &= ~RICHACE_INHERIT_ONLY_ACE;
+			else
 				ace->e_flags |= RICHACE_INHERIT_ONLY_ACE;
 			ace++;
 		}
@@ -88,6 +103,9 @@ richacl_inherit(const struct richacl *dir_acl, int isdir)
 		acl->a_flags = RICHACL_AUTO_INHERIT;
 		richacl_for_each_entry(ace, acl)
 			ace->e_flags |= RICHACE_INHERITED_ACE;
+	} else {
+		richacl_for_each_entry(ace, acl)
+			ace->e_flags &= ~RICHACE_INHERITED_ACE;
 	}
 
 	return acl;

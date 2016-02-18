@@ -42,7 +42,7 @@ d1/d2:
   user:101:rw--------------:fda:deny
   user:102:rw--------------:fia:deny
   user:103:rw--------------:da:deny
- group:101:rw--------------:fdia:deny
+ group:101:rw--------------:fda:deny
 EOF
 
 check "getrichacl --numeric --raw d1/d3" <<EOF
@@ -72,7 +72,7 @@ d1/d2/d4:
   user:101:rw--------------:fda:deny
   user:102:rw--------------:fia:deny
   user:103:rw--------------:da:deny
- group:101:rw--------------:fdia:deny
+ group:101:rw--------------:fda:deny
 EOF
 
 check "getrichacl --numeric --raw d1/d2/d4/d5" <<EOF
@@ -129,7 +129,7 @@ d1/d2:
   user:101:rw--------------:fda:allow
   user:102:rw--------------:fia:deny
   user:103:rw--------------:da:deny
- group:101:rw--------------:fdia:deny
+ group:101:rw--------------:fda:deny
 EOF
 
 check "getrichacl --numeric --raw d1/d3" <<EOF
@@ -152,7 +152,7 @@ d1/d2/d4:
   user:101:rw--------------:fda:allow
   user:102:rw--------------:fia:deny
   user:103:rw--------------:da:deny
- group:101:rw--------------:fdia:deny
+ group:101:rw--------------:fda:deny
 EOF
 
 check "getrichacl --numeric --raw d1/d2/d4/d5" <<EOF
@@ -176,7 +176,7 @@ d1/d6:
   user:101:rw--------------:fda:deny
   user:102:rw--------------:fia:deny
   user:103:rw--------------:da:deny
- group:101:rw--------------:fdia:deny
+ group:101:rw--------------:fda:deny
 EOF
 
 check "getrichacl --numeric --raw d1/d7" <<EOF

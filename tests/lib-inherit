@@ -1,0 +1,126 @@
+#! /bin/bash
+
+. ${0%/*}/test-lib.sh
+
+auto_inherit="flags:a
+"
+acl="
+  user:0:rwpxd--------:-----:allow
+  user:1:rwpxd--------:f----:allow
+  user:2:rwpxd--------:-d---:allow
+  user:3:rwpxd--------:fd---:allow
+  user:4:rwpxd--------:--n--:allow
+  user:5:rwpxd--------:f-n--:allow
+  user:6:rwpxd--------:-dn--:allow
+  user:7:rwpxd--------:fdn--:allow
+  user:8:rwpxd--------:---i-:allow
+  user:9:rwpxd--------:f--i-:allow
+ user:10:rwpxd--------:-d-i-:allow
+ user:11:rwpxd--------:fd-i-:allow
+ user:12:rwpxd--------:--ni-:allow
+ user:13:rwpxd--------:f-ni-:allow
+ user:14:rwpxd--------:-dni-:allow
+ user:15:rwpxd--------:fdni-:allow
+ user:16:rwpxd--------:----a:allow
+ user:17:rwpxd--------:f---a:allow
+ user:18:rwpxd--------:-d--a:allow
+ user:19:rwpxd--------:fd--a:allow
+ user:20:rwpxd--------:--n-a:allow
+ user:21:rwpxd--------:f-n-a:allow
+ user:22:rwpxd--------:-dn-a:allow
+ user:23:rwpxd--------:fdn-a:allow
+ user:24:rwpxd--------:---ia:allow
+ user:25:rwpxd--------:f--ia:allow
+ user:26:rwpxd--------:-d-ia:allow
+ user:27:rwpxd--------:fd-ia:allow
+ user:28:rwpxd--------:--nia:allow
+ user:29:rwpxd--------:f-nia:allow
+ user:30:rwpxd--------:-dnia:allow
+ user:31:rwpxd--------:fdnia:allow
+"
+
+check "richacl-inherit \"$acl\"" <<-EOF
+  user:1:rwpx---------::allow
+  user:3:rwpx---------::allow
+  user:5:rwpx---------::allow
+  user:7:rwpx---------::allow
+  user:9:rwpx---------::allow
+ user:11:rwpx---------::allow
+ user:13:rwpx---------::allow
+ user:15:rwpx---------::allow
+ user:17:rwpx---------::allow
+ user:19:rwpx---------::allow
+ user:21:rwpx---------::allow
+ user:23:rwpx---------::allow
+ user:25:rwpx---------::allow
+ user:27:rwpx---------::allow
+ user:29:rwpx---------::allow
+ user:31:rwpx---------::allow
+EOF
+
+check "richacl-inherit -d \"$acl\"" <<-EOF
+  user:1:rwpxd--------:fi:allow
+  user:2:rwpxd--------:d:allow
+  user:3:rwpxd--------:fd:allow
+  user:6:rwpxd--------::allow
+  user:7:rwpxd--------::allow
+  user:9:rwpxd--------:fi:allow
+ user:10:rwpxd--------:d:allow
+ user:11:rwpxd--------:fd:allow
+ user:14:rwpxd--------::allow
+ user:15:rwpxd--------::allow
+ user:17:rwpxd--------:fi:allow
+ user:18:rwpxd--------:d:allow
+ user:19:rwpxd--------:fd:allow
+ user:22:rwpxd--------::allow
+ user:23:rwpxd--------::allow
+ user:25:rwpxd--------:fi:allow
+ user:26:rwpxd--------:d:allow
+ user:27:rwpxd--------:fd:allow
+ user:30:rwpxd--------::allow
+ user:31:rwpxd--------::allow
+EOF
+
+check "richacl-inherit \"$auto_inherit$acl\"" <<-EOF
+   flags:a
+  user:1:rwpx---------:a:allow
+  user:3:rwpx---------:a:allow
+  user:5:rwpx---------:a:allow
+  user:7:rwpx---------:a:allow
+  user:9:rwpx---------:a:allow
+ user:11:rwpx---------:a:allow
+ user:13:rwpx---------:a:allow
+ user:15:rwpx---------:a:allow
+ user:17:rwpx---------:a:allow
+ user:19:rwpx---------:a:allow
+ user:21:rwpx---------:a:allow
+ user:23:rwpx---------:a:allow
+ user:25:rwpx---------:a:allow
+ user:27:rwpx---------:a:allow
+ user:29:rwpx---------:a:allow
+ user:31:rwpx---------:a:allow
+EOF
+
+check "richacl-inherit -d \"$auto_inherit$acl\"" <<-EOF
+   flags:a
+  user:1:rwpxd--------:fia:allow
+  user:2:rwpxd--------:da:allow
+  user:3:rwpxd--------:fda:allow
+  user:6:rwpxd--------:a:allow
+  user:7:rwpxd--------:a:allow
+  user:9:rwpxd--------:fia:allow
+ user:10:rwpxd--------:da:allow
+ user:11:rwpxd--------:fda:allow
+ user:14:rwpxd--------:a:allow
+ user:15:rwpxd--------:a:allow
+ user:17:rwpxd--------:fia:allow
+ user:18:rwpxd--------:da:allow
+ user:19:rwpxd--------:fda:allow
+ user:22:rwpxd--------:a:allow
+ user:23:rwpxd--------:a:allow
+ user:25:rwpxd--------:fia:allow
+ user:26:rwpxd--------:da:allow
+ user:27:rwpxd--------:fda:allow
+ user:30:rwpxd--------:a:allow
+ user:31:rwpxd--------:a:allow
+EOF

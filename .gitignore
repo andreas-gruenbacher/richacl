@@ -41,5 +41,6 @@ stamp-h1
 /src/richacl-equiv-mode
 /src/richacl-from-mode
 /src/richacl-apply-masks
+/src/richacl-inherit
 /src/runas
 /testdir.*/
