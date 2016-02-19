@@ -39,6 +39,7 @@ displays the file name and the file's Rich Access Control List (RichACL).
 The output format of
 .B getrichacl
 is as follows:
+
 .fam C
 .RS
 .nf
@@ -90,10 +91,8 @@ the ACL.  The file masks and underlying NFSv4 ACL can be displayed with the
 When
 .B getrichacl
 is used on a file that does not have a RichACL or on a filesystem that does not
-support RichACLs,
-.B getrichacl
-displays the access permissions defined by the traditional file permission bits
-as a RichACL. When
+support RichACLs, it displays the access permissions defined by the traditional
+file permission bits as a RichACL. When
 .B getrichacl
 is used on a file that has a POSIX ACL (see
 .BR acl (5)),
@@ -124,7 +123,7 @@ permissions the specified user has instead.  If \fIuser\fR is followed by a
 colon and a (possibly empty) list of groups, assume that \fIuser\fR is a member
 in the specified groups; otherwise,
 .BR getgrouplist (3)
-is used to determine the groups \fIuser\fR is a member in.
+is used to determine the groups \fIuser\fR is a member of.
 .TP
 \fB\-\-version\fR, \fB\-v\fR
 Display the version of

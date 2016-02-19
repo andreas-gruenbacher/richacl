@@ -37,17 +37,14 @@ to support
 .URL https://tools.ietf.org/rfc/rfc5661.txt "NFSv4 Access Control Lists"
 on local and remote-mounted filesystems.
 
-RichACLs support file masks which can be used to apply a file mode to an existing
-NFSv4 ACL without destructive side effects: the file mode determines the values
-of the file masks; the file masks restrict the permissions granted by the NFSv4
-ACL.  When a less restrictive file mode is applied later, the file masks become
-less restrictive, and more of the original permissions can become effective.
-
 A RichACL can always be translated into an equivalent NFSv4 ACL which grants
 the same permissions.
 
-RichACLs can be enabled on supported filesystems. This disables POSIX Access
-Control Lists; the two ACL models cannot coexist on the same filesystem.
+RichACLs can be enabled on supported local filesystems (currently, ext4 and
+XFS).  This disables POSIX Access Control Lists; the two ACL models cannot
+coexist on the same filesystem.
+
+The in-kernel NFSv4 server and client also include RichACL support.
 
 When used on a filesystem that does not support RichACLs, the
 .BR getrichacl (1)
@@ -68,39 +65,46 @@ cannot be represented exactly by the file permission bits results in an error.
 RichACLs consist of a number of ACL entries, three file masks, and some flags
 specifying attributes of the ACL as whole (by contrast with the per-ACL-entry
 flags described below).
+
 Each of the ACL entries allows or denies some permissions to a particular user,
-group, or special entity. Each entry consists of:
+group, or special identifier. An ACL entry consists of four fields:
 
 .IP \(bu 4
-A tag which specifies the user (with prefix
-.B user:
-or
-.BR u: ),
-group (with prefix
-.B group:
-or
-.BR g: ),
-or special identifier the entry applies to. Special
-identifiers can be the file owner
-.RB ( owner@ ),
-the owning group
-.RB ( group@ ),
-or everyone
-.RB ( everyone@ ).
+A tag which specifies the user, group, or special identifier the entry applies
+to.  Special identifiers can be the file owner, the owning group, or everyone.
 .IP \(bu
 A set of permissions the entry allows or denies.
 .IP \(bu
 A set of flags that indicate whether the user or group identifier is mapped or
 unmapped, and whether the entry has been and can be inherited.
 .IP \(bu 4
-A field indicating whether the entry allows or denies access.
+A type field indicating whether the entry allows or denies access.
 .PP
 The owner, group, and other file masks further control which permissions the
 ACL grants, subject to the
 .BR masked "\ (" m )
 and
 .BR write_through "\ (" w )
-ACL flags.
+ACL flags: when the permissions of a file or directory are changed with
+.BR chmod (2),
+the file masks are set based on the new file mode, and the
+.B masked
+and
+.B write_through
+ACL flags are set. Likewise, when a new file or directory inherits an ACL from
+its parent directory, the file masks are set to the intersection between the
+permissions granted by the inherited ACL and the
+.I mode
+parameter as given to
+.BR open "(2), " mkdir (2),
+and similar, and the
+.B masked
+ACL flag is set. In both cases, the file masks limit the permissions that the
+ACL will grant.
+
+The advantage of this approach over directly modifying the ACL entries is that
+permissions defined in ACL entries are not lot when the file masks are later
+set to be less restrictive.
 
 Note that entries with the identifier
 .B everyone@
@@ -119,124 +123,139 @@ the entry is effective during access checks and/or inheritable.
 
 The following flags on ACLs are defined:
 
-.RS
-.HP
-.BR masked "\ (" m ):
+.TP
+.BR masked "\ (" m )
 When set, the file masks define upper limits on the permissions the ACL may
-grant.
-.HP
-.BR write_through "\ (" w ):
+grant.  When not set, the file masks are ignored.
+.TP
+.BR write_through "\ (" w )
 When this flag and the
 .B masked
 flag are both set, the owner and other file masks define the actual permissions
-granted to the file owner and to others instead of an upper limit.
-.HP
-.BR auto_inherit "\ (" a ):
-Automatic Inheritance is enabled for the file the ACL is
-attached to. See
+granted to the file owner and to others instead of defining an upper limit.
+When the
+.B masked
+flag is not set, the write_through flag has no effect.
+.TP
+.BR auto_inherit "\ (" a )
+Automatic Inheritance is enabled.  See
 .IR "Automatic Inheritance" .
-.HP
-.BR protected "\ (" p ):
+.TP
+.BR protected "\ (" p )
 The ACL is protected from modification by Automatic
 Inheritance.
-.HP
-.BR defaulted "\ (" d ):
-The ACL has been assigned by default. Automatic Inheritance should completely
-replace the ACL.
-.RE
+.TP
+.BR defaulted "\ (" d )
+Indicates that the ACL has been assigned in an application-dependent way when
+the file or directory was created; it has neither been inherited nor set
+explicitly. ACLs of files created on Linux will never have the
+.B defaulted
+flag set. When this flag is set for an ACL, Automatic Inheritance will
+completely replace the ACL.
 
 .SS ACL entry flags
 
 The following flags on ACL entries are defined:
 
+.TP
+.BR file_inherit "\ (" f )
+When this flag appears in the ACL entry of a directory, then:
 .RS
-.HP
-.BR file_inherit "\ (" f ):
-The entry is inheritable for files.
-.HP
-.BR dir_inherit "\ (" d ):
-The entry is inheritable for directories.
-.HP
-.BR no_propagate "\ (" n ):
-Inheritance stops at the next subdirectory level.
-.HP
-.BR inherit_only "\ (" i ):
+.IP \(bu 4
+That entry is inherited by new files created in the directory such that the
+permissions of the entry apply to the file (the inheritance flags of the
+inherited entry are cleared).
+.IP \(bu 4
+The entry is is inherited by new subdirectories created in the directory such
+that the permissions of the entry will apply to new files created in the
+subdirectory.
+.RE
+.TP
+.BR dir_inherit "\ (" d )
+When this flag appears in the ACL entry of a directory, then that entry is
+inherited by new subdirectories created in the directory such that the
+permissions of the entry apply to the subdirectory (the
+.B inherit_only
+flag is cleared).
+.TP
+.BR no_propagate "\ (" n )
+Inheritance stops at the next subdirectory level.  When a file or directory
+inherits an entry that has this flag set, the
+.BR file_inherit ", " dir_inherit ", " no_propagate ", and " inherit_only
+flags are cleared.
+.TP
+.BR inherit_only "\ (" i )
 The entry defines inheritable permissions only and is ignored for access
-checking.
-.HP
-.BR inherited "\ (" a ):
+checking.  When a file or directory inherits an entry that has this flag set,
+the flag is cleared.
+.TP
+.BR inherited "\ (" a )
 The entry has been automatically inherited from the parent directory; the
 ACL's
 .B auto_inherit
 flag should be on.
-.HP
-.BR unmapped "\ (" u ):
+.TP
+.BR unmapped "\ (" u )
 The user or group identifier is a textual string and is not mapped to a numeric
 user or group identifier.  ACLs with unmapped identifiers can occur on NFSv4
 mounted filesystems when the client cannot determine numeric user or group
 identifiers for some of the NFSv4 user@domain or group@domain who values.  They
 cannot be assigned to local files or directories.
-.RE
 
 .SS Permissions
 
 The following permissions are defined for RichACL entries and for the three
 file masks:
 
-.RS
-.HP
-.BR read_data " / " list_directory "\ (" r ):
+.TP
+.BR read_data " / " list_directory "\ (" r )
 For a file: read the data of the file.
 For a directory: list the contents of the directory.
-.HP
-.BR write_data " / " add_file "\ (" w ):
+.TP
+.BR write_data " / " add_file "\ (" w )
 For a file: modify the data of the file; does not include opening the file in
 append mode.
 For a directory: add a new file in the directory.
-.HP
-.BR append_data " / " add_subdirectory "\ (" p ):
+.TP
+.BR append_data " / " add_subdirectory "\ (" p )
 For a file: open the file in append mode.
 For a directory: create a subdirectory in the directory.
-.HP
-.BR execute "\ (" x ):
+.TP
+.BR execute "\ (" x )
 For a file: execute the file.
 For a directory: traverse / search the directory.
-.HP
-.BR delete_child "\ (" d ):
-Delete a file or directory within a directory.
-.HP
-.BR delete "\ (" D ):
+.TP
+.BR delete_child "\ (" d )
+Delete a file or directory within a directory.  This permission is meaningless
+for non-directories.
+.TP
+.BR delete "\ (" D )
 Delete the file or directory.
-.HP
-.BR read_attributes "\ (" a ):
+.TP
+.BR read_attributes "\ (" a )
 Read basic attributes of a file or directory (see
 .BR stat (2)).
-This permission is always implicitly granted.
-.HP
-.BR write_attributes "\ (" A ):
+This permission is defined by NFSv4.  It is stored, but ignored.  Reading basic
+attributes of files and directories is always allowed on Linux.
+.TP
+.BR write_attributes "\ (" A )
 Change the times associated with a file or directory to an arbitrary value.
 This permission is always implicitly granted to the file owner.
-.HP
-.BR read_acl "\ (" c ):
+.TP
+.BR read_acl "\ (" c )
 Read the ACL of a file or directory. This permission is always
 implicitly granted.
-.HP
-.BR write_acl "\ (" C ):
+.TP
+.BR write_acl "\ (" C )
 Change the ACL or file mode of a file or directory.
-.HP
-.BR write_owner "\ (" o ):
+.TP
+.BR write_owner "\ (" o )
 Take ownership of a file or directory.  Change the owning group of a file or
 directory to a group of which the calling process is a member.
-.HP
-.BR read_named_attrs "\ (" R ),
-.BR write_named_attrs "\ (" W ),
-.BR synchronize "\ (" S ),
-.BR write_retention "\ (" e ),
-.BR write_retention_hold "\ (" E ):
-These permissions are defined by NFSv4 / NFSv4.1.  They can be stored, but are
-not used.
-.RE
-
+.TP
+.BR read_named_attrs "\ (" R "), " write_named_attrs "\ (" W "), " synchronize "\ (" S "), " write_retention "\ (" e "), " write_retention_hold "\ (" E )
+These permissions are defined by NFSv4 / NFSv4.1.  They are stored, but ignored.
+.PP
 For the
 .BR r ", " w ", and " p
 permissions which have different long forms for files and directories, the
@@ -248,7 +267,7 @@ utility will accept either form for any file type.
 
 .SS Text form
 The common textual representation of a RichACL consists of the colon-separated
-fields of the the ACL flags, file masks, and ACL entries in the following
+fields of the ACL flags, file masks, and ACL entries in the following
 format:
 .TP
 \fBflags:\fR\fIacl_flags\fR
@@ -259,16 +278,20 @@ The file masks and their permissions.
 .TP
 \fIwho\fR\fB:\fR\fIperm\fR\fB:\fR\fIflags\fR\fB:allow\fR, \fIwho\fR\fB:\fR\fIperm\fR\fB:\fR\fIflags\fR\fB:deny\fR
 For each ACL entry, who the entry applies to, the permissions of the entry, the
-entry flags, and whether the entry allows or denies permissions.  The \fIwho\fR
-field has no prefix for special identifiers, a
-.B user:
-or
-.B u:
-prefix for regular users, and a
-.B group:
-or
-.B g:
-prefix for regular groups.
+entry flags, and the entry type. The who field is one of the following:
+.RS
+.IP \(bu 4
+One of the special identifiers:
+.BR owner@ ", " group@ ", or " everyone@ ,
+.IP \(bu
+A
+.BR user: " or " u:
+prefix followed by a user name or user ID that designates a specific user,
+.IP \(bu
+A
+.BR group: " or " g:
+prefix followed by a group name or group ID that designates a specific group.
+.RE
 .PP
 The entries are comma, whitespace, or newline separated.
 
@@ -283,8 +306,8 @@ separated by slashes.  To align permissions or flags vertically, dashes can be
 used for padding.
 
 .SS Setting and modifying file permissions
-The access permissions for a file can either be set by assigning an access
-control list
+The access permissions for a file can either be set by assigning an Access
+Control List
 .RB ( setrichacl (1))
 or by changing the file mode permission bits
 .RB ( chmod (1)).
@@ -323,9 +346,9 @@ the file mode permission bits are converted into an equivalent ACL.)
 .SS Changing the file mode permission bits
 When changing the file mode permission bits with
 .BR chmod (1),
-the owner, group,
-and other file permission bits are set to the permission bits in the new mode,
-and the file masks each are set based on the new mode bits as follows:
+the owner, group, and other file permission bits are set to the permission bits
+in the new mode, and the owner, group, and other file masks are set based on
+the new mode bits as follows:
 .IP \(bu 4
 If the read bit in a set of permissions is set, the
 .B r
@@ -363,25 +386,27 @@ happens when a file or directory is created inside that directory:
 A file created inside that directory will inherit all of the ACL entries that
 have the
 .B file_inherit
-flag set, and all inheritance-related flags in the inherited entries will be
-cleared.
+flag set, and all inheritance-related flags in the inherited entries flag will
+be cleared.
 
 A subdirectory created inside that directory will inherit all of the ACL
-entries that have the
-.B file_inherit
-or
+entries that either have the
 .B dir_inherit
-flag set.  Entries whose
-.B no_propagate
-flag is set will have all inheritance-related flags cleared.  Entries whose
-.B no_propagate
-and
-.B dir_inherit
-flags are not set and whose
+flag set, or the
 .B file_inherit
-is set will have their
+flag set and the
+.B no_propagate
+flag not set.  Entries whose
+.B dir_inherit
+flag is set will have their
 .B inherit_only
-flag set.
+flag cleared, and entries whose
+.B dir_inherit
+flag is not set will have their
+.B inherit_only
+flag set.  Finally, entries whose
+.B no_propagate
+flag is set will have all inheritance-related flags cleared.
 .IP 2.
 If the parent directory's ACL has the
 .B auto_inherit
@@ -389,7 +414,11 @@ flag set, the inherited ACL will have its
 .B auto_inherit
 flag set, and all entries will have their
 .B inherited
-flag set.
+flag set.  Otherwise, the
+.B auto_inherit
+and
+.B inherited
+flags are cleared.
 .IP 3.
 The three file masks are computed from the inherited ACL as described in
 the section
@@ -399,8 +428,8 @@ The three sets of permissions for the owner, the group, and for others in
 the \fImode\fR parameter as given to
 .BR open (2),
 .BR mkdir (2),
-and similar are converted into sets of RichACL permissions as described in
-the section
+and similar are converted into sets of RichACL permissions. The correspondence
+between mask flags and RichACL permission bits is described in the section
 .IR "Changing the file mode permission bits" .
 Any RichACL permissions not included in those sets are
 removed from the owner, group, and other file masks. The file mode permission
@@ -423,7 +452,7 @@ the ACL.
 .RE
 .PP
 When a directory does not have inheritable ACL entries, files and directories
-created inside that directory will not be assigned access control lists and the
+created inside that directory will not be assigned Access Control Lists and the
 file mode permission bits will be set to (\fImode\fR\ &\ ~\fIumask\fR) where
 \fImode\fR is the mode argument of the relevant system call and \fIumask\fR is
 the process umask (see
@@ -439,8 +468,8 @@ it happens without user intervention albeit not entirely automatically.
 
 A significant limitation is that this mechanism works only as long as files
 are created without explicitly specifying the file permissions to use. The
-standard system calls for creating files an directories (
-.BR creat (2),
+standard system calls for creating files and directories
+.RB ( creat (2),
 .BR open (2),
 .BR mkdir (2),
 .BR mknod (2))
@@ -453,7 +482,7 @@ flag is set. This effectively disables Automatic Inheritance for that
 particular file.
 
 Automatic Inheritance still remains useful for network protocols like NFSv4 and
-SMB, which both support creating files and directories without defining which
+SMB, which both support creating files and directories without defining their
 permissions: they can implement those operations by using the standard system
 calls and by then undoing the effect of applying the mode parameters.
 
