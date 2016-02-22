@@ -16,3 +16,7 @@ man/setrichacl.1.txt: man/setrichacl.1
 	$(MAN_TO_TEXT)
 man/richacl.7.txt: man/richacl.7
 	$(MAN_TO_TEXT)
+
+txt: man/getrichacl.1.txt man/setrichacl.1.txt man/richacl.7.txt
+
+.PHONY: txt
