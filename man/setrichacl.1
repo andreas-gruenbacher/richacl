@@ -23,20 +23,17 @@
 .\" <http://www.gnu.org/licenses/>.
 .\"
 .TH SETRICHACL 7 2015-09-01 "Linux" "Rich Access Control Lists"
-
 .SH NAME
 setrichacl \- Set Rich Access Control Lists
-
 .SH SYNOPSIS
 .B setrichacl
 .RI [ option "]... [" file ]...
-
 .SH DESCRIPTION
 The
 .B setrichacl
 utility sets or modifies Rich Access Control Lists (RichACLs) of files and
 directories.
-
+.PP
 The
 .B \-m
 and
@@ -53,10 +50,10 @@ of the
 manual page. The single-letter or long forms of flags and permissions can be
 mixed arbitrarily. Multiple entries are separated by whitespace, newlines, or
 commas.
-
+.PP
 Note that the order of entries in a RichACL is significant, and that reordering
 entries may change the permissions granted.
-
+.PP
 The use of
 .B deny
 entries is discouraged. If
@@ -64,9 +61,9 @@ entries is discouraged. If
 entries are used, they should be placed ahead of
 .B allow
 entries for improved interoperability with Windows where possible.
-
+.PP
 When the file masks are not specified, they are computed automatically.
-
+.PP
 When the ACL to be set is simple enough that the traditional file permission
 bits can express the same permissions,
 .B setrichacl
@@ -81,16 +78,13 @@ that for simple ACLs,
 may display a slightly different ACL which is equivalent to the one that was
 set with
 .BR setrichacl .
-
 .SS Permissions
-
 Setting ACLs or changing the file permission bits is allowed to the file owner,
 to processes which have the
 .B write_acl
 permission, and to processes which have the
 .B CAP_FOWNER
 capability.
-
 .SH OPTIONS
 .TP
 \fB\-\-modify\fR \fIacl\fR, \fB\-m\fR \fIacl\fR
@@ -120,17 +114,13 @@ and exit.
 .TP
 \fB\-\-help\fR, \fB\-h\fR
 Display command-line usage help text.
-
 .\" .SH EXAMPLES
-
 .SH AUTHOR
 Written by Andreas Grünbacher <agruenba@redhat.com>.
-
+.PP
 Please send your bug reports, suggested features and comments to the above address.
-
 .SH CONFORMING TO
 Rich Access Control Lists are Linux-specific.
-
 .SH SEE ALSO
 .BR getrichacl (1),
 .BR richacl (7)

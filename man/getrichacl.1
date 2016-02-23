@@ -23,23 +23,20 @@
 .\" <http://www.gnu.org/licenses/>.
 .\"
 .TH GETRICHACL 7 2015-09-01 "Linux" "Rich Access Control Lists"
-
 .SH NAME
 getrichacl \- Get Rich Access Control Lists
-
 .SH SYNOPSIS
 .B getrichacl
 .RI [ option "]... [" file ]...
-
 .SH DESCRIPTION
 For each file,
 .B getrichacl
 displays the file name and the file's Rich Access Control List (RichACL).
-
+.PP
 The output format of
 .B getrichacl
 is as follows:
-
+.PP
 .fam C
 .RS
 .nf
@@ -57,23 +54,23 @@ is as follows:
 .fi
 .RE
 .fam T
-
+.PP
 Line 1 contains the file name, followed by a colon.
-
+.PP
 Line 2 contains the ACL flags. This line is omitted if no flags are set.
-
+.PP
 Lines 3--5 indicate the owner, group, and other file masks, which are only
 shown if the \fB\-\-raw\fR option is specified.
-
+.PP
 Lines 6--10 indicate different ACL entries for the file owner
 .RB ( owner@ ),
 user \fIfoo\fR, the owning group
 .RB ( group@ ),
 group \fIbar\fR, and for everyone
 .RB ( everyone@ ).
-
+.PP
 A blank line follows at the end.
-
+.PP
 The default output format uses the single-letter forms of flags and
 permissions, identifiers of ACL entries are right justified, permissions are
 vertically aligned, and permissions which are always granted
@@ -81,13 +78,13 @@ vertically aligned, and permissions which are always granted
 are omitted. See the
 .BR richacl (7)
 manual page for the defined flags and permissions.
-
+.PP
 By default,
 .B getrichacl
 displays the effective permissions remaining after applying the file masks to
 the ACL.  The file masks and underlying NFSv4 ACL can be displayed with the
 \fB\-\-raw\fR option.
-
+.PP
 When
 .B getrichacl
 is used on a file that does not have a RichACL or on a filesystem that does not
@@ -97,7 +94,6 @@ file permission bits as a RichACL. When
 is used on a file that has a POSIX ACL (see
 .BR acl (5)),
 it prints an error message.
-
 .SH OPTIONS
 .TP
 \fB\-\-long\fR, \fB\-l\fR
@@ -132,15 +128,12 @@ and exit.
 .TP
 \fB\-\-help\fR, \fB\-h\fR
 Display command-line usage help text.
-
 .SH AUTHOR
 Written by Andreas Grünbacher <agruenba@redhat.com>.
-
+.PP
 Please send your bug reports, suggested features and comments to the above address.
-
 .SH CONFORMING TO
 Rich Access Control Lists are Linux-specific.
-
 .SH SEE ALSO
 .BR richacl (7),
 .BR setrichacl (1)
