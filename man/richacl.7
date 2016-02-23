@@ -120,14 +120,14 @@ or directories, the
 .I mode
 parameter to
 .BR open "(2), " mkdir (2),
-and similar would cause the same effect.
+and similar would have the same effect.
 
 Note that entries with the identifier
 .B everyone@
 apply to all processes, whereas the \(lqother\(rq file permissions and
-\(lqother\(rq entries in POSIX ACLs apply to all processes which are not the
-owner, are not in the owning group, and do not match a user or group mentioned
-in the ACL.
+\(lqother\(rq (\fBACL_OTHER\fP) entries in POSIX ACLs apply to all processes
+which are not the owner, are not in the owning group, and do not match a user
+or group mentioned in the ACL.
 
 Unlike POSIX ACLs, RichACLs do not have separate \(lqaccess\(rq ACLs that
 define the access permissions and \(lqdefault\(rq ACLs that define the
@@ -312,7 +312,8 @@ A
 prefix followed by a group name or group ID that designates a specific group.
 .RE
 .PP
-The entries are comma, whitespace, or newline separated.
+The ACL flags, file masks, and ACL entries are comma, whitespace, or newline
+separated.
 
 Flags and permissions have single-letter as well as long forms, as listed under
 .IR "ACL flags" ,
@@ -400,7 +401,6 @@ the ACL.
 .SS Permissions at file-creation time
 When a directory has any inheritable ACL entries, the following
 happens when a file or directory is created inside that directory:
-.RS 4
 .IP 1. 4
 A file created inside that directory will inherit all of the ACL entries that
 have the
@@ -429,7 +429,7 @@ flag is set will have all inheritance-related flags cleared.
 .IP 2.
 If the parent directory's ACL has the
 .B auto_inherit
-flag set, the inherited ACL will have its
+flag set, then the inherited ACL will have its
 .B auto_inherit
 flag set, and all entries will have their
 .B inherited
@@ -468,7 +468,6 @@ flag of the inherited ACL is set, the
 .B protected
 flag is also set to prevent the Automatic Inheritance algorithm from modifying
 the ACL.
-.RE
 .PP
 When a directory does not have inheritable ACL entries, files and directories
 created inside that directory will not be assigned Access Control Lists and the
@@ -485,15 +484,15 @@ permissions (usually,
 .BR setrichacl (1));
 it happens without user intervention albeit not entirely automatically.
 
-A significant limitation is that this mechanism works only as long as files
-are created without explicitly specifying the file permissions to use. The
-standard system calls for creating files and directories
-.RB ( creat (2),
-.BR open (2),
+A significant limitation of the Automatic Inheritance feature is that this
+mechanism works only as long as files are created without explicitly specifying
+the file permissions to use. The standard system calls for creating files and
+directories
+.RB ( open (2),
 .BR mkdir (2),
-.BR mknod (2))
-all have mandatory mode parameters which define the maximum allowed permissions
-of the new files. To take account of this restriction, the
+.BR mknod (2),
+and so on) all have mandatory mode parameters which define the maximum allowed
+permissions of the new files. To take account of this restriction, the
 .B protected
 ACL flag must be set if the
 .B inherited
@@ -538,7 +537,8 @@ Set the
 .B inherited
 flag of each of these entries.
 .IP d)
-Recompute the file masks.
+Recompute the file masks as decribed in the section
+.IR "Computing the maximum file masks" .
 .RE
 .IP 4.
 If the child is a directory, recursively apply this algorithm.
@@ -666,8 +666,9 @@ the requesting process and includes all the requested permissions.
 
 .SS Computing the maximum file masks
 When setting an ACL and no file masks have been explicitly specified and when
-inheriting an ACL from the parent directory, the following algorithm is used
-for computing the file masks:
+inheriting an ACL from the parent directory (as described in the section
+.IR "Permissions at file-creation time" ),
+the following algorithm is used for computing the file masks:
 
 .IP 1. 4
 Clear the owner, group, and other file masks. Remember which permissions have
