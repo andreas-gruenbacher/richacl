@@ -60,31 +60,31 @@ void printf_stderr(const char *fmt, ...)
 	     (_ace) != (_acl)->a_entries + (_acl)->a_count; \
 	     (_ace)++)
 
-static void compute_masks(struct richacl *acl, int what_acl_contains, uid_t owner)
+static void compute_masks(struct richacl *acl, int valid_in_acl, uid_t owner)
 {
 	unsigned int owner_mask = acl->a_owner_mask;
 	unsigned int group_mask = acl->a_group_mask;
 	unsigned int other_mask = acl->a_other_mask;
 	unsigned char flags = acl->a_flags;
 
-	if ((what_acl_contains & RICHACL_TEXT_OWNER_MASK) &&
-	    (what_acl_contains & RICHACL_TEXT_GROUP_MASK) &&
-	    (what_acl_contains & RICHACL_TEXT_OTHER_MASK))
+	if ((valid_in_acl & RICHACL_TEXT_OWNER_MASK) &&
+	    (valid_in_acl & RICHACL_TEXT_GROUP_MASK) &&
+	    (valid_in_acl & RICHACL_TEXT_OTHER_MASK))
 		return;
 
 	richacl_compute_max_masks(acl);
 
-	if (what_acl_contains & RICHACL_TEXT_FLAGS)
+	if (valid_in_acl & RICHACL_TEXT_FLAGS)
 		acl->a_flags = flags;
-	if (what_acl_contains & RICHACL_TEXT_OWNER_MASK)
+	if (valid_in_acl & RICHACL_TEXT_OWNER_MASK)
 		acl->a_owner_mask = owner_mask;
-	if (what_acl_contains & RICHACL_TEXT_GROUP_MASK)
+	if (valid_in_acl & RICHACL_TEXT_GROUP_MASK)
 		acl->a_group_mask = group_mask;
-	if (what_acl_contains & RICHACL_TEXT_OTHER_MASK)
+	if (valid_in_acl & RICHACL_TEXT_OTHER_MASK)
 		acl->a_other_mask = other_mask;
 }
 
-static int modify_richacl(struct richacl **acl2, struct richacl *acl, int what_acl_contains, uid_t owner)
+static int modify_richacl(struct richacl **acl2, struct richacl *acl, int valid_in_acl, uid_t owner)
 {
 	struct richace *ace2, *ace;
 
@@ -196,15 +196,15 @@ static int modify_richacl(struct richacl **acl2, struct richacl *acl, int what_a
 		return -1;
 	}
 
-	if (what_acl_contains & RICHACL_TEXT_FLAGS)
+	if (valid_in_acl & RICHACL_TEXT_FLAGS)
 		(*acl2)->a_flags = acl->a_flags;
-	if (what_acl_contains & RICHACL_TEXT_OWNER_MASK)
+	if (valid_in_acl & RICHACL_TEXT_OWNER_MASK)
 		(*acl2)->a_owner_mask = acl->a_owner_mask;
-	if (what_acl_contains & RICHACL_TEXT_GROUP_MASK)
+	if (valid_in_acl & RICHACL_TEXT_GROUP_MASK)
 		(*acl2)->a_group_mask = acl->a_group_mask;
-	if (what_acl_contains & RICHACL_TEXT_OTHER_MASK)
+	if (valid_in_acl & RICHACL_TEXT_OTHER_MASK)
 		(*acl2)->a_other_mask = acl->a_other_mask;
-	compute_masks(*acl2, what_acl_contains, owner);
+	compute_masks(*acl2, valid_in_acl, owner);
 
 	return 0;
 }
@@ -445,7 +445,7 @@ int main(int argc, char *argv[])
 	int c;
 
 	struct richacl *acl = NULL;
-	int what_acl_contains;
+	int valid_in_acl;
 
 	progname = argv[0];
 
@@ -494,7 +494,7 @@ int main(int argc, char *argv[])
 		synopsis(optind != argc);
 
 	if (acl_text) {
-		acl = richacl_from_text(acl_text, &what_acl_contains, printf_stderr);
+		acl = richacl_from_text(acl_text, &valid_in_acl, printf_stderr);
 		if (!acl)
 			return 1;
 	}
@@ -530,7 +530,7 @@ int main(int argc, char *argv[])
 		}
 
 		remove_filename(buffer);
-		acl = richacl_from_text(buffer->buffer, &what_acl_contains, printf_stderr);
+		acl = richacl_from_text(buffer->buffer, &valid_in_acl, printf_stderr);
 		if (!acl)
 			return 1;
 		free_string_buffer(buffer);
@@ -550,7 +550,7 @@ int main(int argc, char *argv[])
 		if (opt_set) {
 			if (acl) {
 				/* Compute all masks which haven't been set explicitly. */
-				compute_masks(acl, what_acl_contains, st.st_uid);
+				compute_masks(acl, valid_in_acl, st.st_uid);
 			}
 			if (set_richacl(file, acl))
 				goto fail;
@@ -558,7 +558,7 @@ int main(int argc, char *argv[])
 			acl2 = get_richacl(file, st.st_mode);
 			if (!acl2)
 				goto fail;
-			if (modify_richacl(&acl2, acl, what_acl_contains, st.st_uid))
+			if (modify_richacl(&acl2, acl, valid_in_acl, st.st_uid))
 				goto fail;
 			if (set_richacl(file, acl2))
 				goto fail;
