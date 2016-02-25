@@ -1,7 +1,8 @@
 dist_man_MANS += \
 	man/getrichacl.1 \
 	man/setrichacl.1 \
-	man/richacl.7
+	man/richacl.7 \
+	man/richaclex.7
 
 MAN_TO_TEXT = \
     @echo "$< -> $@"; \
@@ -16,7 +17,9 @@ man/setrichacl.1.txt: man/setrichacl.1
 	$(MAN_TO_TEXT)
 man/richacl.7.txt: man/richacl.7
 	$(MAN_TO_TEXT)
+man/richaclex.7.txt: man/richaclex.7
+	$(MAN_TO_TEXT)
 
-txt: man/getrichacl.1.txt man/setrichacl.1.txt man/richacl.7.txt
+txt: man/getrichacl.1.txt man/setrichacl.1.txt man/richacl.7.txt man/richaclex.7.txt
 
 .PHONY: txt

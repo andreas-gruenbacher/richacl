@@ -57,6 +57,9 @@ which can be represented exactly by the file permission bits,
 .BR setrichacl (1)
 will set the file permission bits instead.  An attempt to set a RichACL that
 cannot be represented exactly by the file permission bits results in an error.
+.PP
+This man-page describes the structure, concepts and algorithms involved in RichACLs. For examples, please refer to
+.BR richaclex (7).
 .SS Structure of RichACLs
 RichACLs consist of a number of ACL entries, three file masks, and a set of
 flags specifying attributes of the ACL as a whole (by contrast with the
@@ -697,6 +700,7 @@ Please send your bug reports, suggested features and comments to the above addre
 .SH CONFORMING TO
 Rich Access Control Lists are Linux-specific.
 .SH SEE ALSO
+.BR richaclex (7),
 .BR chmod (1),
 .BR getrichacl (1),
 .BR ls (1),

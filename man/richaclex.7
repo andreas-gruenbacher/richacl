@@ -1,0 +1,707 @@
+.\"
+.\" RichACL Manual Pages
+.\"
+.\" Copyright (C) 2015,2016  Red Hat, Inc.
+.\" Written by Andreas Gruenbacher <agruenba@redhat.com>
+.\" This is free documentation; you can redistribute it and/or
+.\" modify it under the terms of the GNU General Public License as
+.\" published by the Free Software Foundation; either version 2 of
+.\" the License, or (at your option) any later version.
+.\"
+.\" The GNU General Public License's references to "object code"
+.\" and "executables" are to be interpreted as the output of any
+.\" document formatting or typesetting system, including
+.\" intermediate and printed output.
+.\"
+.\" This manual is distributed in the hope that it will be useful,
+.\" but WITHOUT ANY WARRANTY; without even the implied warranty of
+.\" MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+.\" GNU General Public License for more details.
+.\"
+.\" You should have received a copy of the GNU General Public
+.\" License along with this manual.  If not, see
+.\" <http://www.gnu.org/licenses/>.
+.\"
+.TH RICHACL-EXAMPLES 7 2016-02-24 "Linux" "Rich Access Control Lists"
+.SH NAME
+richaclex \- RichACL Examples
+.SH DESCRIPTION
+This man-page demonstrates the various features of Rich Access Control Lists
+(RichACLs) by example, and shows how they interact with the POSIX file
+permission bits.
+.PP
+For a complete description of the structure, concepts, and algorithms involved,
+please refer to
+.BR richacl (7).
+.\" After showing how the traditional file permission bits are
+.\" represented as RichACLs, RichACLs are used for granting permissions to
+.\" additional users and groups. We then show how changing the file permission bits
+.\" affects an ACL, followed by how permissions are inherited from directories
+.\" to files and directories inside those directories. Finally, we show how to
+.\" easily analyze the permissions of specific users and groups.
+.SH EXAMPLES
+.SS Traditional POSIX file permissions as RichACLs
+In the traditional POSIX file permission model, each file and directory has a
+file mode that specifies the file type and file permission bits.  The file
+permission bits determine the permissions for the owner, group, and other
+classes of processes.  The owner class includes processes which are the file
+owner. The group class includes processes which are not the file owner and
+which are either a user mentioned in an ACL, or which are in the owning group
+or in a group mentioned in an ACL.  The other class includes all processes
+which are not in the owner or group class.
+.PP
+In the absence of inheritable permissions, when a file or directory is created,
+the effective file permissions of the new file or directory are
+.IR "(mode\ &\ ~umask)" ,
+where
+.I mode
+is the mode parameter to
+.BR open (2),
+.BR mkdir (2),
+and similar, and
+.I umask
+is the process umask (see
+.BR umask (2)):
+.PP
+.fam C
+.RS 4
+.nf
+$ \fBumask\fR
+0022
+$ \fBtouch f\fR
+$ \fBls -l f\fR
+-rw-r--r-- 1 agruenba users 0 Feb 24 09:37 f
+.fi
+.RE
+.fam T
+.PP
+Here, the
+.I umask
+has a value of 022. The
+.BR touch (1)
+command calls
+.BR open (2)
+with a
+.I mode
+parameter of 0666 to create a new file, and the resulting effective file
+permissions are 0644, displayed as rw\-r\-\-r\-\- by
+.BR ls (1):
+the owner has read and write access, and the group and other classes have read
+access only.
+.PP
+These permissions are displayed as a RichACL as follows:
+.PP
+.fam C
+.RS 4
+.nf
+$ \fBgetrichacl f\fR
+f:
+    owner@:rwp----------::allow
+ everyone@:r------------::allow
+
+$ \fBgetrichacl --long f\fR
+f:
+    owner@:read_data/write_data/append_data::allow
+ everyone@:read_data::allow
+
+.fi
+.RE
+.fam T
+.PP
+RichACLs have both a short text form in which each permission is represented by
+a single letter, and a long text form in which each permission is represented
+by an equivalent string.  The
+.B owner@
+special indentifier refers to the file owner, an the
+.B everyone@
+special identifier refers to everyone including the owner and the owning group.
+The POSIX read permission maps to the RichACL
+.BR read_data "\ (" r )
+permission; the POSIX write permission maps to the RichACL
+.BR write_data "\ (" w )
+and
+.BR append_data "\ (" p )
+permissions.
+.PP
+Creating directories works similarly:
+.PP
+.fam C
+.RS 4
+.nf
+$ \fBmkdir d\fR
+$ \fBls -dl d\fR
+drwxr-xr-x 2 agruenba users 4096 Feb 24 09:37 d
+.fi
+.RE
+.fam T
+.PP
+Here, the
+.BR mkdir (1)
+command calls
+.BR mkdir (2)
+with a
+.I mode
+parameter of 0777 to create a new directory, and the resulting effective file
+permissions are 0755, displayed as rwxr-xr-x by
+.BR ls (1).
+The owner has read, write and execute (search) access, and the group and other
+classes have read and execute (search) access.
+.PP
+These permissions are displayed as a RichACL as follows:
+.PP
+.fam C
+.RS 4
+.nf
+$ \fBgetrichacl d\fR
+d:
+    owner@:rwpxd--------::allow
+ everyone@:r--x---------::allow
+
+$ \fBgetrichacl --long d\fR
+d:
+    owner@:list_directory/add_file/add_subdirectory/execute/delete_child::allow
+ everyone@:list_directory/execute::allow
+
+.fi
+.RE
+.fam T
+.PP
+For directories, the POSIX read permission maps to the RichACL
+.BR list_directory "\ (" r )
+permission; the POSIX write permission maps to the RichACL
+.BR add_file "\ (" w ),
+.BR add_subdirectory "\ (" p ),
+and
+.BR delete_child "\ (" d )
+permissions; the POSIX execute (search) permission maps to the RichACL
+.BR execute "\ (" x )
+permission. The long text forms for some of the permissions differ between
+files and directories. When setting ACLs, either form can be used
+interchangeably.
+.PP
+When the file permission bits of a file are set to the unusual value of 0604,
+the owning group will not have read access, but everyone else will.  This maps
+to the following RichACL:
+.PP
+.fam C
+.RS 4
+.nf
+$ \fBchmod 604 f\fR
+$ \fBgetrichacl f\fR
+f:
+    owner@:rwp----------::allow
+    group@:r------------::deny
+ everyone@:r------------::allow
+
+.fi
+.RE
+.fam T
+.PP
+A
+.B deny
+entry for the owning group
+.RB ( group@ )
+before the final
+.B allow
+entry for everyone else indicates that the owning group is denied
+.BR read_data "\ (" r )
+access.
+.SS RichACLs
+RichACLs can be used for granting users and groups additional permissions, or
+for denying them some permissions. This includes permissions that go beyond
+what can be granted by the traditional POSIX read, write, and execute
+permissions.  The following example grants user Tim the right to read, write,
+and append to a file, to change the file's permissions
+.RB ( write_acl "\ (" C )),
+and to take ownership of the file
+.RB ( write_owner "\ (" o )):
+.PP
+.fam C
+.RS 4
+.nf
+$ \fBtouch f\fR
+$ \fBls -l f\fR
+-rw-r--r-- 1 agruenba users 0 Feb 24 09:37 f
+$ \fBsetrichacl --modify user:tim:rwpCo::allow f\fR
+$ \fBgetrichacl f\fR
+f:
+    owner@:rwp----------::allow
+ everyone@:r------------::allow
+  user:tim:rwp------Co--::allow
+
+$ \fBls -l f\fR
+-rw-rw-r--+ 1 agruenba users 0 Feb 24 09:37 f
+.fi
+.RE
+.fam T
+.PP
+Setting the ACL has updated the file permission bits, and
+.BR ls (1)
+shows a
+.B +
+sign after the file permissions to indicate that the file now has an ACL. The
+change in file permission bits indicates that one or more members of the group
+class now have POSIX write access, or a subset of POSIX write access (in this
+case, the RichACL
+.BR write_data "\ (" w )
+and
+.BR append_data "\ (" p )
+permissions).
+.PP
+The group class permissions
+.I are not
+the same as the permissions of the owning group; the owning group still only
+has
+.BR read_data "\ (" r )
+access.
+.PP
+In general, when the ACL of a file or directory is changed, the file permission
+bits are updated to reflect the maximum permissions of each of the file classes
+as closely as possible.  Permissions that go beyond the POSIX read, write, and
+execute permissions are not reflected in the file permission bits.
+.SS Changing the file permission bits
+When the file permission bits of a file or directory are changed with
+.BR chmod (2),
+POSIX requires that the new file permission bits define the maximum permissions
+that any process is granted. Therefore, when the file permission bits of file f
+from the previous example are changed to 0664 (their current value), the
+following happens:
+.PP
+.fam C
+.RS 4
+.nf
+$ \fBchmod 664 f\fR
+$ \fBls -l f\fR
+-rw-rw-r--+ 1 agruenba users 0 Feb 24 09:37 f
+$ \fBgetrichacl f\fR
+f:
+    owner@:rwp----------::allow
+  user:tim:rwp----------::allow
+ everyone@:r------------::allow
+
+.fi
+.RE
+.fam T
+.PP
+User Tim loses the
+.BR write_acl "\ (" C )
+and
+.BR write_owner "\ (" o )
+permissions. In addition, the entry for the special identifier
+.B everyone@
+moves to the end of the ACL; this does not change the permissions that the ACL
+grants.
+.PP
+When the file permission bits are changed so that only the file owner has
+access to the file, the ACL changes in the following way:
+.PP
+.fam C
+.RS 4
+.nf
+$ \fBchmod 600 f\fR
+$ \fBls -l f\fR
+-rw-------+ 1 agruenba users 0 Feb 24 09:37 f
+$ \fBgetrichacl f\fR
+f:
+    owner@:rwp----------::allow
+
+.fi
+.RE
+.fam T
+.PP
+The ACL reflects that user Tim and the special identfier
+.B everyone@
+no longer have access to the file. The permissions prevously granted by the ACL
+have not entirely disappeared, they are merely masked by the new file
+permission bits, though (by way of the file masks; see
+.BR richacl (7)).
+When the file permission bits are changed back to their previous value, those
+permissions become effective again:
+.PP
+.fam C
+.RS 4
+.nf
+$ \fBchmod 664 f\fR
+$ \fBls -l f\fR
+-rw-rw-r--+ 1 agruenba users 0 Feb 24 09:37 f
+$ \fBgetrichacl f\fR
+f:
+    owner@:rwp----------::allow
+  user:tim:rwp----------::allow
+ everyone@:r------------::allow
+
+.fi
+.RE
+.fam T
+.PP
+When the file permission bits are changed to the value 0666, we end up with the
+following result:
+.PP
+.fam C
+.RS 4
+.nf
+$ \fBchmod 666 f\fR
+$ \fBls -l f\fR
+-rw-rw-rw-+ 1 agruenba users 0 Feb 24 09:37 f
+$ \fBgetrichacl f\fR
+f:
+    owner@:rwp----------::allow
+  user:tim:rwp----------::allow
+    group@:-wp----------::deny
+ everyone@:rwp----------::allow
+
+.fi
+.RE
+.fam T
+.PP
+By giving POSIX write access to the other class, the
+.B everyone@
+special identifier has gained
+.BR write_data "\ (" w )
+and
+.BR append_data "\ (" p )
+access to the file. The owning group still only has
+.BR read_data "\ (" r )
+access, though.
+.SS Inheritance of permissions at file-creation time
+When a file or directory is created, the ACL of the parent directory defines
+which of the parent's ACL entries the new file or directory will inherit: files
+will inherit entries with the
+.BR file_inherit "\ (" f )
+flag set. Directories will inherit entries with the
+.BR dir_inherit "\ (" d )
+flag set. In addition, directories will inherit entries with the
+.BR file_inherit "\ (" f )
+flag set as inheritable-only permissions for their children; the
+.BR inherit_only "\ (" i )
+flag is set. The
+.BR no_propagate "\ (" n )
+flag can be used to inherit permissions one level deep only.
+.PP
+When a file or directory inherits permissions, the file permissions are
+determined by the
+.I mode
+parameter as given to
+.BR open (2),
+.BR mkdir (2),
+and similar, and by the inherited permissions; the process umask (see
+.BR umask (2))
+is ignored.
+.PP
+The following example creates a directory and sets up inheritable permissions
+for files and subdirectories (the example is indented and padded with dashes
+for improved readability):
+.PP
+.fam C
+.RS 4
+.nf
+$ \fBmkdir d\fR
+$ \fBsetrichacl --set '\fR
+> \fB     owner@:rwpxd:fd:allow\fR
+> \fB   user:tim:rwpxd:fd:allow\fR
+> \fBgroup:staff:r--x-:f-:allow\fR
+> \fB  everyone@:r--x-:fd:allow' d\fR
+.fi
+.RE
+.fam T
+.PP
+Of the four ACL entries, three are inheritable for files and directories (the
+.BR file_inherit "\ (" f )
+and
+.BR dir_inherit "\ (" d )
+flags are set), and the entry for group Staff is inheritable for files only
+(the
+.BR dir_inherit "\ (" d )
+flag is not set).
+.PP
+Files created inside
+.B d
+inherit the following permissions:
+.PP
+.fam C
+.RS 4
+.nf
+$ \fBtouch d/f\fR
+$ \fBls -l d/f\fR
+-rw-rw-r--+ 1 agruenba users 0 Feb 24 09:37 d/f
+$ \fBgetrichacl d/f\fR
+d/f:
+      owner@:rwp----------::allow
+    user:tim:rwp----------::allow
+ group:staff:r------------::allow
+   everyone@:r------------::allow
+
+.fi
+.RE
+.fam T
+.PP
+The
+.BR touch (1)
+command calls
+.BR open (2)
+with a
+.I mode
+parameter of 0666 to create a new file, so the
+.BR execute "\ (" x )
+permission is masked by the file permission bits. When the file permission bits
+are changed to the value 0775 with
+.BR chmod (1),
+the ACL changes as follows:
+.PP
+.fam C
+.RS 4
+.nf
+$ \fBchmod 775 d/f\fR
+$ \fBgetrichacl d/f\fR
+d/f:
+      owner@:rwpx---------::allow
+    user:tim:rwpx---------::allow
+ group:staff:r--x---------::allow
+   everyone@:r--x---------::allow
+
+.fi
+.RE
+.fam T
+.PP
+Directories created inside 
+.B d
+inherit the following permissions:
+.PP
+.fam C
+.RS 4
+.nf
+$ \fBmkdir d/d\fR
+$ \fBls -dl d/d\fR
+drwxrwxr-x+ 2 agruenba users 4096 Feb 24 09:37 d/d
+$ \fBgetrichacl d/d\fR
+d/d:
+      owner@:rwpxd--------:fd:allow
+    user:tim:rwpxd--------:fd:allow
+ group:staff:r--x---------:fi:allow
+   everyone@:r--x---------:fd:allow
+
+.fi
+.RE
+.fam T
+.PP
+The 
+.BR inherit_only "\ (" i )
+flag of the entry for group Staff is set to indicate that the entry has no
+effect on the effective permissions of
+.BR d/d .
+When a file is created inside
+.BR d/d ,
+the
+.BR inherit_only "\ (" i )
+flag in the entry inherited by the file is cleared again, and the resulting ACL
+is somilar to that of
+.BR d/f .
+.SS Inheritance of file permission bits only
+When the permissions inherited by a new file or directory can be exactly
+represented by the file permission bits, only the file permission bits of the
+new file or directory will be set, and no ACL will be stored (no
+.B +
+sign is shown after the file permission bits):
+.PP
+.fam C
+.RS 4
+.nf
+$ \fBls -dl d\fR
+drw-------+ 3 agruenba users 4096 Feb 24 09:37 d
+$ \fBgetrichacl d\fR
+d:
+ owner@:rwp----------:f:allow
+
+$ \fBtouch d/f\fR
+$ \fBls -l d/f\fR
+-rw------- 1 agruenba users 0 Feb 24 09:37 d/f
+$ \fBgetrichacl d/f\fR
+d/f:
+ owner@:rwp----------::allow
+
+.fi
+.RE
+.fam T
+.PP
+.SS Automatic Inheritance
+The NFSv4 and SMB network protocols support creating files and directories
+without specifying any permissions for the new file or directory.  When the
+directory in which such a file is created has the
+.BR auto_inherit "\ (" a )
+ACL flag set, then the new files and directories created in the directory will
+have the
+.BR auto_inherit "\ (" a )
+ACL flag set, and each ACL entry inherited from the parent directory will have
+the
+.BR inherited "\ (" a )
+flag set. For example, consider the following directory:
+.PP
+.fam C
+.RS 4
+.nf
+$ \fBls -dl d\fR
+drw-rw----+ 2 agruenba users 4096 Feb 24 09:37 d
+$ \fBgetrichacl d\fR
+d:
+    flags:a
+   owner@:rwp----------:f:allow
+ user:tim:rwp----------:f:allow
+
+.fi
+.RE
+.fam T
+.PP
+When a file is created inside that directory without specifying any file
+permissions, the file inherits the following ACL:
+.PP
+.fam C
+.RS 4
+.nf
+$ \fBgetrichacl d/f\fR
+d/f:
+    flags:a
+   owner@:rwp----------:a:allow
+ user:tim:rwp----------:a:allow
+
+.fi
+.RE
+.fam T
+.PP
+When the ACL of the directory is then changed, those changes propagate to the
+file:
+.PP
+.fam C
+.RS 4
+.nf
+$ \fBsetrichacl --modify group:staff:r:f:allow d\fR
+$ \fBgetrichacl d/f\fR
+d:
+       flags:a
+      owner@:rwp----------:a:allow
+    user:tim:rwp----------:a:allow
+ group:staff:r------------:a:allow
+
+.fi
+.RE
+.fam T
+.PP
+When ACL entries are propagated from a directory to one of its children (the
+files and directories inside the directory), all entries in the child's ACL
+that have the
+.BR inherited "\ (" a )
+flag set are removed, and the child inherits ACL entries from the parent in the
+same way as when a new file or directory is created. The
+.BR inherited "\ (" a )
+flag of those inherited entries is set. Existing entries in the child's ACL
+that do not have the
+.BR inherited "\ (" a )
+flag set are left untouched:
+.PP
+.fam C
+.RS 4
+.nf
+$ \fBsetrichacl --modify user:ada:rwp::allow d/f\fR
+$ \fBgetrichacl d/f\fR
+d:
+       flags:a
+    user:ada:rwp----------::allow
+      owner@:rwp----------:a:allow
+    user:tim:rwp----------:a:allow
+ group:staff:r------------:a:allow
+
+$ \fBsetrichacl --modify group:staff:::allow d\fR
+$ \fBgetrichacl d\fR
+d:
+    flags:a
+   owner@:rwp----------:f:allow
+ user:tim:rwp----------:f:allow
+
+$ \fBgetrichacl d/f\fR
+d:
+    flags:a
+ user:ada:rwp----------::allow
+   owner@:rwp----------:a:allow
+ user:tim:rwp----------:a:allow
+
+.fi
+.RE
+.fam T
+.PP
+We remove the allow entry for group Staff from the ACL by assigning it an empty
+set of permissions.
+.PP
+When the file permission bits of a file or directory are changed with
+.BR chmod (2),
+the Automatic Inheritance algorithm must no longer override those permissions.
+Likewise, when a file or directory is created with
+.BR open (2),
+.BR mkdir (2),
+or similar, the
+.I mode
+parameter to those system calls defines an upper limit to the file permission
+bits of the new file or directory, and the Automatic Inheritance algorithm must
+no longer override the resulting permissions.  To achieve that, when the ACL of
+the file or directory has the
+.BR auto_inherit "\ (" a )
+flag set, those operations set the
+.BR protected "\ (" p )
+flag, which stops the Automatic Inheritance algorithm from modifying the ACL:
+.PP
+.fam C
+.RS 4
+.nf
+$ \fBchmod 660 d/f\fR
+$ \fBgetrichacl d/f\fR
+d/f:
+    flags:ap
+ user:ada:rwp----------::allow
+   owner@:rwp----------:a:allow
+ user:tim:rwp----------:a:allow
+
+$ \fBtouch d/g\fR
+$ \fBgetrichacl d/g\fR
+d/g:
+    flags:ap
+   owner@:rwp----------:a:allow
+ user:tim:rwp----------:a:allow
+
+.fi
+.RE
+.fam T
+.SS Effective permissions
+With complex ACLs, it can become difficult to determine the permissions of a
+particular user or group. In this situation, the
+.B --access
+option of
+.BR getrichacl (1)
+can be used:
+.PP
+.fam C
+.RS 4
+.nf
+$ \fBgetrichacl --access d/f\fR
+rwpx---------  d/f
+$ \fBgetrichacl --access=tim d/f\fR
+rwpx---------  d/f
+$ \fBgetrichacl --access=:staff d/f\fR
+r--x---------  d/f
+.fi
+.RE
+.fam T
+.PP
+When the
+.B --access
+option is used without arguments, getrichacl displays the permissions the
+current process has for the specified file or files. With a user name as the
+argument, getrichacl displays the permissions of that user. With a colon
+followed by a group name, getrichacl displays the permissions of that group.
+.SH AUTHOR
+Written by Andreas Grünbacher <agruenba@redhat.com>.
+.PP
+Please send your bug reports, suggested features and comments to the above address.
+.SH CONFORMING TO
+Rich Access Control Lists are Linux-specific.
+.SH SEE ALSO
+.BR getrichacl (1),
+.BR setrichacl (1),
+.BR richacl (7)

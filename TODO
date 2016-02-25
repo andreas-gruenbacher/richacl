@@ -1,3 +1,5 @@
+* Add support for owner@, group@, everyone@ to the --access option?
+
 * Internationalize
 - include po (gettext stuff) in packages and build process
 
@@ -8,5 +10,3 @@
 
 * Look into Windows OWNER RIGHTS
   http://windowsitpro.com/article/security/acl-enhancements-in-windows-vista-and-windows-server-2008-102871
-
-* Use the kernel headers from /usr/include/linux/ where available.
