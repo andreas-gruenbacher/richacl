@@ -94,23 +94,41 @@ static int modify_richacl(struct richacl **acl2, struct richacl *acl, int valid_
 	richacl_for_each_entry(ace, acl) {
 		struct richacl *acl3;
 		struct richace *ace3;
+		unsigned short count = (*acl2)->a_count;
 
 		richacl_for_each_entry(ace2, *acl2) {
 			if (ace2->e_type == ace->e_type &&
 			    richace_is_inherited(ace2) == richace_is_inherited(ace) &&
 			    richace_is_same_identifier(ace, ace2)) {
+				if (!ace->e_mask) {
+					count--;
+					break;
+				}
 				ace2->e_mask = ace->e_mask;
 				ace2->e_flags = ace->e_flags;
 				goto next_change;
 			}
 		}
 
-		acl3 = richacl_alloc((*acl2)->a_count + 1);
+		if (ace->e_mask)
+			count++;
+		acl3 = richacl_alloc(count);
 		if (!acl3)
 			return -1;
 		acl3->a_flags = (*acl2)->a_flags;
 		ace3 = acl3->a_entries;
-		if (!(ace->e_flags & RICHACE_INHERITED_ACE)) {
+
+		if (!ace->e_mask) {
+			richacl_for_each_entry(ace2, *acl2) {
+				if (ace2->e_type == ace->e_type &&
+				    richace_is_inherited(ace2) ==
+				    richace_is_inherited(ace) &&
+				    richace_is_same_identifier(ace, ace2))
+					continue;
+				if (richace_copy(ace3++, ace2))
+					goto fail;
+			}
+		} else if (!(ace->e_flags & RICHACE_INHERITED_ACE)) {
 			if (richace_is_deny(ace)) {
 				/*
 				 * Insert the new deny entry after the existing
