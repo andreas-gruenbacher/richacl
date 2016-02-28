@@ -110,7 +110,7 @@ The purpose of the file masks is to allow traditional POSIX applications which
 are unaware of RichACLs to place limits on the permissions granted by the
 RichACL without causing the ACL entries to be modified.  Without the file mask,
 the only alternative would be for the kernel to directly modify the ACL
-entries.  However, this latter approach could have a "hysteresis effect",
+entries.  However, this latter approach could have a \(lqhysteresis effect\(rq,
 whereby a RichACL-unaware application that performs a transition from one file
 mode to another file mode and then back to the original file mode could cause
 destruction of the permission information in ACL entries.  When creating files
