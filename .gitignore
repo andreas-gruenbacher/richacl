@@ -33,6 +33,10 @@ stamp-h1
 /richacl-*
 /src/getrichacl
 /src/setrichacl
+/man/getrichacl.1.txt
+/man/richacl.7.txt
+/man/richaclex.7.txt
+/man/setrichacl.1.txt
 
 /test-suite.log
 /tests/*.log

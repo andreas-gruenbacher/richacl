@@ -1,0 +1,10 @@
+#! /bin/sh
+
+col -b | \
+sed -e 's,\xe2\x80\x90,-,g' \
+    -e 's,\xe2\x9f\xa8,<,g' \
+    -e 's,\xe2\x9f\xa9,>,g' \
+    -e 's,\xe2\x80\x9c,",g' \
+    -e 's,\xe2\x80\x9d,",g' \
+    -e 's,\xc2\xb7,*,g' \
+    -e 's,\xc3\xbc,ue,g'

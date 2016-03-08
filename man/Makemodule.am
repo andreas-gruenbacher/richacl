@@ -8,7 +8,7 @@ MAN_TO_TEXT = \
     @echo "$< -> $@"; \
     export COLUMNS=80; \
     mkdir -p $$(dirname $@) && \
-    man $< | col -b > $@.tmp && \
+    man $< | $(top_srcdir)/man/txt-filter > $@.tmp && \
     mv $@.tmp $@
 
 man/getrichacl.1.txt: man/getrichacl.1
