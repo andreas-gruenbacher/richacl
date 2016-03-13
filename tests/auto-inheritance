@@ -8,7 +8,7 @@ use_testdir
 umask 022
 
 ncheck "mkdir d1"
-ncheck "setrichacl --modify u:101:rw:fd:deny d1"
+ncheck "setrichacl --modify owner@:rwpxd:fd:allow,u:101:rw:fd:deny d1"
 ncheck "setrichacl --modify u:102:rw:f:deny d1"
 ncheck "setrichacl --modify u:103:rw:d:deny d1"
 ncheck "setrichacl --modify g:101:rw:fdi:deny d1"
@@ -25,7 +25,7 @@ d1:
   user:102:rw--------------:f:deny
   user:103:rw--------------:d:deny
  group:101:rw--------------:fdi:deny
-    owner@:rwpxd-----------::allow
+    owner@:rwpxd-----------:fd:allow
  everyone@:r--x------------::allow
 EOF
 
@@ -36,24 +36,26 @@ ncheck "touch d1/d3"
 check "getrichacl --numeric --raw d1/d2" <<EOF
 d1/d2:
      flags:map
-     owner:----------------::mask
+     owner:rwpxd-----------::mask
      group:----------------::mask
      other:----------------::mask
   user:101:rw--------------:fda:deny
   user:102:rw--------------:fia:deny
   user:103:rw--------------:da:deny
  group:101:rw--------------:fda:deny
+    owner@:rwpxd-----------:fda:allow
 EOF
 
 check "getrichacl --numeric --raw d1/d3" <<EOF
 d1/d3:
      flags:map
-     owner:----------------::mask
+     owner:rwp-------------::mask
      group:----------------::mask
      other:----------------::mask
   user:101:rw--------------:a:deny
   user:102:rw--------------:a:deny
  group:101:rw--------------:a:deny
+    owner@:rwpx------------:a:allow
 EOF
 
 ncheck "mkdir d1/d2/d4"
@@ -66,24 +68,26 @@ ncheck "touch d1/d7"
 check "getrichacl --numeric --raw d1/d2/d4" <<EOF
 d1/d2/d4:
      flags:map
-     owner:----------------::mask
+     owner:rwpxd-----------::mask
      group:----------------::mask
      other:----------------::mask
   user:101:rw--------------:fda:deny
   user:102:rw--------------:fia:deny
   user:103:rw--------------:da:deny
  group:101:rw--------------:fda:deny
+    owner@:rwpxd-----------:fda:allow
 EOF
 
 check "getrichacl --numeric --raw d1/d2/d4/d5" <<EOF
 d1/d2/d4/d5:
      flags:map
-     owner:----------------::mask
+     owner:rwp-------------::mask
      group:----------------::mask
      other:----------------::mask
   user:101:rw--------------:a:deny
   user:102:rw--------------:a:deny
  group:101:rw--------------:a:deny
+    owner@:rwpx------------:a:allow
 EOF
 
 # Clear protected flag from all the ACLs
@@ -100,7 +104,7 @@ d1:
   user:102:rw-----------:f:deny
   user:103:rw-----------:d:deny
  group:101:rw-----------:fdi:deny
-    owner@:rwpxd--------::allow
+    owner@:rwpxd--------:fd:allow
  everyone@:r--x---------::allow
 EOF
 
@@ -116,76 +120,82 @@ d1:
   user:102:rw--------------:f:deny
   user:103:rw--------------:d:deny
  group:101:rw--------------:fdi:deny
-    owner@:rwpxd-----------::allow
+    owner@:rwpxd-----------:fd:allow
  everyone@:r--x------------::allow
 EOF
 
 check "getrichacl --numeric --raw d1/d2" <<EOF
 d1/d2:
      flags:a
-     owner:rw--------------::mask
+     owner:rwpxd-----------::mask
      group:rw--------------::mask
      other:----------------::mask
   user:101:rw--------------:fda:allow
   user:102:rw--------------:fia:deny
   user:103:rw--------------:da:deny
  group:101:rw--------------:fda:deny
+    owner@:rwpxd-----------:fda:allow
 EOF
 
 check "getrichacl --numeric --raw d1/d3" <<EOF
 d1/d3:
      flags:a
-     owner:rw--------------::mask
+     owner:rwpx------------::mask
      group:rw--------------::mask
      other:----------------::mask
   user:101:rw--------------:a:allow
   user:102:rw--------------:a:deny
  group:101:rw--------------:a:deny
+    owner@:rwpx------------:a:allow
 EOF
 
 check "getrichacl --numeric --raw d1/d2/d4" <<EOF
 d1/d2/d4:
      flags:a
-     owner:rw--------------::mask
+     owner:rwpxd-----------::mask
      group:rw--------------::mask
      other:----------------::mask
   user:101:rw--------------:fda:allow
   user:102:rw--------------:fia:deny
   user:103:rw--------------:da:deny
  group:101:rw--------------:fda:deny
+    owner@:rwpxd-----------:fda:allow
 EOF
 
 check "getrichacl --numeric --raw d1/d2/d4/d5" <<EOF
 d1/d2/d4/d5:
      flags:a
-     owner:rw--------------::mask
+     owner:rwpx------------::mask
      group:rw--------------::mask
      other:----------------::mask
   user:101:rw--------------:a:allow
   user:102:rw--------------:a:deny
  group:101:rw--------------:a:deny
+    owner@:rwpx------------:a:allow
 EOF
 
 # No automatic inheritance for protected files
 check "getrichacl --numeric --raw d1/d6" <<EOF
 d1/d6:
      flags:map
-     owner:----------------::mask
+     owner:rwpxd-----------::mask
      group:----------------::mask
      other:----------------::mask
   user:101:rw--------------:fda:deny
   user:102:rw--------------:fia:deny
   user:103:rw--------------:da:deny
  group:101:rw--------------:fda:deny
+    owner@:rwpxd-----------:fda:allow
 EOF
 
 check "getrichacl --numeric --raw d1/d7" <<EOF
 d1/d7:
      flags:map
-     owner:----------------::mask
+     owner:rwp-------------::mask
      group:----------------::mask
      other:----------------::mask
   user:101:rw--------------:a:deny
   user:102:rw--------------:a:deny
  group:101:rw--------------:a:deny
+    owner@:rwpx------------:a:allow
 EOF
