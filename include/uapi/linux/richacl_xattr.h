@@ -21,19 +21,19 @@
 #include <linux/limits.h>
 
 struct richace_xattr {
-	__le16		e_type;
-	__le16		e_flags;
-	__le32		e_mask;
-	__le32		e_id;
+	__le16	e_type;
+	__le16	e_flags;
+	__le32	e_mask;
+	__le32	e_id;
 };
 
 struct richacl_xattr {
-	unsigned char	a_version;
-	unsigned char	a_flags;
-	__le16		a_count;
-	__le32		a_owner_mask;
-	__le32		a_group_mask;
-	__le32		a_other_mask;
+	__u8	a_version;
+	__u8	a_flags;
+	__le16	a_count;
+	__le32	a_owner_mask;
+	__le32	a_group_mask;
+	__le32	a_other_mask;
 };
 
 #define RICHACL_XATTR_VERSION 0
