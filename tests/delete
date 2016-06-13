@@ -75,10 +75,10 @@ EOF
 # Regression: Delete access must not override add_file / add_subdirectory
 # access.
 ncheck "touch h"
-check "mv h d7/h || :" <<EOF
+check "mv -f h d7/h || :" <<EOF
 mv: cannot move 'h' to 'd7/h': Permission denied
 EOF
-check "mv h s7/h || :" <<EOF
+check "mv -f h s7/h || :" <<EOF
 mv: cannot move 'h' to 's7/h': Permission denied
 EOF
 
