@@ -40,6 +40,7 @@ CFILES = \
 	lib/richacl_get_fd.c \
 	lib/richacl_get_file.c \
 	lib/richacl_inherit.c \
+	lib/richacl_inherit_inode.c \
 	lib/richacl_insert_entry.c \
 	lib/richacl_mask_to_mode.c \
 	lib/richacl_mask_to_text.c \
