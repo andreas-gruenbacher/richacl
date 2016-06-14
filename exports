@@ -32,6 +32,7 @@ RICHACL_1.0 {
 	richacl_get_fd;
 	richacl_get_file;
 	richacl_inherit;
+	richacl_inherit_inode;
 	richacl_mask_to_text;
 	richacl_masks_to_mode;
 	richacl_set_fd;
