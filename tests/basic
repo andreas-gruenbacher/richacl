@@ -10,7 +10,7 @@ umask 022
 
 ncheck "touch x"
 ncheck "setrichacl --set 'everyone@:rwp::allow' x"
-check "ls -l x | sed -e 's/[. ].*//'" <<EOF
+check "stat -c %A x" <<EOF
 -rw-rw-rw-
 EOF
 
@@ -20,7 +20,7 @@ x:
 EOF
 
 ncheck 'chmod 664 x'
-check "ls -l x | sed -e 's/[. ].*//'" <<EOF
+check "stat -c %A x" <<EOF
 -rw-rw-r--
 EOF
 
@@ -36,7 +36,7 @@ EOF
 
 ncheck "mkdir sub"
 ncheck "setrichacl --set 'everyone@:rwpxd:fd:allow' sub"
-check "ls -dl sub | sed -e 's/[.+ ].*/+/'" <<EOF
+check "stat -c %A+ sub" <<EOF
 drwxrwxrwx+
 EOF
 
@@ -47,7 +47,7 @@ system.richacl
 EOF
 
 ncheck "chmod 775 sub"
-check "ls -dl sub | sed -e 's/[.+ ].*/+/'" <<EOF
+check "stat -c %A+ sub" <<EOF
 drwxrwxr-x+
 EOF
 
@@ -65,7 +65,7 @@ sub:
 EOF
 
 ncheck "touch sub/f"
-check "ls -l sub/f | sed -e 's/[. ].*//'" <<EOF
+check "stat -c %A sub/f" <<EOF
 -rw-rw-rw-
 EOF
 
@@ -75,7 +75,7 @@ sub/f:
 EOF
 
 ncheck "mkdir sub/sub2"
-check "ls -dl sub/sub2 | sed -e 's/[.+ ].*/+/'" <<EOF
+check "stat -c %A+ sub/sub2" <<EOF
 drwxrwxrwx+
 EOF
 
@@ -85,7 +85,7 @@ sub/sub2:
 EOF
 
 ncheck "mkdir -m 750 sub/sub3"
-check "ls -dl sub/sub3 | sed -e 's/[.+ ].*/+/'" <<EOF
+check "stat -c %A+ sub/sub3" <<EOF
 drwxr-x---+
 EOF
 
