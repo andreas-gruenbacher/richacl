@@ -37,7 +37,7 @@
  * If there is an inheritable acl, the maximum permissions that the acl grants
  * are computed and the file masks of the new acl are set accordingly.
  */
-static struct richacl *
+struct richacl *
 richacl_inherit_inode(const struct richacl *dir_acl, mode_t *mode_p,
 		      mode_t (*umask)(void *), void *umask_arg)
 {

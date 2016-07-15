@@ -146,7 +146,7 @@ extern bool richacl_permission(struct richacl *, uid_t, gid_t, uid_t, const gid_
 extern char *richacl_mask_to_text(unsigned int, int);
 
 extern struct richacl *richacl_auto_inherit(const struct richacl *, const struct richacl *);
-static struct richacl *richacl_inherit_inode(const struct richacl *, mode_t *,
+extern struct richacl *richacl_inherit_inode(const struct richacl *, mode_t *,
 					     mode_t (*)(void *), void *);
 
 extern size_t richacl_xattr_size(const struct richacl *acl);
