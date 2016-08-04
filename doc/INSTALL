@@ -4,6 +4,10 @@ attribute library and utility from source, and how to install them.
 0. If you have the binary rpm, simply install it and skip to step 2 (below).
    The rpm command to do this is:
 	# rpm -Uvh richacl
+   or, if you have YUM/DNF configured (don't need the binary package):
+        # yum install richacl
+                OR
+        # dnf install richacl
 
    The Debian command to do this is:
 	# dpkg -i richacl
