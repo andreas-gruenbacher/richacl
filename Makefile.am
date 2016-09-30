@@ -8,8 +8,7 @@ EXTRA_DIST = \
 	doc/COPYING \
 	doc/COPYING-GPLv2 \
 	doc/COPYING-LGPLv2 \
-	doc/INSTALL \
-	doc/PORTING
+	INSTALL
 
 BUILT_SOURCES = $(top_srcdir)/.version
 $(top_srcdir)/.version:
