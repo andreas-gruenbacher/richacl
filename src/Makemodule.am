@@ -21,4 +21,5 @@ check_PROGRAMS += \
 	src/richacl-apply-masks \
 	src/richacl-inherit \
 	src/require-richacls \
+	src/renameat2 \
 	src/runas

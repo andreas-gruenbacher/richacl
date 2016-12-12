@@ -22,6 +22,8 @@ AC_CHECK_HEADER([sys/xattr.h],,
 AC_CHECK_HEADER([linux/richacl.h])
 AM_CONDITIONAL([NEED_UAPI], [test "$ac_cv_header_linux_richacl_h" != yes])
 
+AC_CHECK_FUNCS([renameat2])
+
 #AM_GNU_GETTEXT_VERSION([0.18.2])
 #AM_GNU_GETTEXT([external])
 

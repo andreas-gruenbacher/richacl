@@ -12,7 +12,9 @@ TESTS = \
 	tests/setrichacl-modify \
 	tests/write-vs-append \
 	tests/ctime \
-	tests/auto-inheritance
+	tests/auto-inheritance \
+	tests/rename \
+	tests/rename-posix
 
 EXTRA_DIST += \
 	$(TESTS) \

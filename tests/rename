@@ -1,0 +1,201 @@
+#! /bin/bash
+
+. ${0%/*}/test-lib.sh
+
+require_runas
+require_richacls
+use_testdir
+
+export LC_ALL=C
+
+# Undefine the runas wrapper: we use the runas utility directly.
+unset runas
+
+init1() {
+    rm -rf a b
+    mkdir -p a/d b
+    touch a/f
+    chgrp 99 a a/d b a/f
+    # Target file / directory does not exist now.
+}
+
+init2() {
+    rm -rf a b
+    mkdir -p a/d b/d
+    touch a/f b/f
+    chgrp 99 a a/d b b/d a/f b/f
+    # Same as init1, but target file / directory exists now.
+}
+
+perms() {
+    local mask=$1
+    shift
+
+    parent_ncheck "setrichacl -m u:99:$mask::allow $*"
+    #getrichacl --access=99:99 --long $*
+}
+
+umask 077
+ncheck "chmod go+rx ."
+
+# Target file / directory does not exist:
+init1
+perms "execute/delete_child" a
+perms "execute" b
+check "runas -u 99 -g 99 -- renameat2 a/f b/f || :" <<EOF
+Permission denied
+EOF
+
+check "runas -u 99 -g 99 -- renameat2 a/d b/d || :" <<EOF
+Permission denied
+EOF
+
+perms "add_subdirectory/execute" b
+check "runas -u 99 -g 99 -- renameat2 a/f b/f || :" <<EOF
+Permission denied
+EOF
+
+perms "execute" a
+perms "add_file/execute" b
+check "runas -u 99 -g 99 -- renameat2 a/f b/f || :" <<EOF
+Permission denied
+EOF
+
+perms "execute/delete_child" a
+ncheck "runas -u 99 -g 99 -- renameat2 a/f b/f || :"
+
+check "runas -u 99 -g 99 -- renameat2 a/d b/d || :" <<EOF
+Permission denied
+EOF
+
+perms "execute" a
+perms "add_subdirectory/execute" b
+check "runas -u 99 -g 99 -- renameat2 a/d b/d || :" <<EOF
+Permission denied
+EOF
+
+perms "execute/delete_child" a
+check "runas -u 99 -g 99 -- renameat2 a/d b/d || :" <<EOF
+Permission denied
+EOF
+
+perms "write_data" a/d
+ncheck "runas -u 99 -g 99 -- renameat2 a/d b/d || :"
+
+init1
+perms "execute" a
+perms "delete" a/f
+perms "execute/add_file" b
+ncheck "runas -u 99 -g 99 -- renameat2 a/f b/f || :"
+
+perms "write_data/delete" a/d
+perms "execute/add_subdirectory" b
+ncheck "runas -u 99 -g 99 -- renameat2 a/d b/d || :"
+
+# Target file / directory exists:
+init2
+perms "execute/delete_child" a
+perms "execute/delete_child/add_file" b
+ncheck "runas -u 99 -g 99 -- renameat2 a/f b/f || :"
+
+check "runas -u 99 -g 99 -- renameat2 a/d b/d || :" <<EOF
+Permission denied
+EOF
+
+perms "execute/delete_child/add_subdirectory" b
+perms "w" a/d
+ncheck "runas -u 99 -g 99 -- renameat2 a/d b/d || :"
+
+# Swap files / directories:
+init2
+check "runas -u 99 -g 99 -- renameat2 -x a/f b/f || :" <<EOF
+Permission denied
+EOF
+
+check "runas -u 99 -g 99 -- renameat2 -x a/d b/d || :" <<EOF
+Permission denied
+EOF
+
+perms "execute/delete_child/add_subdirectory" a b
+check "runas -u 99 -g 99 -- renameat2 -x a/f b/f || :" <<EOF
+Permission denied
+EOF
+
+perms "execute/delete_child/add_file" a
+perms "execute/delete_child/add_subdirectory" b
+check "runas -u 99 -g 99 -- renameat2 -x a/f b/f || :" <<EOF
+Permission denied
+EOF
+
+perms "execute/delete_child/add_subdirectory" a
+perms "execute/delete_child/add_file" b
+check "runas -u 99 -g 99 -- renameat2 -x a/f b/f || :" <<EOF
+Permission denied
+EOF
+
+perms "execute/delete_child/add_file" a b
+ncheck "runas -u 99 -g 99 -- renameat2 -x a/f b/f || :"
+
+perms "execute/delete_child" a b
+perms "w" a/d b/d
+check "runas -u 99 -g 99 -- renameat2 -x a/d b/d || :" <<EOF
+Permission denied
+EOF
+
+perms "execute/delete_child/add_subdirectory" a
+perms "execute/delete_child/add_file" b
+check "runas -u 99 -g 99 -- renameat2 -x a/d b/d || :" <<EOF
+Permission denied
+EOF
+
+perms "execute/delete_child/add_file" a
+perms "execute/delete_child/add_subdirectory" b
+check "runas -u 99 -g 99 -- renameat2 -x a/d b/d || :" <<EOF
+Permission denied
+EOF
+
+perms "execute/delete_child/add_subdirectory" a b
+perms "w" a/d b/d
+ncheck "runas -u 99 -g 99 -- renameat2 -x a/d b/d || :"
+
+# Swap file and directory across directories:
+init2
+check "runas -u 99 -g 99 -- renameat2 -x a/d b/f || :" <<EOF
+Permission denied
+EOF
+
+perms "execute/delete_child/add_subdirectory" a
+perms "execute/delete_child/add_file" b
+perms "w" a/d
+check "runas -u 99 -g 99 -- renameat2 -x a/d b/f || :" <<EOF
+Permission denied
+EOF
+
+perms "execute/delete_child/add_file" a
+perms "execute/delete_child/add_subdirectory" b
+perms "w" a/d
+ncheck "runas -u 99 -g 99 -- renameat2 -x a/d b/f || :"
+
+# Swap file and subdirectory in the same directory: Write access to
+# subdirectory not needed because the parent directory doesn't change.
+mkdir c
+mkdir c/d
+touch c/f
+chgrp 99 c c/d c/f
+perms "execute/delete_child" c
+check "runas -u 99 -g 99 -- renameat2 -x c/d c/f || :" <<EOF
+Permission denied
+EOF
+
+perms "execute/delete_child/add_file" c
+check "runas -u 99 -g 99 -- renameat2 -x c/d c/f || :" <<EOF
+Permission denied
+EOF
+
+perms "execute/delete_child/add_subdirectory" c
+check "runas -u 99 -g 99 -- renameat2 -x c/d c/f || :" <<EOF
+Permission denied
+EOF
+
+perms "execute/delete_child/add_file/add_subdirectory" c
+ncheck "runas -u 99 -g 99 -- renameat2 -x c/d c/f || :"
