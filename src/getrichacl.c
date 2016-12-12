@@ -268,7 +268,7 @@ int main(int argc, char *argv[])
 
 			mask_text = richacl_mask_to_text(mask,
 					format | format_for_mode(st.st_mode));
-			printf("%s  %s\n", mask_text, file);
+			printf("%s  %s\n", *mask_text ? mask_text : "-", file);
 			free(mask_text);
 		} else {
 			acl = get_richacl(file, st.st_mode);
