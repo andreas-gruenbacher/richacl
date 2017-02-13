@@ -9,6 +9,9 @@ use_testdir
 umask 022
 export LC_ALL=C
 
+# Undefine the runas wrapper: we use the runas utility directly.
+unset runas
+
 ncheck "chmod go+w ."
 ncheck "mkdir d1 d2 d3 d4 d5 d6 d7"
 ncheck "touch d1/f d1/g d2/f d3/f d4/f d5/f d6/f d7/f d7/g d7/h"
@@ -34,56 +37,54 @@ ncheck "setrichacl --set 'u:99:xd::allow' s6"
 ncheck "setrichacl --set 'u:99:D::allow' s7/f s7/g s7/h"
 ncheck "chmod 664 s7/g"
 
-runas -u 99 -g 99
-
 # Cannot delete files with no or only with write permissions on the directory
-check "rm -f d1/f d1/g || :" <<EOF
+check "runas -u 99 -g 99 -- rm -f d1/f d1/g || :" <<EOF
 rm: cannot remove 'd1/f': Permission denied
 rm: cannot remove 'd1/g': Permission denied
 EOF
 
 # Can delete files in directories we own
-ncheck "rm -f d2/f s2/f"
+ncheck "runas -u 99 -g 99 -- rm -f d2/f s2/f"
 
 # Can delete files in non-sticky directories we have write access to
-check "rm -f d3/f s3/f || :" <<EOF
+check "runas -u 99 -g 99 -- rm -f d3/f s3/f || :" <<EOF
 rm: cannot remove 's3/f': Operation not permitted
 EOF
 
 # "Write_data/execute" access does not include delete_child access, so deleting
 # is not allowed:
-check "rm -f d4/f s4/f || :" <<EOF
+check "runas -u 99 -g 99 -- rm -f d4/f s4/f || :" <<EOF
 rm: cannot remove 'd4/f': Permission denied
 rm: cannot remove 's4/f': Permission denied
 EOF
 
 # "Delete_child" access alone also is not sufficient
-check "rm -f d5/f s5/f || :" <<EOF
+check "runas -u 99 -g 99 -- rm -f d5/f s5/f || :" <<EOF
 rm: cannot remove 'd5/f': Permission denied
 rm: cannot remove 's5/f': Permission denied
 EOF
 
 # "Execute/delete_child" access is sufficient for non-sticky directories
-check "rm -f d6/f s6/f || :" <<EOF
+check "runas -u 99 -g 99 -- rm -f d6/f s6/f || :" <<EOF
 rm: cannot remove 's6/f': Operation not permitted
 EOF
 
 # "Delete" access on the child is sufficient, even in sticky directories.
-check "rm -f d7/f s7/f || :" <<EOF
+check "runas -u 99 -g 99 -- rm -f d7/f s7/f || :" <<EOF
 EOF
 
 # Regression: Delete access must not override add_file / add_subdirectory
 # access.
-ncheck "touch h"
-check "mv -f h d7/h || :" <<EOF
+ncheck "runas -u 99 -g 99 -- touch h"
+check "runas -u 99 -g 99 -- mv -f h d7/h || :" <<EOF
 mv: cannot move 'h' to 'd7/h': Permission denied
 EOF
-check "mv -f h s7/h || :" <<EOF
+check "runas -u 99 -g 99 -- mv -f h s7/h || :" <<EOF
 mv: cannot move 'h' to 's7/h': Permission denied
 EOF
 
 # A chmod turns off the "delete" permission
-check "rm -f d7/g s7/g || :" <<EOF
+check "runas -u 99 -g 99 -- rm -f d7/g s7/g || :" <<EOF
 rm: cannot remove 'd7/g': Permission denied
 rm: cannot remove 's7/g': Permission denied
 EOF
