@@ -32,12 +32,24 @@ x:
  everyone@:r------------::allow
 EOF
 
+# When checking if an ACL is equivalent to a file mode, the synchronize (S),
+# read_attributes (a), and read_acl (c) permissions are completely ignored as
+# they are always granted.  The write_attributes (A), write_acl (C), and
+# write_owner (o) permissions are ignored for the file owner as they are always
+# granted to the file owner.  If the remaining permissions can be exactly
+# represented as a file mode, the ACL is not stored as the file mode represents
+# an equivalent set of permissions.
+
+# write_data (w) without append_data (p) is not mode-equivalent, so the ACL
+# needs to be stored:
 ncheck "setrichacl --set 'owner@:rwCo::allow' x"
 check "getrichacl x" <<EOF
 x:
  owner@:rw-------Co--::allow
 EOF
 
+# write_data (w) with append_data (p) is mode-equivalent, so the ACL does not
+# need to be stored:
 ncheck "setrichacl --set 'owner@:rwpCo::allow' x"
 check "getrichacl x" <<EOF
 x:
