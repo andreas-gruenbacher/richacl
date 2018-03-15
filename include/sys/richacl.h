@@ -26,6 +26,11 @@
 
 #include <linux/richacl.h>
 
+/* Allow the use in C++ code.  */
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct richace {
 	unsigned short	e_type;
 	unsigned short	e_flags;
@@ -153,5 +158,9 @@ extern size_t richacl_xattr_size(const struct richacl *acl);
 extern struct richacl *richacl_from_xattr(const void *value, size_t size);
 extern void richacl_to_xattr(const struct richacl *acl, void *buffer);
 extern int richacl_valid(struct richacl *);
+
+#ifdef __cplusplus
+}
+#endif  /* C++ */
 
 #endif  /* __RICHACL_H */
