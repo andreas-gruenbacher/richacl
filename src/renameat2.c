@@ -5,6 +5,7 @@
  * This is a trivial wrapper around the renameat2 syscall.
  */
 
+#include "config.h"
 #define _GNU_SOURCE
 #include <fcntl.h>
 #include <stdio.h>
